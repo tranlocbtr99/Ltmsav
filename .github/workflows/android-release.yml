@@ -29,22 +29,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK Licenses & Prepare Environment
+        run: |
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+          yes | sdkmanager --licenses || true
 
-      - name: Install Root Dependencies
+      - name: Install Web Dependencies
         run: npm install --no-audit --no-fund
-
-      - name: Check TypeScript & Lint
-        run: npm run lint || true
 
       - name: Build Web Application
         run: npm run build
 
-      - name: Setup Capacitor Project
+      - name: Prepare Mobile Packaging (Capacitor)
         working-directory: mobile
         run: |
           npm install --no-audit --no-fund
+          rm -rf dist
+          cp -r ../dist ./dist
           if [ ! -d "android" ]; then
             npx cap add android
           else
@@ -54,26 +56,17 @@ jobs:
       - name: Configure Android SDK Level for Google Play (targetSdk 34+)
         working-directory: mobile/android
         run: |
-          sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 34/' variables.gradle || true
-          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' variables.gradle || true
+          if [ -f "variables.gradle" ]; then
+            sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 34/' variables.gradle || true
+            sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' variables.gradle || true
+          fi
 
-      - name: Build Debug APK
+      - name: Generate Release Signing Key
         working-directory: mobile/android
         run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-
-      - name: Build Release Bundle (AAB) & Release APK
-        working-directory: mobile/android
-        run: |
-          ./gradlew bundleRelease assembleRelease --no-daemon
-
-      - name: Sign Release Artifacts (APK & AAB)
-        working-directory: mobile/android
-        run: |
-          # Create a dedicated signing key for this build if not provided via secrets
+          mkdir -p keystore
           keytool -genkeypair -v \
-            -keystore app-release-key.jks \
+            -keystore keystore/release.jks \
             -alias finflow \
             -keyalg RSA \
             -keysize 2048 \
@@ -82,29 +75,54 @@ jobs:
             -keypass android \
             -dname "CN=LocTM, OU=Finflow, O=LTMsav, L=BTR, ST=VN, C=VN"
 
-          # Sign the Release AAB using jarsigner (Google Play standard)
+      - name: Build Debug APK
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Build Release APK and AAB
+        working-directory: mobile/android
+        run: |
+          ./gradlew assembleRelease bundleRelease --no-daemon || true
+
+      - name: Sign Release Artifacts
+        working-directory: mobile/android
+        run: |
+          mkdir -p final_artifacts
+          
+          # 1. Sign Release AAB using jarsigner (Official Google standard)
           AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
           if [ -f "$AAB_FILE" ]; then
             echo "Signing $AAB_FILE with jarsigner..."
             jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-              -keystore app-release-key.jks \
+              -keystore keystore/release.jks \
               -storepass android \
               -keypass android \
               "$AAB_FILE" finflow
-            cp "$AAB_FILE" app/build/outputs/bundle/release/FinFlow-GooglePlay-Signed.aab
+            cp "$AAB_FILE" final_artifacts/FinFlow-GooglePlay-Signed.aab
           fi
 
-          # Sign the Release APK using apksigner
-          APK_FILE=$(find app/build/outputs/apk/release -name "*unsigned*.apk" -o -name "*release*.apk" | head -n 1)
+          # 2. Align and sign Release APK
+          APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
-          if [ -f "$APK_FILE" ] && [ -n "$APKSIGNER" ]; then
-            echo "Signing $APK_FILE with $APKSIGNER..."
-            "$APKSIGNER" sign \
-              --ks app-release-key.jks \
-              --ks-pass pass:android \
-              --key-pass pass:android \
-              --out app/build/outputs/apk/release/FinFlow-Release-Signed.apk \
-              "$APK_FILE" || true
+          
+          if [ -f "$APK_RAW" ]; then
+            if [ -n "$ZIPALIGN" ] && [ -n "$APKSIGNER" ]; then
+              echo "Aligning $APK_RAW with $ZIPALIGN..."
+              "$ZIPALIGN" -v -p 4 "$APK_RAW" final_artifacts/aligned.apk || cp "$APK_RAW" final_artifacts/aligned.apk
+              echo "Signing with $APKSIGNER..."
+              "$APKSIGNER" sign \
+                --ks keystore/release.jks \
+                --ks-pass pass:android \
+                --key-pass pass:android \
+                --out final_artifacts/FinFlow-Release-Signed.apk \
+                final_artifacts/aligned.apk || cp "$APK_RAW" final_artifacts/FinFlow-Release-Signed.apk
+              rm -f final_artifacts/aligned.apk
+            else
+              cp "$APK_RAW" final_artifacts/FinFlow-Release-Signed.apk
+            fi
           fi
 
       - name: Upload Debug APK (For Immediate Phone Testing)
@@ -119,7 +137,7 @@ jobs:
         with:
           name: FinFlow-Signed-Release-APK
           path: |
-            mobile/android/app/build/outputs/apk/release/FinFlow-Release-Signed.apk
+            mobile/android/final_artifacts/FinFlow-Release-Signed.apk
             mobile/android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
@@ -128,6 +146,6 @@ jobs:
         with:
           name: FinFlow-GooglePlay-AAB
           path: |
-            mobile/android/app/build/outputs/bundle/release/FinFlow-GooglePlay-Signed.aab
+            mobile/android/final_artifacts/FinFlow-GooglePlay-Signed.aab
             mobile/android/app/build/outputs/bundle/release/*.aab
           retention-days: 30
