@@ -22,19 +22,20 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          # Do NOT use cache here — we generate package-lock.json first
 
-      - name: Setup Java 21 (Required for Capacitor 7)
+      - name: Setup Java 17 (Compatible with Android Gradle Plugin 8.x)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
-      - name: Accept Android SDK Licenses & Prepare Environment
+      - name: Accept Android SDK Licenses & Install SDK 35
         run: |
-          echo "ANDROID_HOME: $ANDROID_HOME"
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
-          yes | sdkmanager --licenses || true
-          yes | sdkmanager "platforms;android-35" "build-tools;35.0.0" || true
+          yes | sdkmanager --licenses 2>/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" 2>/dev/null || \
+            sdkmanager "platforms;android-35" "build-tools;34.0.0" || true
 
       - name: Install Web Dependencies
         run: npm install --no-audit --no-fund
@@ -75,6 +76,12 @@ jobs:
             sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 35/' variables.gradle || true
             sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 35/' variables.gradle || true
           fi
+          # Fix Java source compatibility in capacitor-generated build.gradle
+          if [ -f "app/build.gradle" ]; then
+            sed -i 's/JavaVersion\.VERSION_21/JavaVersion.VERSION_17/g' app/build.gradle || true
+            sed -i "s/jvmTarget = '21'/jvmTarget = '17'/g" app/build.gradle || true
+            sed -i 's/jvmTarget = "21"/jvmTarget = "17"/g' app/build.gradle || true
+          fi
 
       - name: Generate Release Signing Key
         working-directory: mobile/android
@@ -82,22 +89,28 @@ jobs:
           mkdir -p keystore
           keytool -genkeypair -v \
             -keystore keystore/release.jks \
-            -alias finflow \
+            -alias ltmsav \
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
-            -storepass android \
-            -keypass android \
-            -dname "CN=LocTM, OU=Finflow, O=LTMsav, L=BTR, ST=VN, C=VN"
+            -storepass ltmsav2026 \
+            -keypass ltmsav2026 \
+            -dname "CN=LTMsav App, OU=LTMsav, O=LTMsav, L=HoChiMinh, ST=HoChiMinh, C=VN" \
+            -noprompt
 
       - name: Build Debug APK
         working-directory: mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Build Release APK and AAB
         working-directory: mobile/android
+        env:
+          KEYSTORE_PATH: keystore/release.jks
+          KEYSTORE_PASSWORD: ltmsav2026
+          KEY_ALIAS: ltmsav
+          KEY_PASSWORD: ltmsav2026
         run: |
           ./gradlew assembleRelease bundleRelease --no-daemon || true
 
@@ -105,16 +118,16 @@ jobs:
         working-directory: mobile/android
         run: |
           mkdir -p final_artifacts
-          
+
           # 1. Sign Release AAB using jarsigner (Official Google standard)
           AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
           if [ -f "$AAB_FILE" ]; then
             echo "Signing $AAB_FILE with jarsigner..."
             jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
               -keystore keystore/release.jks \
-              -storepass android \
-              -keypass android \
-              "$AAB_FILE" finflow
+              -storepass ltmsav2026 \
+              -keypass ltmsav2026 \
+              "$AAB_FILE" ltmsav
             cp "$AAB_FILE" final_artifacts/FinFlow-GooglePlay-Signed.aab
           fi
 
@@ -122,13 +135,7 @@ jobs:
           APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
-          if [ -z "$ZIPALIGN" ]; then
-            ZIPALIGN=$(which zipalign 2>/dev/null || true)
-          fi
-          if [ -z "$APKSIGNER" ]; then
-            APKSIGNER=$(which apksigner 2>/dev/null || true)
-          fi
-          
+
           if [ -f "$APK_RAW" ]; then
             if [ -n "$ZIPALIGN" ] && [ -n "$APKSIGNER" ]; then
               echo "Aligning $APK_RAW with $ZIPALIGN..."
@@ -136,8 +143,8 @@ jobs:
               echo "Signing with $APKSIGNER..."
               "$APKSIGNER" sign \
                 --ks keystore/release.jks \
-                --ks-pass pass:android \
-                --key-pass pass:android \
+                --ks-pass pass:ltmsav2026 \
+                --key-pass pass:ltmsav2026 \
                 --out final_artifacts/FinFlow-Release-Signed.apk \
                 final_artifacts/aligned.apk || cp "$APK_RAW" final_artifacts/FinFlow-Release-Signed.apk
               rm -f final_artifacts/aligned.apk

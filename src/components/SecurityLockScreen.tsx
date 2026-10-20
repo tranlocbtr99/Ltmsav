@@ -133,7 +133,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
               {errorMessage}
             </p>
           ) : (
-            <p className="text-[11px] text-slate-500 mt-1">Mã PIN mặc định: {correctPin || '1234'}</p>
+            <p className="text-[11px] text-slate-500 mt-1">Nhập mã PIN để mở khóa ứng dụng</p>
           )}
         </div>
 

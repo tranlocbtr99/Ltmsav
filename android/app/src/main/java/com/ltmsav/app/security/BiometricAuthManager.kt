@@ -17,7 +17,7 @@ class BiometricAuthManager(private val activity: FragmentActivity) {
     fun promptBiometric(
         title: String = "LTMsav Bảo Mật",
         subtitle: String = "Quét vân tay hoặc khuôn mặt để mở khóa ứng dụng",
-        onSuccess: () => Unit,
+        onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
         val executor = ContextCompat.getMainExecutor(activity)

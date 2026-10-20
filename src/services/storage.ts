@@ -1,6 +1,6 @@
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from '../types';
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const STORAGE_KEYS = {
   SCHEMA_VERSION: 'ltmsav_schema_version',
@@ -14,14 +14,8 @@ const STORAGE_KEYS = {
   SNAPSHOTS: 'ltmsav_auto_snapshots_v1',
 };
 
-// Initial default data seed
-const DEFAULT_ACCOUNTS: Account[] = [
-  { id: 'acc_cash', name: 'Tiền mặt', type: 'cash', balance: 3500000, currency: 'VND', iconName: 'Banknote', color: '#10B981' },
-  { id: 'acc_vcb', name: 'Vietcombank', type: 'bank', balance: 18450000, currency: 'VND', iconName: 'Landmark', color: '#059669' },
-  { id: 'acc_momo', name: 'Ví MoMo', type: 'wallet', balance: 850000, currency: 'VND', iconName: 'Smartphone', color: '#EC4899' },
-  { id: 'acc_tcb', name: 'Techcombank', type: 'bank', balance: 12200000, currency: 'VND', iconName: 'CreditCard', color: '#DC2626' },
-  { id: 'acc_saving', name: 'Sổ Tiết Kiệm', type: 'savings', balance: 50000000, currency: 'VND', iconName: 'PiggyBank', color: '#3B82F6' },
-];
+// Initial default data seed — empty for new users
+const DEFAULT_ACCOUNTS: Account[] = [];
 
 const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat_food', name: 'Ăn uống', type: 'expense', iconName: 'Utensils', color: '#F59E0B', isDefault: true },
@@ -38,145 +32,23 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat_other_income', name: 'Thu nhập khác', type: 'income', iconName: 'Coins', color: '#8B5CF6', isDefault: true },
 ];
 
-const DEFAULT_BUDGETS: Budget[] = [
-  { id: 'b_1', categoryId: 'cat_food', monthlyLimit: 4500000 },
-  { id: 'b_2', categoryId: 'cat_transport', monthlyLimit: 1500000 },
-  { id: 'b_3', categoryId: 'cat_shopping', monthlyLimit: 2000000 },
-  { id: 'b_4', categoryId: 'cat_entertainment', monthlyLimit: 1200000 },
-];
+const DEFAULT_BUDGETS: Budget[] = [];
 
-const DEFAULT_DEBTS: DebtOrLoan[] = [
-  {
-    id: 'loan_1',
-    type: 'loan',
-    person: 'Anh Tuấn',
-    amount: 1500000,
-    remainingAmount: 1000000,
-    accountId: 'acc_cash',
-    dueDate: '2026-11-05',
-    note: 'Cho vay tiền đóng tiền điện gia đình',
-    status: 'active',
-    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: 'debt_1',
-    type: 'debt',
-    person: 'Ngân hàng VPBank (Thẻ TD)',
-    amount: 3200000,
-    remainingAmount: 1800000,
-    accountId: 'acc_vcb',
-    dueDate: '2026-10-28',
-    note: 'Kỳ sao kê tháng này',
-    status: 'active',
-    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
-  }
-];
+const DEFAULT_DEBTS: DebtOrLoan[] = [];
 
 const DEFAULT_SETTINGS: AppSettings = {
   currency: '₫',
   allowNegativeBalance: false,
   autoConfirmAi: false,
   securityEnabled: false,
-  pinCode: '1234',
-  biometricEnabled: true,
+  pinCode: '',
+  biometricEnabled: false,
   theme: 'dark',
   autoBackupOnUpdate: true,
 };
 
 function getInitialTransactions(): Transaction[] {
-  const now = new Date();
-  const formatDay = (daysAgo: number) => {
-    const d = new Date(now.getTime() - daysAgo * 86400000);
-    return d.toISOString().split('T')[0];
-  };
-
-  return [
-    {
-      id: 'tx_1',
-      type: 'income',
-      amount: 22000000,
-      accountId: 'acc_vcb',
-      categoryId: 'cat_salary',
-      date: formatDay(4),
-      description: 'Nhận lương tháng công ty Tech',
-      note: 'Chuyển khoản lương định kỳ',
-      createdAt: new Date(now.getTime() - 4 * 86400000).toISOString(),
-    },
-    {
-      id: 'tx_2',
-      type: 'expense',
-      amount: 45000,
-      accountId: 'acc_cash',
-      categoryId: 'cat_food',
-      date: formatDay(0),
-      description: 'Cơm trưa sườn trứng',
-      note: 'Quán cơm bình dân',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'tx_3',
-      type: 'expense',
-      amount: 65000,
-      accountId: 'acc_momo',
-      categoryId: 'cat_food',
-      date: formatDay(0),
-      description: 'Cà phê Highland Coffee',
-      note: 'Uống cùng đồng nghiệp',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'tx_4',
-      type: 'expense',
-      amount: 150000,
-      accountId: 'acc_vcb',
-      categoryId: 'cat_transport',
-      date: formatDay(1),
-      description: 'Đổ xăng ô tô / xe máy Petrolimex',
-      createdAt: new Date(now.getTime() - 1 * 86400000).toISOString(),
-    },
-    {
-      id: 'tx_5',
-      type: 'expense',
-      amount: 420000,
-      accountId: 'acc_tcb',
-      categoryId: 'cat_shopping',
-      date: formatDay(2),
-      description: 'Mua áo thun Uniqlo',
-      createdAt: new Date(now.getTime() - 2 * 86400000).toISOString(),
-    },
-    {
-      id: 'tx_6',
-      type: 'transfer',
-      amount: 2000000,
-      accountId: 'acc_vcb',
-      targetAccountId: 'acc_momo',
-      categoryId: 'cat_other_income',
-      date: formatDay(3),
-      description: 'Nạp tiền vào ví MoMo từ VCB',
-      note: 'Dự phòng chi tiêu online',
-      createdAt: new Date(now.getTime() - 3 * 86400000).toISOString(),
-    },
-    {
-      id: 'tx_7',
-      type: 'expense',
-      amount: 780000,
-      accountId: 'acc_vcb',
-      categoryId: 'cat_bills',
-      date: formatDay(5),
-      description: 'Thanh toán tiền điện EVN & Internet',
-      createdAt: new Date(now.getTime() - 5 * 86400000).toISOString(),
-    },
-    {
-      id: 'tx_8',
-      type: 'income',
-      amount: 2500000,
-      accountId: 'acc_vcb',
-      categoryId: 'cat_bonus',
-      date: formatDay(6),
-      description: 'Tiền thưởng dự án quý 3',
-      createdAt: new Date(now.getTime() - 6 * 86400000).toISOString(),
-    }
-  ];
+  return [];
 }
 
 class StorageManager {
@@ -213,6 +85,52 @@ class StorageManager {
       // If version is updated, take an automatic safety snapshot first
       if (storedVersion < SCHEMA_VERSION) {
         this.createAutomaticSnapshot(`Cập nhật ứng dụng lên phiên bản v${SCHEMA_VERSION}`);
+
+        // v3: Clear demo seed data — only remove keys that still hold demo values
+        if (storedVersion < 3) {
+          const demoAccountIds = ['acc_cash', 'acc_vcb', 'acc_momo', 'acc_tcb', 'acc_saving'];
+          const demoTxIds = ['tx_1','tx_2','tx_3','tx_4','tx_5','tx_6','tx_7','tx_8'];
+          const demoDebtIds = ['loan_1','debt_1'];
+          const demoBudgetIds = ['b_1','b_2','b_3','b_4'];
+
+          try {
+            const rawAccounts = localStorage.getItem(STORAGE_KEYS.ACCOUNTS);
+            if (rawAccounts) {
+              const accounts: any[] = JSON.parse(rawAccounts);
+              const userAccounts = accounts.filter((a: any) => !demoAccountIds.includes(a.id));
+              localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(userAccounts));
+            }
+            const rawTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+            if (rawTx) {
+              const txs: any[] = JSON.parse(rawTx);
+              const userTxs = txs.filter((t: any) => !demoTxIds.includes(t.id));
+              localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(userTxs));
+            }
+            const rawDebts = localStorage.getItem(STORAGE_KEYS.DEBTS);
+            if (rawDebts) {
+              const debts: any[] = JSON.parse(rawDebts);
+              const userDebts = debts.filter((d: any) => !demoDebtIds.includes(d.id));
+              localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(userDebts));
+            }
+            const rawBudgets = localStorage.getItem(STORAGE_KEYS.BUDGETS);
+            if (rawBudgets) {
+              const budgets: any[] = JSON.parse(rawBudgets);
+              const userBudgets = budgets.filter((b: any) => !demoBudgetIds.includes(b.id));
+              localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(userBudgets));
+            }
+            // Clear demo PIN — reset to empty (user must set their own PIN)
+            const rawSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+            if (rawSettings) {
+              const s = JSON.parse(rawSettings);
+              if (s.pinCode === '1234') {
+                s.pinCode = '';
+                s.securityEnabled = false;
+                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(s));
+              }
+            }
+          } catch (_) {}
+        }
+
         localStorage.setItem(STORAGE_KEYS.SCHEMA_VERSION, SCHEMA_VERSION.toString());
       }
     } catch (e) {

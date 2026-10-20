@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.ltmsav.app"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.ltmsav.app"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.2.1"
 
@@ -21,13 +21,27 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val storeFile = file(System.getenv("KEYSTORE_PATH") ?: "keystore/ltmsav-release.jks")
+            val storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "ltmsav2026"
+            val keyAlias = System.getenv("KEY_ALIAS") ?: "ltmsav"
+            val keyPassword = System.getenv("KEY_PASSWORD") ?: "ltmsav2026"
+            this.storeFile = storeFile
+            this.storePassword = storePassword
+            this.keyAlias = keyAlias
+            this.keyPassword = keyPassword
+        }
+    }
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

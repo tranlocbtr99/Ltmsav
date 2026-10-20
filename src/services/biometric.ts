@@ -16,6 +16,10 @@ export const biometricService = {
     // 1. Native Android / iOS via Capacitor
     if (Capacitor.isNativePlatform()) {
       try {
+        if (!Capacitor.isPluginAvailable('NativeBiometric')) {
+          console.warn('NativeBiometric plugin not registered');
+          return false;
+        }
         const result = await NativeBiometric.isAvailable();
         return !!result?.isAvailable;
       } catch (err) {
@@ -44,6 +48,10 @@ export const biometricService = {
     // 1. Native Android BiometricPrompt via Capacitor
     if (Capacitor.isNativePlatform()) {
       try {
+        if (!Capacitor.isPluginAvailable('NativeBiometric')) {
+          console.warn('NativeBiometric plugin not registered');
+          return false;
+        }
         const res = await NativeBiometric.authenticate({
           title,
           subtitle,
