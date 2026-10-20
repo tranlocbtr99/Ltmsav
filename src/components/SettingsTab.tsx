@@ -3,10 +3,12 @@ import { AppSettings, AuditLog } from '../types';
 import { 
   Lock, Fingerprint, KeyRound, HardDrive, RotateCcw, Shield, Check, 
   AlertCircle, History, FileDown, FileUp, Mail, User, Info, Smartphone, 
-  Sun, Moon, Monitor, Database, ShieldCheck, RefreshCw, Sparkles, Globe
+  Sun, Moon, Monitor, Database, ShieldCheck, RefreshCw, Sparkles, Globe, Trash2,
+  Heart, Copy, X
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWA';
 import { storage } from '../services/storage';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SettingsTabProps {
   settings: AppSettings;
@@ -16,6 +18,7 @@ interface SettingsTabProps {
   onImportBackup: (json: string) => { success: boolean; message: string };
   onResetData: () => void;
   onLockAppNow: () => void;
+  onDeleteAccount: () => Promise<void> | void;
 }
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({
@@ -26,7 +29,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   onImportBackup,
   onResetData,
   onLockAppNow,
+  onDeleteAccount,
 }) => {
+  const { language, setLanguage, t } = useLanguage();
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [showAuditLogs, setShowAuditLogs] = useState(false);
@@ -35,6 +40,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [isPersisted, setIsPersisted] = useState(false);
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Delete account modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [supportCopied, setSupportCopied] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // PIN change modal state
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
@@ -55,17 +68,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     const granted = await storage.requestPersistentStorage();
     setIsPersisted(granted);
     if (granted) {
-      setImportMessage({ text: 'Bộ nhớ trình duyệt đã được khóa bảo vệ vĩnh viễn (Persistent)!', isError: false });
+      setImportMessage({ text: t('persistentStorageGranted'), isError: false });
     } else {
-      setImportMessage({ text: 'Trình duyệt chưa cấp quyền lưu trữ vĩnh viễn.', isError: true });
+      setImportMessage({ text: t('persistentStorageDenied'), isError: true });
     }
     setTimeout(() => setImportMessage(null), 4000);
   };
 
   const handleCreateSnapshot = () => {
-    storage.createAutomaticSnapshot('Sao lưu an toàn thủ công từ Cài đặt');
+    storage.createAutomaticSnapshot(t('manualSnapshotReason'));
     setSnapshots(storage.getAutoSnapshots());
-    setImportMessage({ text: 'Đã tạo bản sao lưu an toàn tức thời!', isError: false });
+    setImportMessage({ text: t('snapshotCreated'), isError: false });
     setTimeout(() => setImportMessage(null), 3000);
   };
 
@@ -89,11 +102,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const handleSavePin = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPin.length < 4 || newPin.length > 6) {
-      setPinError('Mã PIN phải từ 4 đến 6 chữ số');
+      setPinError(t('pinLengthError'));
       return;
     }
     if (newPin !== confirmPin) {
-      setPinError('Mã PIN xác nhận không khớp');
+      setPinError(t('pinMismatch'));
       return;
     }
 
@@ -103,7 +116,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       securityEnabled: true,
     });
 
-    setPinSuccess('Đã đổi mã PIN thành công!');
+    setPinSuccess(t('pinChangedSuccess'));
     setTimeout(() => {
       setIsPinModalOpen(false);
       setNewPin('');
@@ -111,6 +124,21 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       setPinError('');
       setPinSuccess('');
     }, 1200);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmText.trim().toUpperCase() !== 'XÓA') {
+      setDeleteError(t('pleaseTypeDeleteWord'));
+      return;
+    }
+    setDeleteError('');
+    setIsDeleting(true);
+    try {
+      await onDeleteAccount();
+    } catch (e) {
+      setIsDeleting(false);
+      setDeleteError(t('deleteDataFailed'));
+    }
   };
 
   return (
@@ -123,8 +151,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             {settings.theme === 'light' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-indigo-400" />}
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Giao Diện Ứng Dụng</h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Tùy chỉnh chế độ Sáng / Tối theo sở thích</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('theme')}</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('themeDesc')}</p>
           </div>
         </div>
 
@@ -139,7 +167,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             }`}
           >
             <Sun className="w-4 h-4 text-amber-500" />
-            <span>Sáng</span>
+            <span>{t('light')}</span>
           </button>
 
           <button
@@ -152,7 +180,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             }`}
           >
             <Moon className="w-4 h-4 text-indigo-400" />
-            <span>Tối</span>
+            <span>{t('dark')}</span>
           </button>
 
           <button
@@ -165,7 +193,46 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             }`}
           >
             <Monitor className="w-4 h-4" />
-            <span>Hệ thống</span>
+            <span>{t('system')}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 1b. Language Configuration (Tiếng Việt / English) */}
+      <div className="glass-card p-5 rounded-3xl border space-y-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            <Globe className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('language')}</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('languageDesc')}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setLanguage('vi')}
+            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition ${
+              language === 'vi'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <span>🇻🇳 Tiếng Việt</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setLanguage('en')}
+            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition ${
+              language === 'en'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            <span>🇬🇧 English</span>
           </button>
         </div>
       </div>
@@ -178,23 +245,23 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <span>Bảo Vệ Dữ Liệu Khi Nâng Cấp & Cài Đặt Mới</span>
+              <span>{t('dataProtectionTitle')}</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-bold border border-emerald-500/30">
-                Chống Mất Dữ Liệu
+                {t('dataProtectionBadge')}
               </span>
             </h3>
-            <p className="text-[11px] text-slate-400">Công nghệ Schema Versioning & Persistent Storage</p>
+            <p className="text-[11px] text-slate-400">{t('dataProtectionTech')}</p>
           </div>
         </div>
 
         <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-2">
           <p className="leading-relaxed text-[11px]">
-            🛡️ <strong>LTMsav bảo toàn 100% dữ liệu của bạn như thế nào?</strong>
+            🛡️ <strong>{t('dataProtectionQuestion')}</strong>
           </p>
           <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-400">
-            <li><strong>Bộ chuyển đổi phiên bản (Data Migration Engine):</strong> Khi có tính năng mới hoặc gói cập nhật, LTMsav tự động nâng cấp cấu trúc và kế thừa toàn bộ sổ giao dịch cũ, không ghi đè dữ liệu người dùng.</li>
-            <li><strong>Lưu trữ vĩnh viễn (Persistent Storage):</strong> Đăng ký với hệ điều hành điện thoại để không bị dọn rác bộ nhớ.</li>
-            <li><strong>Bản chụp an toàn tự động (Auto Snapshots):</strong> Tự động sao lưu một bản dự phòng trước mỗi lần nâng cấp.</li>
+            <li><strong>{t('migrationEngineLabel')}</strong> {t('migrationEngineDesc')}</li>
+            <li><strong>{t('persistentStorageLabel')}</strong> {t('persistentStorageDesc')}</li>
+            <li><strong>{t('autoSnapshotsLabel')}</strong> {t('autoSnapshotsDesc')}</li>
           </ul>
         </div>
 
@@ -209,7 +276,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             }`}
           >
             <Database className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{isPersisted ? '✓ Đã kích hoạt lưu vĩnh viễn' : 'Kích hoạt Persistent Storage'}</span>
+            <span>{isPersisted ? t('persistentEnabled') : t('enablePersistent')}</span>
           </button>
 
           <button
@@ -218,7 +285,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition"
           >
             <RefreshCw className="w-3.5 h-3.5 text-blue-400" />
-            <span>Tạo bản chụp dự phòng ngay</span>
+            <span>{t('createSnapshotNow')}</span>
           </button>
 
           {snapshots.length > 0 && (
@@ -227,7 +294,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               onClick={() => setShowSnapshots(!showSnapshots)}
               className="text-xs font-semibold text-emerald-400 hover:underline px-2 py-2"
             >
-              {showSnapshots ? 'Ẩn bản chụp' : `Xem bản chụp tự động (${snapshots.length})`}
+              {showSnapshots ? t('hideSnapshots') : t('viewAutoSnapshots', { count: snapshots.length })}
             </button>
           )}
         </div>
@@ -235,7 +302,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         {/* Snapshots list */}
         {showSnapshots && (
           <div className="space-y-1.5 pt-2 border-t border-slate-800 text-xs">
-            <span className="text-slate-400 text-[11px] font-semibold block">Các bản chụp dữ liệu an toàn gần nhất:</span>
+            <span className="text-slate-400 text-[11px] font-semibold block">{t('recentSnapshots')}</span>
             {snapshots.map((s, idx) => (
               <div key={idx} className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center justify-between">
                 <div>
@@ -245,14 +312,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm('Khôi phục lại dữ liệu từ bản chụp này?')) {
+                    if (confirm(t('restoreSnapshotConfirm'))) {
                       storage.importBackup(JSON.stringify({ data: s.data }));
                       window.location.reload();
                     }
                   }}
                   className="px-2.5 py-1 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg text-[11px] font-medium"
                 >
-                  Khôi phục
+                  {t('restore')}
                 </button>
               </div>
             ))}
@@ -269,16 +336,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Bảo Mật Ứng Dụng</span>
+                <span>{t('appSecurity')}</span>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                   settings.securityEnabled
                     ? 'bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border-emerald-500/30'
                     : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700'
                 }`}>
-                  {settings.securityEnabled ? 'Đang bật' : 'Chưa bật'}
+                  {settings.securityEnabled ? t('statusEnabled') : t('statusNotEnabled')}
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Đăng nhập bằng Mật khẩu PIN, Vân tay & Khuôn mặt</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('securitySubtitle')}</p>
             </div>
           </div>
 
@@ -287,7 +354,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               onClick={onLockAppNow}
               className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-amber-600 dark:text-amber-400 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 transition"
             >
-              Khóa ngay
+              {t('lockNowShort')}
             </button>
           )}
         </div>
@@ -298,8 +365,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div className="flex items-center gap-2.5">
               <Lock className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
               <div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">Khóa ứng dụng bằng mã PIN</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">Yêu cầu xác thực khi mở ứng dụng</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('pinLockLabel')}</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('pinLockDesc')}</span>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -317,8 +384,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div className="flex items-center gap-2.5">
               <Fingerprint className="w-4 h-4 text-purple-500 dark:text-purple-400" />
               <div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">Vân tay & Khuôn mặt (Biometrics)</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">Tích hợp cảm biến vân tay / Face ID trên điện thoại</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('biometricsLabel')}</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('biometricsDesc')}</span>
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -336,8 +403,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div className="flex items-center gap-2.5">
               <KeyRound className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">Mã PIN bảo mật hiện tại</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">Mã PIN: •••• ({settings.pinCode?.length || 4} chữ số)</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">{t('currentPin')}</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('pinDigits', { count: settings.pinCode?.length || 4 })}</span>
               </div>
             </div>
             <button
@@ -350,7 +417,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               }}
               className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 rounded-xl transition"
             >
-              Đổi mã PIN
+              {t('changePin')}
             </button>
           </div>
         </div>
@@ -364,8 +431,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               <Smartphone className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Cài Đặt LTMsav Vào Điện Thoại</h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Sử dụng mượt mà không chiếm dung lượng bộ nhớ</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('installOnPhone')}</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('installOnPhoneDesc')}</p>
             </div>
           </div>
         </div>
@@ -376,7 +443,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl text-xs sm:text-sm shadow-lg shadow-blue-950/20 transition active:scale-95"
           >
             <Smartphone className="w-4 h-4" />
-            <span>Thêm LTMsav Vào Màn Hình Chính</span>
+            <span>{t('addToHomeScreen')}</span>
           </button>
         ) : isIOS ? (
           <button
@@ -384,17 +451,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-2xl text-xs sm:text-sm transition"
           >
             <Smartphone className="w-4 h-4" />
-            <span>Hướng dẫn cài đặt trên iOS Safari</span>
+            <span>{t('iosGuideBtn')}</span>
           </button>
         ) : isInstalled ? (
           <div className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium rounded-2xl text-xs sm:text-sm border border-emerald-500/20">
             <Check className="w-4 h-4" />
-            <span>Đã cài đặt LTMsav trên màn hình chính</span>
+            <span>{t('installedOnHome')}</span>
           </div>
         ) : (
           <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
             <Info className="w-4 h-4 text-slate-400 shrink-0" />
-            <span>Bạn có thể nhấn menu trình duyệt và chọn "Thêm vào màn hình chính" bất kỳ lúc nào.</span>
+            <span>{t('addHomeScreenHint')}</span>
           </div>
         )}
       </div>
@@ -406,31 +473,31 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Cấu Hình Trí Tuệ Nhân Tạo (AI)</h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Hỗ trợ nhận diện giọng nói & văn bản tự nhiên khi dùng trên điện thoại</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('aiConfigTitle')}</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('aiConfigDesc')}</p>
           </div>
         </div>
 
         <div className="space-y-3 pt-1">
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              Google Gemini API Key (Tùy chọn)
+              {t('geminiKeyLabel')}
             </label>
             <input
               type="password"
-              placeholder="AIzaSy... (Để trống nếu dùng bộ AI Offline mặc định)"
+              placeholder={t('geminiKeyPlaceholder')}
               value={settings.geminiApiKey || ''}
               onChange={(e) => onUpdateSettings({ ...settings, geminiApiKey: e.target.value })}
               className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-              Ứng dụng luôn tích hợp sẵn bộ phân tích tiếng Việt cục bộ (Offline). Nhập Gemini API Key nếu muốn AI phân tích các câu lệnh phức tạp.
+              {t('geminiKeyHint')}
             </p>
           </div>
 
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              Địa chỉ máy chủ Backend (Tùy chọn)
+              {t('backendUrlLabel')}
             </label>
             <input
               type="url"
@@ -450,8 +517,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <HardDrive className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Dữ Liệu & Sao Lưu</h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Xuất file JSON an toàn hoặc khôi phục dữ liệu</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('dataBackupTitle')}</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('dataBackupDesc')}</p>
           </div>
         </div>
 
@@ -472,7 +539,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             className="flex items-center justify-center gap-1.5 p-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-white font-medium rounded-xl border border-slate-200 dark:border-slate-800 text-xs transition active:scale-95"
           >
             <FileDown className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-            <span>Xuất sao lưu JSON</span>
+            <span>{t('exportJsonBackup')}</span>
           </button>
 
           <button
@@ -480,7 +547,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             className="flex items-center justify-center gap-1.5 p-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-white font-medium rounded-xl border border-slate-200 dark:border-slate-800 text-xs transition active:scale-95"
           >
             <FileUp className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-            <span>Nhập khôi phục</span>
+            <span>{t('importRestore')}</span>
           </button>
           <input
             type="file"
@@ -500,8 +567,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               <History className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Nhật Ký Kiểm Toán</h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Lịch sử sửa đổi & đảo bút toán giao dịch</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('auditLogTitle')}</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('auditLogDesc')}</p>
             </div>
           </div>
 
@@ -509,14 +576,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             onClick={() => setShowAuditLogs(!showAuditLogs)}
             className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
           >
-            {showAuditLogs ? 'Ẩn' : `Xem (${auditLogs.length})`}
+            {showAuditLogs ? t('hide') : t('viewCount', { count: auditLogs.length })}
           </button>
         </div>
 
         {showAuditLogs && (
           <div className="max-h-60 overflow-y-auto space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800 pr-1 text-xs">
             {auditLogs.length === 0 ? (
-              <p className="text-slate-400 dark:text-slate-500 text-center py-4">Chưa có bản ghi kiểm toán nào.</p>
+              <p className="text-slate-400 dark:text-slate-500 text-center py-4">{t('noAuditLogs')}</p>
             ) : (
               auditLogs.map(log => (
                 <div key={log.id} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 space-y-1">
@@ -543,19 +610,46 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       {/* 7. Reset Data */}
       <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-bold text-slate-900 dark:text-white">Khôi phục dữ liệu mẫu</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Xóa dữ liệu hiện tại và tải lại tài khoản mẫu</p>
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{t('restoreSampleData')}</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{t('restoreSampleDesc')}</p>
         </div>
         <button
           onClick={() => {
-            if (confirm('Bạn có chắc chắn muốn đặt lại dữ liệu về mặc định ban đầu không? (Ứng dụng đã tự động lưu bản chụp để khôi phục nếu cần)')) {
+            if (confirm(t('resetConfirm'))) {
               onResetData();
             }
           }}
           className="flex items-center gap-1.5 px-3 py-2 bg-rose-500/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white rounded-xl text-xs font-semibold transition"
         >
           <RotateCcw className="w-4 h-4" />
-          <span>Đặt lại</span>
+          <span>{t('resetBtn')}</span>
+        </button>
+      </div>
+
+      {/* 7.5. Delete Account — permanent erasure */}
+      <div className="glass-card p-5 rounded-3xl border border-rose-300 dark:border-rose-900/70 space-y-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2.5 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400">
+            <Trash2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('deleteAccount')}</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('deleteAccountDesc')}</p>
+          </div>
+        </div>
+        <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-[11px] text-rose-700 dark:text-rose-300 leading-relaxed">
+          {t('deleteWarningBefore')} <strong>{t('notRecoverable')}</strong> {t('deleteWarningAfter')}
+        </div>
+        <button
+          onClick={() => {
+            setDeleteConfirmText('');
+            setDeleteError('');
+            setIsDeleteModalOpen(true);
+          }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl text-xs sm:text-sm shadow-lg shadow-rose-950/20 transition active:scale-95"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span>{t('deleteAllData')}</span>
         </button>
       </div>
 
@@ -566,22 +660,22 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <User className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-white">designed by LocTM</h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Tác giả & Bản quyền phần mềm</p>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Designed by LocTM</h4>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('authorCopyright')}</p>
           </div>
         </div>
 
         <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-200 dark:border-slate-800/80">
           <div className="flex items-center justify-between">
-            <span className="text-slate-400">Bản quyền:</span>
+            <span className="text-slate-400">{t('copyrightLabel')}</span>
             <span className="font-semibold text-slate-900 dark:text-white">© 2026 LTMsav. All rights reserved.</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-slate-400">Tác giả:</span>
+            <span className="text-slate-400">{t('authorLabel')}</span>
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">LocTM</span>
           </div>
           <div className="flex items-center justify-between pt-1">
-            <span className="text-slate-400">Liên hệ tác giả:</span>
+            <span className="text-slate-400">{t('contactAuthorLabel')}</span>
             <a
               href="mailto:tranlocbtr99@gmail.com"
               className="flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:underline"
@@ -591,7 +685,72 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </a>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => { setSupportCopied(false); setIsSupportOpen(true); }}
+          className="mt-1 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-500 hover:brightness-110 text-white text-xs font-bold shadow-md shadow-rose-900/20 transition active:scale-95"
+        >
+          <Heart className="w-4 h-4" />
+          <span>{t('supportAuthor')}</span>
+        </button>
       </div>
+
+      {/* Support Author Modal */}
+      {isSupportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Heart className="w-4 h-4 text-rose-500" />
+                <span>{t('supportAuthor')}</span>
+              </h3>
+              <button onClick={() => setIsSupportOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {t('supportDesc')}
+            </p>
+
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <div className="min-w-0">
+                  <span className="text-[11px] text-slate-400 block">{t('bankName')}</span>
+                  <span className="font-semibold text-slate-900 dark:text-white text-xs">Techcombank</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <div className="min-w-0">
+                  <span className="text-[11px] text-slate-400 block">{t('accountHolder')}</span>
+                  <span className="font-semibold text-slate-900 dark:text-white text-xs">Tran Minh Loc</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                <div className="min-w-0">
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block">{t('accountNumber')}</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white text-sm tabular-nums">4444444790</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText('4444444790');
+                    setSupportCopied(true);
+                    setTimeout(() => setSupportCopied(false), 1800);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition active:scale-95 shrink-0"
+                >
+                  {supportCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{supportCopied ? t('copied') : t('copy')}</span>
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-center text-slate-500 dark:text-slate-400">{t('supportThanks')}</p>
+          </div>
+        </div>
+      )}
 
       {/* Change PIN Modal */}
       {isPinModalOpen && (
@@ -600,7 +759,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                <span>Đổi Mã PIN Bảo Mật</span>
+                <span>{t('changePinTitle')}</span>
               </h3>
               <button onClick={() => setIsPinModalOpen(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
                 ✕
@@ -609,7 +768,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
             <form onSubmit={handleSavePin} className="space-y-3.5">
               <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mb-1">Mã PIN mới (4 - 6 số)</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mb-1">{t('newPinLabel')}</label>
                 <input
                   type="password"
                   inputMode="numeric"
@@ -624,7 +783,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </div>
 
               <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mb-1">Xác nhận mã PIN mới</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mb-1">{t('confirmNewPinLabel')}</label>
                 <input
                   type="password"
                   inputMode="numeric"
@@ -657,16 +816,66 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   onClick={() => setIsPinModalOpen(false)}
                   className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700"
                 >
-                  Hủy
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
                 >
-                  Lưu mã PIN
+                  {t('savePin')}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-900/70 rounded-2xl p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200 dark:border-slate-800">
+              <Trash2 className="w-5 h-5 text-rose-500" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('confirmDeleteAccountTitle')}</h3>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {t('deleteModalBefore')} <strong>{t('notRecoverable')}</strong>{t('deleteModalMid')} <strong className="text-rose-500">XÓA</strong> {t('deleteModalAfter')}
+            </p>
+
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={e => setDeleteConfirmText(e.target.value)}
+              placeholder={t('deleteWordPlaceholder')}
+              className="w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm font-bold text-center tracking-widest focus:outline-none focus:border-rose-500"
+            />
+
+            {deleteError && (
+              <p className="text-xs text-rose-500 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>{deleteError}</span>
+              </p>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeleting}
+                className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 disabled:opacity-50"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting || deleteConfirmText.trim().toUpperCase() !== 'XÓA'}
+                className="px-4 py-1.5 bg-rose-600 text-white font-semibold text-xs rounded-lg hover:bg-rose-500 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? t('deleting') : t('deleteForever')}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -675,17 +884,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       {showIOSGuide && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-xl text-center space-y-4">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Cài đặt trên iPhone / iPad</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('iosInstallTitle')}</h3>
             <p className="text-xs text-slate-600 dark:text-slate-300 text-left leading-relaxed">
-              1. Nhấn vào biểu tượng <strong>Chia sẻ (Share)</strong> ở thanh dưới Safari.<br />
-              2. Kéo xuống và chọn <strong>Thêm vào Màn hình chính (Add to Home Screen)</strong>.<br />
-              3. Chọn <strong>Thêm</strong> để hoàn tất.
+              1. {t('iosStep1Before')} <strong>{t('iosStep1Share')}</strong> {t('iosStep1After')}<br />
+              2. {t('iosStep2Before')} <strong>{t('iosStep2Action')}</strong>.<br />
+              3. {t('iosStep3Before')} <strong>{t('iosStep3Action')}</strong> {t('iosStep3After')}
             </p>
             <button
               onClick={() => setShowIOSGuide(false)}
               className="w-full rounded-xl bg-slate-200 dark:bg-slate-800 py-2.5 text-xs font-bold text-slate-800 dark:text-white hover:bg-slate-300 dark:hover:bg-slate-700 transition"
             >
-              Đóng
+              {t('close')}
             </button>
           </div>
         </div>

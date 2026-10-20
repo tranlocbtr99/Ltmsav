@@ -5,6 +5,7 @@ import {
   Calendar, Edit3, Trash2, SlidersHorizontal, X 
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface TransactionsTabProps {
   transactions: Transaction[];
@@ -23,6 +24,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   onOpenAdd,
   onDeleteTransaction,
 }) => {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedAccount, setSelectedAccount] = useState<string>('all');
@@ -70,8 +72,8 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-    if (dateStr === today) return 'Hôm nay';
-    if (dateStr === yesterday) return 'Hôm qua';
+    if (dateStr === today) return t('today');
+    if (dateStr === yesterday) return t('yesterday');
 
     const [year, month, day] = dateStr.split('-');
     return `${day}/${month}/${year}`;
@@ -87,7 +89,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-12">
+    <div className="space-y-4 pb-12 stagger">
       
       {/* Top Search & Filter Bar */}
       <div className="space-y-2.5">
@@ -98,7 +100,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Tìm kiếm nội dung, ghi chú..."
+              placeholder={t('searchPlaceholder')}
               className="w-full pl-9 pr-9 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-sm"
             />
             {searchTerm && (
@@ -118,7 +120,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
                 : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white shadow-sm'
             }`}
-            title="Bộ lọc nâng cao"
+            title={t('advancedFilter')}
           >
             <SlidersHorizontal className="w-4 h-4" />
           </button>
@@ -128,18 +130,18 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
             className="flex items-center gap-1 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition shadow-md shadow-emerald-950/20 shrink-0"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Thêm mới</span>
+            <span className="hidden sm:inline">{t('addNew')}</span>
           </button>
         </div>
 
         {/* Quick Type Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
           {[
-            { id: 'all', label: 'Tất cả' },
-            { id: 'expense', label: 'Chi tiêu' },
-            { id: 'income', label: 'Thu nhập' },
-            { id: 'transfer', label: 'Chuyển tiền' },
-            { id: 'lend', label: 'Cho vay' },
+            { id: 'all', label: t('all') },
+            { id: 'expense', label: t('expense') },
+            { id: 'income', label: t('income') },
+            { id: 'transfer', label: t('transfer') },
+            { id: 'lend', label: t('loan') },
           ].map(tab => (
             <button
               key={tab.id}
@@ -160,7 +162,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               className="px-2.5 py-1.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition flex items-center gap-1 whitespace-nowrap"
             >
               <X className="w-3.5 h-3.5" />
-              <span>Xóa lọc</span>
+              <span>{t('clearFilter')}</span>
             </button>
           )}
         </div>
@@ -170,13 +172,13 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
           <div className="p-3.5 rounded-2xl glass-card space-y-3 animate-in fade-in duration-150">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="text-slate-600 dark:text-slate-400 font-semibold mb-1 block">Lọc theo nguồn tiền</label>
+                <label className="text-slate-600 dark:text-slate-400 font-semibold mb-1 block">{t('filterBySource')}</label>
                 <select
                   value={selectedAccount}
                   onChange={e => setSelectedAccount(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="all">Tất cả tài khoản</option>
+                  <option value="all">{t('allAccounts')}</option>
                   {accounts.map(acc => (
                     <option key={acc.id} value={acc.id}>{acc.name}</option>
                   ))}
@@ -184,15 +186,15 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 dark:text-slate-400 font-semibold mb-1 block">Lọc theo danh mục</label>
+                <label className="text-slate-600 dark:text-slate-400 font-semibold mb-1 block">{t('filterByCategory')}</label>
                 <select
                   value={selectedCategory}
                   onChange={e => setSelectedCategory(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="all">Tất cả danh mục</option>
+                  <option value="all">{t('allCategories')}</option>
                   {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name} ({cat.type === 'expense' ? 'Chi' : 'Thu'})</option>
+                    <option key={cat.id} value={cat.id}>{cat.name} ({cat.type === 'expense' ? t('out') : t('in')})</option>
                   ))}
                 </select>
               </div>
@@ -207,16 +209,16 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
           <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500">
             <Calendar className="w-6 h-6" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Không tìm thấy giao dịch nào</h3>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{t('noTransactions')}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-            Không có giao dịch nào phù hợp với bộ lọc hiện tại. Thử xóa bộ lọc hoặc thêm giao dịch mới.
+            {t('noTransactionsFilter')}
           </p>
           <button
             onClick={onOpenAdd}
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-md"
           >
             <Plus className="w-4 h-4" />
-            <span>Thêm giao dịch ngay</span>
+            <span>{t('addTransactionNow')}</span>
           </button>
         </div>
       ) : (
@@ -250,7 +252,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                     <div
                       key={tx.id}
                       onClick={() => onSelectTransaction(tx)}
-                      className="group flex items-center justify-between p-3.5 rounded-2xl glass-card hover:bg-slate-100 dark:hover:bg-slate-800/90 cursor-pointer transition active:scale-[0.99]"
+                      className="group flex items-center justify-between p-3.5 rounded-2xl glass-card card-interactive hover:bg-slate-100 dark:hover:bg-slate-800/90 cursor-pointer"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`p-2.5 rounded-xl shrink-0 ${
@@ -261,13 +263,13 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                           <DynamicIcon name={cat?.iconName || 'CircleDollarSign'} className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white block truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
                               {tx.description}
                             </span>
                             {tx.updatedAt && (
-                              <span className="px-1.5 py-0.2 text-[9px] bg-slate-200 dark:bg-slate-800 text-amber-600 dark:text-amber-400 rounded-md border border-slate-300 dark:border-slate-700">
-                                Đã sửa
+                              <span className="px-1.5 py-0.2 text-[9px] bg-slate-200 dark:bg-slate-800 text-amber-600 dark:text-amber-400 rounded-md border border-slate-300 dark:border-slate-700 shrink-0">
+                                {t('edited')}
                               </span>
                             )}
                           </div>
@@ -289,7 +291,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                             {tx.amount.toLocaleString('vi-VN')}₫
                           </span>
                           <span className="text-[10px] text-slate-400 dark:text-slate-500 block group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
-                            Nhấn để sửa
+                            {t('tapToEdit')}
                           </span>
                         </div>
                         
@@ -300,7 +302,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                             onSelectTransaction(tx);
                           }}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700/60 transition"
-                          title="Chỉnh sửa giao dịch"
+                          title={t('editTransaction')}
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>

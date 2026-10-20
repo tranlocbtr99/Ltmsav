@@ -22,21 +22,25 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          # Do NOT use cache here — we generate package-lock.json first
+          # No cache — package-lock.json is not committed
 
-      - name: Setup Java 17 (Compatible with Android Gradle Plugin 8.x)
+      - name: Setup Java 21 (Required by Capacitor 7 / capacitor-android)
         id: setup-java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Accept Android SDK Licenses & Install SDK 35
         run: |
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
-          yes | sdkmanager --licenses 2>/dev/null || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" 2>/dev/null || \
-            sdkmanager "platforms;android-35" "build-tools;34.0.0" || true
+          # Use the latest cmdline-tools already on the runner
+          SDKMANAGER=$(find $ANDROID_HOME/cmdline-tools -name "sdkmanager" | sort -V | tail -n 1)
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          yes | "$SDKMANAGER" --licenses 2>/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" || \
+          "$SDKMANAGER" "platforms;android-35" "build-tools;34.0.0" || true
 
       - name: Install Web Dependencies
         run: npm install --no-audit --no-fund
@@ -70,32 +74,23 @@ jobs:
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.USE_BIOMETRIC" />' android/app/src/main/AndroidManifest.xml
           fi
 
-      - name: Configure Android SDK Level and Force Java 17 across ALL subprojects
+      - name: Configure Android SDK Level (compileSdk & targetSdk = 35)
         working-directory: mobile/android
         run: |
+          # Fix variables.gradle if Capacitor generated it
           if [ -f "variables.gradle" ]; then
             sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 35/' variables.gradle || true
             sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 35/' variables.gradle || true
           fi
 
-          # Fix Java version in ALL build.gradle files (app + capacitor-android + plugins)
-          find . -name "build.gradle" -o -name "build.gradle.kts" | while read f; do
-            sed -i 's/JavaVersion\.VERSION_21/JavaVersion.VERSION_17/g' "$f" || true
-            sed -i "s/sourceCompatibility JavaVersion\.VERSION_21/sourceCompatibility JavaVersion.VERSION_17/g" "$f" || true
-            sed -i "s/targetCompatibility JavaVersion\.VERSION_21/targetCompatibility JavaVersion.VERSION_17/g" "$f" || true
-            sed -i "s/jvmTarget = '21'/jvmTarget = '17'/g" "$f" || true
-            sed -i 's/jvmTarget = "21"/jvmTarget = "17"/g' "$f" || true
-            sed -i "s/sourceCompatibility = '21'/sourceCompatibility = '17'/g" "$f" || true
-            sed -i 's/sourceCompatibility = "21"/sourceCompatibility = "17"/g' "$f" || true
-            sed -i "s/targetCompatibility = '21'/targetCompatibility = '17'/g" "$f" || true
-            sed -i 's/targetCompatibility = "21"/targetCompatibility = "17"/g' "$f" || true
-          done
-
-          # Inject root gradle.properties to pin JAVA_HOME for ALL modules
+          # Ensure Gradle uses the Java 21 JDK set up by actions/setup-java
           echo "" >> gradle.properties
-          echo "# Force Java 17 for all subprojects" >> gradle.properties
-          echo "org.gradle.java.home=$JAVA_HOME_17_X64" >> gradle.properties
-          cat gradle.properties
+          echo "# Pin Gradle daemon to Java 21 installed by CI" >> gradle.properties
+          echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> gradle.properties
+          echo "org.gradle.daemon=false" >> gradle.properties
+
+          echo "=== gradle.properties ===" && cat gradle.properties
 
       - name: Generate Release Signing Key
         working-directory: mobile/android
@@ -116,7 +111,7 @@ jobs:
         working-directory: mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
       - name: Build Release APK and AAB
         working-directory: mobile/android
@@ -133,48 +128,52 @@ jobs:
         run: |
           mkdir -p final_artifacts
 
-          # 1. Sign Release AAB using jarsigner (Official Google standard)
-          AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
+          # 1. Sign AAB with jarsigner
+          AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" 2>/dev/null | head -n 1)
           if [ -f "$AAB_FILE" ]; then
-            echo "Signing $AAB_FILE with jarsigner..."
             jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
               -keystore keystore/release.jks \
               -storepass ltmsav2026 \
               -keypass ltmsav2026 \
               "$AAB_FILE" ltmsav
             cp "$AAB_FILE" final_artifacts/FinFlow-GooglePlay-Signed.aab
+            echo "AAB signed: final_artifacts/FinFlow-GooglePlay-Signed.aab"
+          else
+            echo "No AAB found, skipping AAB signing"
           fi
 
-          # 2. Align and sign Release APK
-          APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
-          APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
+          # 2. Align and sign APK
+          APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" 2>/dev/null | head -n 1)
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" 2>/dev/null | sort -V | tail -n 1)
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" 2>/dev/null | sort -V | tail -n 1)
 
           if [ -f "$APK_RAW" ]; then
             if [ -n "$ZIPALIGN" ] && [ -n "$APKSIGNER" ]; then
-              echo "Aligning $APK_RAW with $ZIPALIGN..."
-              "$ZIPALIGN" -v -p 4 "$APK_RAW" final_artifacts/aligned.apk || cp "$APK_RAW" final_artifacts/aligned.apk
-              echo "Signing with $APKSIGNER..."
+              "$ZIPALIGN" -v -p 4 "$APK_RAW" final_artifacts/aligned.apk
               "$APKSIGNER" sign \
                 --ks keystore/release.jks \
                 --ks-pass pass:ltmsav2026 \
                 --key-pass pass:ltmsav2026 \
                 --out final_artifacts/FinFlow-Release-Signed.apk \
-                final_artifacts/aligned.apk || cp "$APK_RAW" final_artifacts/FinFlow-Release-Signed.apk
+                final_artifacts/aligned.apk
               rm -f final_artifacts/aligned.apk
+              echo "APK signed: final_artifacts/FinFlow-Release-Signed.apk"
             else
               cp "$APK_RAW" final_artifacts/FinFlow-Release-Signed.apk
+              echo "APK copied (no zipalign/apksigner found)"
             fi
+          else
+            echo "No release APK found, skipping APK signing"
           fi
 
-      - name: Upload Debug APK (For Immediate Phone Testing)
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: FinFlow-Debug-APK
           path: mobile/android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
-      - name: Upload Signed Release APK (For Direct Phone Installation)
+      - name: Upload Signed Release APK
         uses: actions/upload-artifact@v4
         with:
           name: FinFlow-Signed-Release-APK
@@ -183,7 +182,7 @@ jobs:
             mobile/android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
-      - name: Upload Google Play Release Bundle (AAB for CH Play)
+      - name: Upload Google Play AAB
         uses: actions/upload-artifact@v4
         with:
           name: FinFlow-GooglePlay-AAB

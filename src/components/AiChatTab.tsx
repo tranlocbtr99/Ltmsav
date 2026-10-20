@@ -6,6 +6,7 @@ import {
   HelpCircle, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownLeft, ArrowRightLeft 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface AiChatTabProps {
   accounts: Account[];
@@ -24,15 +25,6 @@ interface ChatMessage {
   executed?: boolean;
 }
 
-const SAMPLE_PROMPTS = [
-  'Hôm nay ăn trưa hết 45 nghìn bằng tiền mặt',
-  'Nhận lương 22 triệu vào Vietcombank',
-  'Chuyển 2 triệu từ tiền mặt sang Vietcombank',
-  'Đổ xăng xe máy 80k qua ví MoMo',
-  'Tôi cho Tuấn vay 1 triệu từ tiền mặt',
-  'Hôm nay tôi đã tiêu bao nhiêu?',
-];
-
 export const AiChatTab: React.FC<AiChatTabProps> = ({
   accounts,
   categories,
@@ -40,11 +32,22 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
   onAddTransaction,
   onNavigateTab,
 }) => {
+  const { t } = useLanguage();
+
+  const SAMPLE_PROMPTS = [
+    t('aiQuickExample1'),
+    t('aiQuickExample2'),
+    t('aiQuickExample3'),
+    t('aiQuickExample4'),
+    t('aiQuickExample5'),
+    t('aiQuickExample6'),
+  ];
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'msg_welcome',
       sender: 'bot',
-      text: `Xin chào! Tôi là Trợ lý AI LTMsav.\nBạn có thể nhập câu nói tự nhiên để ghi nhanh giao dịch thu chi mà không cần bấm nhiều bước:\n• "Ăn trưa 45k tiền mặt"\n• "Nhận lương 20 triệu vào Vietcombank"\n• "Chuyển 2 triệu từ tiền mặt sang MoMo"\n• "Cho Tuấn vay 500k từ tiền mặt, hẹn 30 này trả"\nTôi sẽ phân tích và hiển thị bản xem trước để bạn xác nhận!`,
+      text: t('aiWelcome'),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
   ]);
@@ -78,7 +81,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
     try {
       const data: AiChatResponse = await processAiMessage(text, accounts, categories, settings);
 
-      let botReply = data.analysis || 'Đã phân tích yêu cầu của bạn.';
+      let botReply = data.analysis || t('aiAnalyzed');
       if (data.answer) {
         botReply = data.answer;
       }
@@ -102,7 +105,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
         {
           id: 'msg_err_' + Date.now(),
           sender: 'bot',
-          text: 'Xin lỗi, đã xảy ra lỗi trong quá trình phân tích. Vui lòng thử lại với câu lệnh ngắn gọn hơn.',
+          text: t('aiError'),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         }
       ]);
@@ -134,7 +137,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
       targetAccountId: matchedTargetAccount,
       categoryId: matchedCategory?.id || categories[0].id,
       date: cmd.date || new Date().toISOString().split('T')[0],
-      description: cmd.description || 'Giao dịch qua AI',
+      description: cmd.description || t('aiTransaction'),
       note: cmd.note || undefined,
       person: cmd.person || undefined,
     });
@@ -154,17 +157,17 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
     <div className="flex flex-col h-[calc(100vh-140px)] sm:h-[calc(100vh-160px)] pb-2">
       
       {/* Header bar */}
-      <div className="p-3.5 glass-panel rounded-2xl flex items-center justify-between mb-3 border border-slate-800">
+      <div className="p-3.5 glass-panel rounded-2xl flex items-center justify-between mb-3 border border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <span>Trợ Lý Tài Chính LTMsav AI</span>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+              <span>{t('aiTitle')}</span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </h2>
-            <p className="text-[11px] text-slate-400">Hỗ trợ nhận diện câu lệnh tiếng Việt & chuyển thành giao dịch</p>
+            <p className="text-[11px] text-slate-400">{t('aiSubtitle')}</p>
           </div>
         </div>
 
@@ -174,13 +177,13 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
               {
                 id: 'msg_welcome_' + Date.now(),
                 sender: 'bot',
-                text: 'Hộp thoại đã được làm mới. Hãy nhập câu lệnh mới của bạn!',
+                text: t('aiCleared'),
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               }
             ]);
           }}
-          className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-          title="Xóa đoạn chat"
+          className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0"
+          title={t('clearChat')}
         >
           <RefreshCw className="w-4 h-4" />
         </button>
@@ -209,7 +212,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
               <div className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                 msg.sender === 'user'
                   ? 'bg-emerald-600 text-white rounded-tr-none'
-                  : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none shadow-sm'
+                  : 'bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none shadow-sm'
               }`}>
                 <div className="whitespace-pre-line">{msg.text}</div>
                 <div className={`text-[10px] mt-1.5 ${
@@ -221,23 +224,23 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
 
               {/* Parsed Commands Preview Card */}
               {msg.response?.commands && msg.response.commands.length > 0 && (
-                <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 shadow-lg space-y-3 animate-in fade-in">
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-emerald-500/30 shadow-lg space-y-3 animate-fade-in">
                   <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
                     <span className="flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" />
-                      Bản Xem Trước Giao Dịch
+                      {t('previewTransaction')}
                     </span>
                     {msg.executed && (
                       <span className="flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        <Check className="w-3 h-3" /> Đã ghi sổ
+                        <Check className="w-3 h-3" /> {t('recorded')}
                       </span>
                     )}
                   </div>
 
                   {msg.response.commands.map((cmd, idx) => (
-                    <div key={idx} className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 space-y-2 text-xs">
+                    <div key={idx} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 space-y-2 text-xs overflow-hidden">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-white text-sm">
+                        <span className="font-bold text-slate-900 dark:text-white text-sm truncate min-w-0">
                           {cmd.description}
                         </span>
                         <span className={`font-extrabold text-sm ${
@@ -250,24 +253,24 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 pt-1 border-t border-slate-900">
+                      <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-900">
                         <div>
-                          <span>Nguồn: </span>
-                          <strong className="text-slate-200">{cmd.account}</strong>
+                          <span>{t('source')}</span>
+                          <strong className="text-slate-700 dark:text-slate-200 truncate block">{cmd.account}</strong>
                         </div>
                         {cmd.account_to && (
                           <div>
-                            <span>Đến: </span>
-                            <strong className="text-slate-200">{cmd.account_to}</strong>
+                            <span>{t('toAccount')}</span>
+                            <strong className="text-slate-700 dark:text-slate-200 truncate block">{cmd.account_to}</strong>
                           </div>
                         )}
                         <div>
-                          <span>Danh mục: </span>
-                          <strong className="text-slate-200">{cmd.category}</strong>
+                          <span>{t('category')}</span>
+                          <strong className="text-slate-700 dark:text-slate-200 truncate block">{cmd.category}</strong>
                         </div>
                         <div>
-                          <span>Ngày: </span>
-                          <strong className="text-slate-200">{cmd.date}</strong>
+                          <span>{t('date')}</span>
+                          <strong className="text-slate-700 dark:text-slate-200 truncate block">{cmd.date}</strong>
                         </div>
                       </div>
 
@@ -278,7 +281,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs shadow-md shadow-emerald-950 transition active:scale-95"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>Xác Nhận & Ghi Sổ Ngay</span>
+                            <span>{t('confirmAndRecord')}</span>
                           </button>
                         </div>
                       )}
@@ -291,11 +294,11 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
         ))}
 
         {isLoading && (
-          <div className="flex gap-2.5 max-w-[85%] items-center text-xs text-slate-400 pl-2">
+          <div className="flex gap-2.5 max-w-[85%] items-center text-xs text-slate-500 dark:text-slate-400 pl-2">
             <div className="w-7 h-7 rounded-xl bg-purple-600/30 flex items-center justify-center text-purple-400 animate-spin">
               <RefreshCw className="w-3.5 h-3.5" />
             </div>
-            <span>LTMsav AI đang phân tích câu lệnh...</span>
+            <span>{t('aiAnalyzing')}</span>
           </div>
         )}
 
@@ -308,7 +311,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
           <button
             key={i}
             onClick={() => handleSend(prompt)}
-            className="px-2.5 py-1 rounded-xl bg-slate-900/90 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800 text-[11px] whitespace-nowrap transition active:scale-95"
+            className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-[11px] whitespace-nowrap transition active:scale-95 shrink-0"
           >
             {prompt}
           </button>
@@ -316,14 +319,14 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
       </div>
 
       {/* Input box */}
-      <div className="glass-panel p-2 rounded-2xl border border-slate-800 flex items-center gap-2 shrink-0">
+      <div className="glass-panel p-2 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-2 shrink-0">
         <input
           type="text"
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
-          placeholder="Nhập câu nói: vd Ăn sáng 30k tiền mặt..."
-          className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none"
+          placeholder={t('aiInputPlaceholder')}
+          className="flex-1 min-w-0 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
         />
         <button
           onClick={() => handleSend()}

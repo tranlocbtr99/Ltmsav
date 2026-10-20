@@ -82,7 +82,7 @@ export function parseVietnameseFinancialCommand(
       clarification_question: null,
       clarification_options: [],
       analysis: 'Người dùng đang hỏi về số dư hiện tại của các tài khoản.',
-      answer: 'Dưới đây là thông tin số dư theo sổ cái FinFlow của bạn.',
+      answer: 'Dưới đây là thông tin số dư theo sổ cái LTMsav của bạn.',
       commands: [],
     };
   }
@@ -189,7 +189,7 @@ export async function processAiMessage(
   if (settings?.geminiApiKey) {
     try {
       const apiKey = settings.geminiApiKey.trim();
-      const systemInstruction = `Bạn là bộ phân tích câu lệnh tài chính cho ứng dụng FinFlow (tiếng Việt).
+      const systemInstruction = `Bạn là bộ phân tích câu lệnh tài chính cho ứng dụng LTMsav (tiếng Việt).
 Nhiệm vụ: chuyển câu nói tự nhiên của người dùng thành JSON có cấu trúc.
 NGUYÊN TẮC BẮT BUỘC:
 1. CHỈ trả về JSON hợp lệ thuần túy, không kèm Markdown hay text ngoài JSON.

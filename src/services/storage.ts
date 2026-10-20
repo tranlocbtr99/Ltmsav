@@ -1,6 +1,6 @@
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from '../types';
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const STORAGE_KEYS = {
   SCHEMA_VERSION: 'ltmsav_schema_version',
@@ -240,6 +240,16 @@ class StorageManager {
     accounts[index] = { ...old, ...updates };
     this.saveAccounts(accounts);
     return accounts[index];
+  }
+
+  deleteAccount(id: string): boolean {
+    const accounts = this.getAccounts();
+    const account = accounts.find(a => a.id === id);
+    if (!account) return false;
+    const filtered = accounts.filter(a => a.id !== id);
+    this.saveAccounts(filtered);
+    this.addAuditLog('DELETE', 'ACCOUNT', id, `Xóa tài khoản nguồn tiền: ${account.name}`);
+    return true;
   }
 
   adjustAccountBalance(id: string, newBalance: number, reason: string): boolean {
@@ -529,6 +539,57 @@ class StorageManager {
     localStorage.removeItem(STORAGE_KEYS.DEBTS);
     localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+  }
+
+  // Permanently delete every trace of local data (account erasure, GDPR-style)
+  public async deleteAccountAndAllData(): Promise<boolean> {
+    try {
+      await this.clearCachesAndServiceWorkers();
+    } catch (e) {
+      console.warn('Cache clearing failed:', e);
+    }
+
+    try {
+      localStorage.removeItem(STORAGE_KEYS.SCHEMA_VERSION);
+      localStorage.removeItem(STORAGE_KEYS.ACCOUNTS);
+      localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
+      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+      localStorage.removeItem(STORAGE_KEYS.BUDGETS);
+      localStorage.removeItem(STORAGE_KEYS.DEBTS);
+      localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
+      localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+      localStorage.removeItem(STORAGE_KEYS.SNAPSHOTS);
+
+      const legacyKeys = [
+        'finflow_accounts_v1', 'finflow_categories_v1', 'finflow_transactions_v1',
+        'finflow_budgets_v1', 'finflow_debts_v1', 'finflow_audit_logs_v1', 'finflow_settings_v1'
+      ];
+      legacyKeys.forEach(k => localStorage.removeItem(k));
+
+      try {
+        if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persisted) {
+          await navigator.storage.persisted();
+        }
+        localStorage.clear();
+      } catch (_) {}
+
+      return true;
+    } catch (e) {
+      console.error('Account deletion failed:', e);
+      return false;
+    }
+  }
+
+  private async clearCachesAndServiceWorkers(): Promise<void> {
+    if (typeof window === 'undefined') return;
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+    }
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(reg => reg.unregister()));
+    }
   }
 }
 

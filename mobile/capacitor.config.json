@@ -1,6 +1,6 @@
 {
   "appId": "com.ltmsav.app",
-  "appName": "FinFlow LTMsav",
+  "appName": "LTMsav",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false

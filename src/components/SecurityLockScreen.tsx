@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Fingerprint, Lock, ShieldCheck, Delete, KeyRound, AlertCircle, Sparkles } from 'lucide-react';
 import { biometricService } from '../services/biometric';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SecurityLockScreenProps {
   correctPin: string;
@@ -13,6 +14,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
   biometricEnabled,
   onUnlock,
 }) => {
+  const { t } = useLanguage();
   const [enteredPin, setEnteredPin] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isShaking, setIsShaking] = useState(false);
@@ -45,16 +47,16 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
 
     try {
       const success = await biometricService.authenticate(
-        'FinFlow Bảo Mật',
-        'Quét vân tay hoặc khuôn mặt để mở khóa ứng dụng'
+        t('securityTitle'),
+        t('scanBiometric')
       );
       if (success) {
         onUnlock();
       } else {
-        setErrorMessage('Không nhận diện được sinh trắc học. Vui lòng nhập mã PIN.');
+        setErrorMessage(t('biometricFailed'));
       }
     } catch (err: any) {
-      setErrorMessage('Xác thực thất bại. Vui lòng nhập mã PIN.');
+      setErrorMessage(t('authFailed'));
     } finally {
       setIsAuthenticating(false);
     }
@@ -72,7 +74,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
           onUnlock();
         } else {
           setIsShaking(true);
-          setErrorMessage('Mã PIN không đúng, vui lòng thử lại!');
+          setErrorMessage(t('wrongPin'));
           setTimeout(() => {
             setEnteredPin('');
             setIsShaking(false);
@@ -117,7 +119,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
             <span>LTM</span>
             <span className="text-emerald-400">sav</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">Designed by LocTM</p>
+          <p className="text-xs text-slate-400 mt-0.5">{t('designedBy')}</p>
         </div>
       </div>
 
@@ -125,7 +127,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
       <div className="w-full max-w-xs flex flex-col items-center space-y-5">
         <div className="text-center">
           <p className="text-sm font-semibold text-slate-200">
-            Nhập mã PIN hoặc xác thực vân tay / khuôn mặt
+            {t('unlockHint')}
           </p>
           {errorMessage ? (
             <p className="text-xs text-rose-400 mt-1 flex items-center justify-center gap-1 animate-in fade-in">
@@ -133,7 +135,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
               {errorMessage}
             </p>
           ) : (
-            <p className="text-[11px] text-slate-500 mt-1">Nhập mã PIN để mở khóa ứng dụng</p>
+            <p className="text-[11px] text-slate-500 mt-1">{t('enterPinToUnlock')}</p>
           )}
         </div>
 
@@ -159,7 +161,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
           className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-emerald-400 border border-emerald-500/20 shadow-md transition active:scale-95"
         >
           <Fingerprint className="w-4 h-4 animate-pulse" />
-          <span>{isAuthenticating ? 'Đang quét sinh trắc học...' : 'Mở khóa bằng Vân tay / Face ID'}</span>
+          <span>{isAuthenticating ? t('scanningBiometric') : t('unlockWithBiometric')}</span>
         </button>
       </div>
 
@@ -182,10 +184,10 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
             type="button"
             onClick={triggerBiometricAuth}
             className="h-16 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:bg-slate-800 active:scale-95 text-emerald-400 flex flex-col items-center justify-center transition"
-            title="Quét vân tay / Face ID"
+            title={t('scanBiometricTitle')}
           >
             <Fingerprint className="w-6 h-6" />
-            <span className="text-[9px] font-semibold mt-0.5">Vân tay</span>
+            <span className="text-[9px] font-semibold mt-0.5">{t('fingerprint')}</span>
           </button>
 
           {/* 0 */}
@@ -202,7 +204,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
             type="button"
             onClick={handleDelete}
             className="h-16 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:bg-slate-800 active:scale-95 text-slate-400 hover:text-white flex items-center justify-center transition"
-            title="Xóa ký tự"
+            title={t('backspace')}
           >
             <Delete className="w-6 h-6" />
           </button>

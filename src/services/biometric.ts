@@ -83,8 +83,8 @@ export const biometricService = {
           return await navigator.credentials.create({
             publicKey: {
               challenge,
-              rp: { name: 'FinFlow App', id: window.location.hostname || 'localhost' },
-              user: { id: userId, name: 'finflow_user', displayName: 'FinFlow User' },
+              rp: { name: 'LTMsav', id: window.location.hostname || 'localhost' },
+              user: { id: userId, name: 'ltmsav_user', displayName: 'LTMsav User' },
               pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
               authenticatorSelection: {
                 authenticatorAttachment: 'platform',

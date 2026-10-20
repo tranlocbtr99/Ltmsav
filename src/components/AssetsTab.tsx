@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Account, DebtOrLoan } from '../types';
 import { 
   Wallet, Plus, Edit2, ArrowDownLeft, ArrowUpRight, CheckCircle2, 
-  Clock, User, Landmark, ShieldCheck, X, Check 
+  Clock, User, Landmark, ShieldCheck, X, Check, Trash2
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 
@@ -13,6 +14,7 @@ interface AssetsTabProps {
   onAdjustBalance: (id: string, newBalance: number, reason: string) => void;
   onAddDebtOrLoan: (item: Omit<DebtOrLoan, 'id' | 'createdAt' | 'status' | 'remainingAmount'>) => void;
   onRecordPayment: (id: string, amount: number) => void;
+  onDeleteAccount: (id: string) => void;
 }
 
 export const AssetsTab: React.FC<AssetsTabProps> = ({
@@ -22,7 +24,9 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
   onAdjustBalance,
   onAddDebtOrLoan,
   onRecordPayment,
+  onDeleteAccount,
 }) => {
+  const { t } = useLanguage();
   const [subTab, setSubTab] = useState<'accounts' | 'debts' | 'loans'>('accounts');
   
   // Modals
@@ -63,7 +67,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
     e.preventDefault();
     if (!selectedAccount) return;
     const balance = parseInt(newBalanceStr.replace(/\D/g, ''), 10) || 0;
-    onAdjustBalance(selectedAccount.id, balance, adjustReason.trim() || 'Cân đối số dư sổ cái');
+    onAdjustBalance(selectedAccount.id, balance, adjustReason.trim() || t('ledgerBalance'));
     setIsAdjustModalOpen(false);
   };
 
@@ -118,49 +122,49 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-12">
+    <div className="space-y-4 pb-12 stagger">
       
       {/* Sub tabs */}
-      <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-semibold">
-        <button
-          onClick={() => setSubTab('accounts')}
-          className={`py-2 rounded-xl transition ${
-            subTab === 'accounts' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Nguồn tiền ({accounts.length})
+        <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-[10px] sm:text-xs font-semibold">
+          <button
+            onClick={() => setSubTab('accounts')}
+            className={`py-2 rounded-xl transition ${
+              subTab === 'accounts' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+          {t('moneySourcesCount')} ({accounts.length})
         </button>
-        <button
-          onClick={() => setSubTab('loans')}
-          className={`py-2 rounded-xl transition ${
-            subTab === 'loans' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Cho vay ({debts.filter(d => d.type === 'loan').length})
-        </button>
-        <button
-          onClick={() => setSubTab('debts')}
-          className={`py-2 rounded-xl transition ${
-            subTab === 'debts' ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          Sổ nợ ({debts.filter(d => d.type === 'debt').length})
-        </button>
+          <button
+            onClick={() => setSubTab('loans')}
+            className={`py-2 rounded-xl transition ${
+              subTab === 'loans' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            {t('loansCount')} ({debts.filter(d => d.type === 'loan').length})
+          </button>
+          <button
+            onClick={() => setSubTab('debts')}
+            className={`py-2 rounded-xl transition ${
+              subTab === 'debts' ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            {t('debtsCount')} ({debts.filter(d => d.type === 'debt').length})
+          </button>
       </div>
 
       {/* SubTab 1: ACCOUNTS */}
       {subTab === 'accounts' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Tổng tiền tài khoản: <strong className="text-white font-extrabold">{totalAssets.toLocaleString('vi-VN')}₫</strong>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {t('totalAccountMoney')}: <strong className="text-slate-900 dark:text-white font-extrabold">{totalAssets.toLocaleString('vi-VN')}₫</strong>
             </span>
             <button
               onClick={() => setIsAccountModalOpen(true)}
               className="flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
             >
               <Plus className="w-4 h-4" />
-              <span>Thêm tài khoản</span>
+              <span>{t('addAccount')}</span>
             </button>
           </div>
 
@@ -168,23 +172,23 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
             {accounts.map(acc => (
               <div
                 key={acc.id}
-                className="glass-card p-4 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between"
+                className="glass-card card-interactive p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="p-2.5 rounded-xl text-white"
+                      className="p-2.5 rounded-xl text-white shrink-0"
                       style={{ backgroundColor: `${acc.color}20`, color: acc.color }}
                     >
                       <DynamicIcon name={acc.iconName} className="w-5 h-5" />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{acc.name}</h4>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{acc.name}</h4>
                       <span className="text-[11px] text-slate-400 capitalize">
-                        {acc.type === 'cash' ? 'Tiền mặt' :
-                         acc.type === 'bank' ? 'Ngân hàng' :
-                         acc.type === 'wallet' ? 'Ví điện tử' :
-                         acc.type === 'savings' ? 'Tiết kiệm' : 'Tín dụng'}
+                        {acc.type === 'cash' ? t('cash') :
+                         acc.type === 'bank' ? t('bank') :
+                         acc.type === 'wallet' ? t('eWallet') :
+                         acc.type === 'savings' ? t('savings') : t('credit')}
                       </span>
                     </div>
                   </div>
@@ -196,18 +200,31 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                       setAdjustReason('');
                       setIsAdjustModalOpen(true);
                     }}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-                    title="Điều chỉnh số dư"
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    title={t('adjustBalance')}
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Số dư hiện tại</span>
-                  <span className="text-base font-extrabold text-white">
-                    {acc.balance.toLocaleString('vi-VN')}₫
-                  </span>
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+                  <span className="text-xs text-slate-600 dark:text-slate-400">{t('currentBalance')}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white tabular-nums break-all">
+                      {acc.balance.toLocaleString('vi-VN')}₫
+                    </span>
+                    <button
+                      onClick={() => {
+                        if (confirm(t('deleteAccountConfirm', { name: acc.name }))) {
+                          onDeleteAccount(acc.id);
+                        }
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                      title={t('deleteAccount')}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -219,18 +236,18 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {subTab === 'loans' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Đang cho vay: <strong className="text-blue-400">{totalLoans.toLocaleString('vi-VN')}₫</strong>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+              {t('lending')}: <strong className="text-blue-600 dark:text-blue-400">{totalLoans.toLocaleString('vi-VN')}₫</strong>
             </span>
             <button
               onClick={() => {
                 setDebtType('loan');
                 setIsDebtModalOpen(true);
               }}
-              className="flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300"
+              className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             >
               <Plus className="w-4 h-4" />
-              <span>Ghi khoản cho vay</span>
+              <span>{t('addLoan')}</span>
             </button>
           </div>
 
@@ -238,17 +255,17 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
             {debts.filter(d => d.type === 'loan').map(loan => (
               <div
                 key={loan.id}
-                className="glass-card p-4 rounded-2xl border border-slate-800 space-y-2.5"
+                className="glass-card card-interactive p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 shrink-0">
                       <User className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{loan.person}</h4>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{loan.person}</h4>
                       <span className="text-[11px] text-slate-400">
-                        Hạn trả: {loan.dueDate || 'Chưa định ngày'} {loan.note ? `• ${loan.note}` : ''}
+                        {t('dueDate')}: {loan.dueDate || t('noDueDate')} {loan.note ? `• ${loan.note}` : ''}
                       </span>
                     </div>
                   </div>
@@ -258,15 +275,15 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                   }`}>
-                    {loan.status === 'settled' ? 'Đã thu hồi đủ' : 'Chưa thu hồi hết'}
+                    {loan.status === 'settled' ? t('collectedFull') : t('notCollectedFull')}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
                   <div>
-                    <span className="text-slate-400">Gốc: {loan.amount.toLocaleString('vi-VN')}₫</span>
-                    <span className="block font-bold text-blue-400">
-                      Còn lại: {loan.remainingAmount.toLocaleString('vi-VN')}₫
+                    <span className="text-slate-600 dark:text-slate-400">{t('principal')}: {loan.amount.toLocaleString('vi-VN')}₫</span>
+                    <span className="block font-bold text-blue-700 dark:text-blue-400">
+                      {t('remaining')}: {loan.remainingAmount.toLocaleString('vi-VN')}₫
                     </span>
                   </div>
 
@@ -279,7 +296,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                       }}
                       className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs transition"
                     >
-                      Thu Nợ
+                      {t('collectDebt')}
                     </button>
                   )}
                 </div>
@@ -293,18 +310,18 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {subTab === 'debts' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Tổng số nợ cần trả: <strong className="text-rose-400">{totalDebts.toLocaleString('vi-VN')}₫</strong>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+              {t('totalDebtPay')}: <strong className="text-rose-700 dark:text-rose-400">{totalDebts.toLocaleString('vi-VN')}₫</strong>
             </span>
             <button
               onClick={() => {
                 setDebtType('debt');
                 setIsDebtModalOpen(true);
               }}
-              className="flex items-center gap-1 text-xs font-bold text-rose-400 hover:text-rose-300"
+              className="flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
             >
               <Plus className="w-4 h-4" />
-              <span>Ghi khoản nợ</span>
+              <span>{t('addDebt')}</span>
             </button>
           </div>
 
@@ -312,17 +329,17 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
             {debts.filter(d => d.type === 'debt').map(debt => (
               <div
                 key={debt.id}
-                className="glass-card p-4 rounded-2xl border border-slate-800 space-y-2.5"
+                className="glass-card card-interactive p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 shrink-0">
                       <Landmark className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{debt.person}</h4>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{debt.person}</h4>
                       <span className="text-[11px] text-slate-400">
-                        Kỳ hạn: {debt.dueDate || 'Chưa định ngày'} {debt.note ? `• ${debt.note}` : ''}
+                        {t('term')}: {debt.dueDate || t('noDueDate')} {debt.note ? `• ${debt.note}` : ''}
                       </span>
                     </div>
                   </div>
@@ -332,15 +349,15 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                   }`}>
-                    {debt.status === 'settled' ? 'Đã trả xong' : 'Còn nợ'}
+                    {debt.status === 'settled' ? t('paidFull') : t('stillOwe')}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
                   <div>
-                    <span className="text-slate-400">Tổng: {debt.amount.toLocaleString('vi-VN')}₫</span>
-                    <span className="block font-bold text-rose-400">
-                      Cần trả: {debt.remainingAmount.toLocaleString('vi-VN')}₫
+                    <span className="text-slate-600 dark:text-slate-400">{t('total')}: {debt.amount.toLocaleString('vi-VN')}₫</span>
+                    <span className="block font-bold text-rose-700 dark:text-rose-400">
+                      {t('needToPay')}: {debt.remainingAmount.toLocaleString('vi-VN')}₫
                     </span>
                   </div>
 
@@ -353,7 +370,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                       }}
                       className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs transition"
                     >
-                      Trả Nợ
+                      {t('payDebt')}
                     </button>
                   )}
                 </div>
@@ -365,24 +382,24 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
       {/* Modal: Adjust Balance */}
       {isAdjustModalOpen && selectedAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white">Điều Chỉnh Số Dư Sổ Cái</h3>
-              <button onClick={() => setIsAdjustModalOpen(false)} className="text-slate-400 hover:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('adjustLedgerTitle')}</h3>
+              <button onClick={() => setIsAdjustModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleAdjustSubmit} className="space-y-3.5">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Tài khoản: <strong className="text-white">{selectedAccount.name}</strong></label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('account')}: <strong className="text-slate-900 dark:text-white">{selectedAccount.name}</strong></label>
                 <div className="relative">
                   <input
                     type="text"
                     value={newBalanceStr ? parseInt(newBalanceStr.replace(/\D/g, ''), 10).toLocaleString('vi-VN') : ''}
                     onChange={e => setNewBalanceStr(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-base font-bold focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-base font-bold focus:outline-none focus:border-emerald-500 tabular-nums"
                     required
                     autoFocus
                   />
@@ -391,13 +408,13 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Lý do điều chỉnh (Kiểm toán)</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('adjustReason')}</label>
                 <input
                   type="text"
                   value={adjustReason}
                   onChange={e => setAdjustReason(e.target.value)}
-                  placeholder="VD: Kiểm đếm tiền mặt cuối tháng, chênh lệch phí..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs placeholder-slate-500"
+                  placeholder={t('adjustReasonPlaceholder')}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs placeholder-slate-400 dark:placeholder-slate-500"
                   required
                 />
               </div>
@@ -406,15 +423,15 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAdjustModalOpen(false)}
-                  className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg"
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-lg transition"
                 >
-                  Hủy
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
                 >
-                  Cập nhật số dư
+                  {t('updateBalance')}
                 </button>
               </div>
             </form>
@@ -424,51 +441,51 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
       {/* Modal: Add Account */}
       {isAccountModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white">Thêm Nguồn Tiền Mới</h3>
-              <button onClick={() => setIsAccountModalOpen(false)} className="text-slate-400 hover:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('addMoneySource')}</h3>
+              <button onClick={() => setIsAccountModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleCreateAccount} className="space-y-3.5">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Tên tài khoản / nguồn tiền</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('accountName')}</label>
                 <input
                   type="text"
                   value={accName}
                   onChange={e => setAccName(e.target.value)}
-                  placeholder="VD: MB Bank, Tiền mặt phụ, ViettelPay..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                  placeholder={t('accountNamePlaceholder')}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Loại tài khoản</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('accountType')}</label>
                 <select
                   value={accType}
                   onChange={e => setAccType(e.target.value as Account['type'])}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
                 >
-                  <option value="cash">Tiền mặt</option>
-                  <option value="bank">Tài khoản Ngân hàng</option>
-                  <option value="wallet">Ví điện tử</option>
-                  <option value="savings">Sổ tiết kiệm</option>
-                  <option value="credit">Thẻ tín dụng</option>
+                  <option value="cash">{t('cash')}</option>
+                  <option value="bank">{t('bankAccount')}</option>
+                  <option value="wallet">{t('eWallet')}</option>
+                  <option value="savings">{t('savingsBook')}</option>
+                  <option value="credit">{t('creditCard')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Số dư ban đầu</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('initialBalance')}</label>
                 <input
                   type="text"
                   value={accBalanceStr ? parseInt(accBalanceStr.replace(/\D/g, ''), 10).toLocaleString('vi-VN') : ''}
                   onChange={e => setAccBalanceStr(e.target.value.replace(/\D/g, ''))}
                   placeholder="0"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs font-bold tabular-nums"
                 />
               </div>
 
@@ -476,15 +493,15 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAccountModalOpen(false)}
-                  className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg"
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-lg transition"
                 >
-                  Hủy
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
                 >
-                  Tạo tài khoản
+                  {t('createAccount')}
                 </button>
               </div>
             </form>
@@ -494,60 +511,60 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
       {/* Modal: Add Debt/Loan */}
       {isDebtModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white">
-                {debtType === 'loan' ? 'Ghi Khoản Cho Vay' : 'Ghi Khoản Đi Vay / Nợ'}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                {debtType === 'loan' ? t('addLoanTitle') : t('addDebtTitle')}
               </h3>
-              <button onClick={() => setIsDebtModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setIsDebtModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleCreateDebt} className="space-y-3">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Người liên quan / Tổ chức</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('relatedPerson')}</label>
                 <input
                   type="text"
                   value={debtPerson}
                   onChange={e => setDebtPerson(e.target.value)}
-                  placeholder="VD: Tuấn, Anh Hùng, Thẻ tín dụng..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs"
+                  placeholder={t('relatedPersonPlaceholder')}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Số tiền (VND)</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('amountVnd')}</label>
                 <input
                   type="text"
                   value={debtAmountStr ? parseInt(debtAmountStr.replace(/\D/g, ''), 10).toLocaleString('vi-VN') : ''}
                   onChange={e => setDebtAmountStr(e.target.value.replace(/\D/g, ''))}
                   placeholder="1.000.000"
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs font-bold tabular-nums"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Hạn thanh toán</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('paymentDue')}</label>
                 <input
                   type="date"
                   value={debtDueDate}
                   onChange={e => setDebtDueDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Ghi chú</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('note')}</label>
                 <input
                   type="text"
                   value={debtNote}
                   onChange={e => setDebtNote(e.target.value)}
-                  placeholder="Lý do vay / mượn..."
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs"
+                  placeholder={t('loanReasonPlaceholder')}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
                 />
               </div>
 
@@ -555,9 +572,9 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsDebtModalOpen(false)}
-                  className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg"
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-lg transition"
                 >
-                  Hủy
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
@@ -565,7 +582,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                     debtType === 'loan' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-rose-600 hover:bg-rose-500'
                   }`}
                 >
-                  Lưu bản ghi
+                  {t('saveRecord')}
                 </button>
               </div>
             </form>
@@ -575,29 +592,29 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
       {/* Modal: Payment Record */}
       {isPaymentModalOpen && selectedDebt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white">
-                {selectedDebt.type === 'loan' ? 'Thu Nợ Từ ' : 'Trả Nợ Cho '} {selectedDebt.person}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                {selectedDebt.type === 'loan' ? t('collectFrom') : t('payTo')} {selectedDebt.person}
               </h3>
-              <button onClick={() => setIsPaymentModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setIsPaymentModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handlePaymentSubmit} className="space-y-3.5">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Số tiền thanh toán</label>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('paymentAmount')}</label>
                 <input
                   type="text"
                   value={payAmountStr ? parseInt(payAmountStr.replace(/\D/g, ''), 10).toLocaleString('vi-VN') : ''}
                   onChange={e => setPayAmountStr(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-base font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-base font-bold tabular-nums"
                   required
                 />
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  Còn nợ hiện tại: {selectedDebt.remainingAmount.toLocaleString('vi-VN')}₫
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block tabular-nums">
+                  {t('currentDebt')}: {selectedDebt.remainingAmount.toLocaleString('vi-VN')}₫
                 </span>
               </div>
 
@@ -605,15 +622,15 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsPaymentModalOpen(false)}
-                  className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg"
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-lg transition"
                 >
-                  Hủy
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
                 >
-                  Xác nhận thanh toán
+                  {t('confirmPayment')}
                 </button>
               </div>
             </form>

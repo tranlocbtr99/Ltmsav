@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Transaction, Account, Category, TransactionType } from '../types';
 import { X, Check, Trash2, ArrowRightLeft, Calendar, FileText, User, AlertCircle, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface EditTransactionModalProps {
   transaction: Transaction | null;
@@ -22,6 +23,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { t } = useLanguage();
+
   if (!isOpen || !transaction) return null;
 
   const [type, setType] = useState<TransactionType>(transaction.type);
@@ -67,7 +70,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       targetAccountId: type === 'transfer' ? targetAccountId : undefined,
       categoryId,
       date,
-      description: description.trim() || 'Giao dịch',
+      description: description.trim() || t('transactions'),
       note: note.trim() || undefined,
       person: person.trim() || undefined,
     });
@@ -85,29 +88,29 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-pop-in">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/80">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/80">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className={`p-2 rounded-xl ${
               type === 'expense' ? 'bg-rose-500/15 text-rose-400' :
               type === 'income' ? 'bg-emerald-500/15 text-emerald-400' :
               type === 'transfer' ? 'bg-blue-500/15 text-blue-400' : 'bg-purple-500/15 text-purple-400'
-            }`}>
+            } shrink-0`}>
               {type === 'expense' ? <ArrowUpRight className="w-5 h-5" /> :
                type === 'income' ? <ArrowDownLeft className="w-5 h-5" /> :
                <ArrowRightLeft className="w-5 h-5" />}
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-white">Chỉnh Sửa Giao Dịch</h2>
-              <p className="text-xs text-slate-400">Tự động đối soát và đảo bút toán số dư</p>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{t('editTransactionTitle')}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('editTransactionSubtitle')}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -117,20 +120,20 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
         <form onSubmit={handleSave} className="overflow-y-auto p-5 space-y-4 flex-1">
           {/* Type Selector Tabs */}
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-              Loại giao dịch
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+              {t('transactionType')}
             </label>
-            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setType('expense')}
                 className={`py-2 text-xs font-medium rounded-lg transition ${
                   type === 'expense'
                     ? 'bg-rose-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Chi tiêu
+                {t('expense')}
               </button>
               <button
                 type="button"
@@ -138,10 +141,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 className={`py-2 text-xs font-medium rounded-lg transition ${
                   type === 'income'
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Thu nhập
+                {t('income')}
               </button>
               <button
                 type="button"
@@ -149,10 +152,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 className={`py-2 text-xs font-medium rounded-lg transition ${
                   type === 'transfer'
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Chuyển tiền
+                {t('transfer')}
               </button>
               <button
                 type="button"
@@ -160,18 +163,18 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 className={`py-2 text-xs font-medium rounded-lg transition ${
                   type === 'lend'
                     ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Cho vay
+                {t('loan')}
               </button>
             </div>
           </div>
 
           {/* Amount Input */}
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-              Số tiền (VND)
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+              {t('amountVnd')}
             </label>
             <div className="relative">
               <input
@@ -179,10 +182,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 value={numAmount ? numAmount.toLocaleString('vi-VN') : ''}
                 onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="w-full pl-4 pr-12 py-3 bg-slate-950 border border-slate-800 rounded-xl text-xl font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xl font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 required
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-semibold">
                 ₫
               </span>
             </div>
@@ -193,7 +196,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                   key={val}
                   type="button"
                   onClick={() => handleQuickAdd(val)}
-                  className="px-2.5 py-1 text-xs rounded-lg bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/50 transition"
+                  className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/50 transition"
                 >
                   +{val >= 1000000 ? `${val / 1000000}M` : `${val / 1000}k`}
                 </button>
@@ -203,22 +206,22 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 onClick={() => setAmount('0')}
                 className="px-2.5 py-1 text-xs rounded-lg bg-slate-800/80 text-rose-400 hover:bg-slate-700 border border-slate-700/50 transition"
               >
-                Xóa số
+                {t('clearAmount')}
               </button>
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-              Nội dung mô tả
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+              {t('contentDesc')}
             </label>
             <input
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="VD: Cơm trưa, Xăng xe, Lương..."
-              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition"
+              placeholder={t('contentDescPlaceholder')}
+              className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition"
               required
             />
           </div>
@@ -226,16 +229,16 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
           {/* Account & Target Account */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-                {type === 'transfer' ? 'Từ tài khoản' : 'Nguồn tiền'}
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+                {type === 'transfer' ? t('fromAccount') : t('moneySourcesCount')}
               </label>
               <select
                 value={accountId}
                 onChange={e => setAccountId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
               >
                 {accounts.map(acc => (
-                  <option key={acc.id} value={acc.id}>
+                  <option key={acc.id} value={acc.id} className="tabular-nums break-all">
                     {acc.name} ({acc.balance.toLocaleString('vi-VN')}₫)
                   </option>
                 ))}
@@ -244,18 +247,18 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
             {type === 'transfer' ? (
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-                  Đến tài khoản
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+                  {t('toAccountLabel')}
                 </label>
                 <select
                   value={targetAccountId}
                   onChange={e => setTargetAccountId(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                 >
                   {accounts
                     .filter(a => a.id !== accountId)
                     .map(acc => (
-                      <option key={acc.id} value={acc.id}>
+                      <option key={acc.id} value={acc.id} className="tabular-nums break-all">
                         {acc.name} ({acc.balance.toLocaleString('vi-VN')}₫)
                       </option>
                     ))}
@@ -263,13 +266,13 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               </div>
             ) : (
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-                  Danh mục
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+                  {t('category')}
                 </label>
                 <select
                   value={categoryId}
                   onChange={e => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                 >
                   {availableCategories.map(cat => (
                     <option key={cat.id} value={cat.id}>
@@ -284,15 +287,15 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
           {/* Date & Person */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-                Ngày giao dịch
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+                {t('transactionDate')}
               </label>
               <div className="relative">
                 <input
                   type="date"
                   value={date}
                   onChange={e => setDate(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
@@ -300,16 +303,16 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
             {(type === 'lend' || type === 'debt_repay') && (
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-                  Người liên quan
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+                  {t('relatedPersonLabel')}
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     value={person}
                     onChange={e => setPerson(e.target.value)}
-                    placeholder="VD: Tuấn, Minh, VPBank..."
-                    className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    placeholder={t('relatedPersonExample2')}
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
@@ -318,25 +321,25 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
           {/* Note */}
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5 block">
-              Ghi chú thêm (tùy chọn)
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
+              {t('extraNote')}
             </label>
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder="Chi tiết địa điểm, người đi cùng..."
+              placeholder={t('locationDetails2')}
               rows={2}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           {/* Balance Reversal Information Box */}
-          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 flex items-start gap-2.5 text-xs text-slate-400">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-400">
             <AlertCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-slate-300 font-medium">Bảo toàn sổ cái tài chính:</p>
-              <p>
-                Khi lưu, số dư cũ ({transaction.amount.toLocaleString('vi-VN')}₫) sẽ được hoàn lại tự động và số dư mới ({numAmount.toLocaleString('vi-VN')}₫) sẽ được áp dụng chính xác vào tài khoản liên quan.
+            <div className="min-w-0">
+              <p className="text-slate-600 dark:text-slate-300 font-medium">{t('preserveLedger')}</p>
+              <p className="tabular-nums break-all">
+                {t('preserveLedgerDesc', { old: transaction.amount.toLocaleString('vi-VN'), new: numAmount.toLocaleString('vi-VN') })}
               </p>
             </div>
           </div>
@@ -345,11 +348,11 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
           {showDeleteConfirm && (
             <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs text-rose-300 space-y-2 animate-in fade-in">
               <div className="flex items-center gap-2 font-bold text-rose-200">
-                <AlertCircle className="w-4 h-4" />
-                Xác nhận xóa giao dịch này?
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {t('confirmDeleteTx')}
               </div>
-              <p>
-                Giao dịch sẽ bị xóa vĩnh viễn và số tiền {transaction.amount.toLocaleString('vi-VN')}₫ sẽ được đảo bút toán để khôi phục số dư tài khoản về trạng thái ban đầu.
+              <p className="tabular-nums break-all">
+                {t('deleteTxDesc', { amount: transaction.amount.toLocaleString('vi-VN') })}
               </p>
               <div className="flex items-center gap-2 pt-1">
                 <button
@@ -360,14 +363,14 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                   }}
                   className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg transition"
                 >
-                  Xóa Ngay
+                  {t('deleteNow')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition"
                 >
-                  Hủy bỏ
+                  {t('cancelAction')}
                 </button>
               </div>
             </div>
@@ -375,15 +378,15 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
         </form>
 
         {/* Footer Actions */}
-        <div className="px-5 py-3.5 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between gap-3">
+        <div className="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 flex items-center justify-between gap-3">
           {!showDeleteConfirm ? (
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs sm:text-sm font-medium transition"
+              className="flex items-center gap-1.5 px-3 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs sm:text-sm font-medium transition shrink-0"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Xóa</span>
+              <span>{t('delete')}</span>
             </button>
           ) : (
             <div />
@@ -393,17 +396,17 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-medium rounded-xl transition"
+              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs sm:text-sm font-medium rounded-xl transition"
             >
-              Hủy
+              {t('cancel')}
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-emerald-900/30 transition"
+              className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-emerald-900/30 transition shrink-0"
             >
               <Check className="w-4 h-4" />
-              <span>Lưu Thay Đổi</span>
+              <span>{t('saveChanges')}</span>
             </button>
           </div>
         </div>

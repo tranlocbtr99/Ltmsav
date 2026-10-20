@@ -5,6 +5,7 @@ import {
   ArrowUpRight, ArrowDownLeft, AlertTriangle, ShieldCheck, ChevronRight 
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface OverviewTabProps {
   accounts: Account[];
@@ -29,6 +30,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onSelectTransaction,
   onNavigateTab,
 }) => {
+  const { t } = useLanguage();
   // Calculations
   const totalAssets = accounts.reduce((sum, a) => sum + Math.max(0, a.balance), 0);
   const totalDebts = debts
@@ -64,7 +66,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       .reduce((sum, t) => sum + t.amount, 0);
     const pct = b.monthlyLimit > 0 ? (spent / b.monthlyLimit) * 100 : 0;
     return {
-      category: cat?.name || 'Danh mục',
+      category: cat?.name || t('categories'),
       icon: cat?.iconName || 'Tag',
       color: cat?.color || '#3B82F6',
       spent,
@@ -74,7 +76,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   }).filter(b => b.pct >= 70);
 
   return (
-    <div className="space-y-5 pb-6">
+    <div className="space-y-5 pb-6 stagger">
       
       {/* Net Worth Hero Card */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 p-5 sm:p-6 text-white shadow-xl shadow-emerald-950/20 border border-emerald-500/20">
@@ -83,29 +85,29 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-200">
             <ShieldCheck className="w-4 h-4" />
-            <span>Tổng Tài Sản Ròng (Net Worth)</span>
+            <span>{t('netWorth')}</span>
           </div>
           <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-xs font-medium border border-emerald-400/30">
-            {accounts.length} nguồn tiền
+            {accounts.length} {t('moneySources')}
           </span>
         </div>
 
         <div className="mb-4">
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">
             {netWorth.toLocaleString('vi-VN')} <span className="text-lg font-bold text-emerald-200">₫</span>
           </h1>
         </div>
 
         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10 text-xs">
           <div>
-            <span className="text-emerald-200/80 block">Tổng tài sản:</span>
-            <span className="font-bold text-white text-sm">
+            <span className="text-emerald-200/80 block">{t('totalAssets')}:</span>
+            <span className="font-bold text-white text-sm tabular-nums break-all">
               {totalAssets.toLocaleString('vi-VN')}₫
             </span>
           </div>
           <div>
-            <span className="text-emerald-200/80 block">Nợ cần trả:</span>
-            <span className="font-bold text-rose-300 text-sm">
+            <span className="text-emerald-200/80 block">{t('totalDebtToPay')}:</span>
+            <span className="font-bold text-rose-300 text-sm tabular-nums break-all">
               {totalDebts > 0 ? `-${totalDebts.toLocaleString('vi-VN')}₫` : '0₫'}
             </span>
           </div>
@@ -113,35 +115,35 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       </div>
 
       {/* Monthly Cashflow Overview */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 stagger">
         <div className="glass-card rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
-            <span>Thu nhập tháng</span>
+            <span>{t('incomeThisMonth')}</span>
             <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <span className="text-base sm:text-xl font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-sm sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums break-all">
               +{monthIncome.toLocaleString('vi-VN')}₫
             </span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">Tháng hiện tại</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">{t('thisMonth')}</span>
           </div>
         </div>
 
         <div className="glass-card rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
-            <span>Chi tiêu tháng</span>
+            <span>{t('expenseThisMonth')}</span>
             <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
               <TrendingDown className="w-4 h-4" />
             </div>
           </div>
           <div>
-            <span className="text-base sm:text-xl font-bold text-rose-600 dark:text-rose-400">
+            <span className="text-sm sm:text-xl font-bold text-rose-600 dark:text-rose-400 tabular-nums break-all">
               -{monthExpense.toLocaleString('vi-VN')}₫
             </span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-              Dư: {netSavings >= 0 ? '+' : ''}{netSavings.toLocaleString('vi-VN')}₫
+              {t('surplus')}: {netSavings >= 0 ? '+' : ''}{netSavings.toLocaleString('vi-VN')}₫
             </span>
           </div>
         </div>
@@ -156,7 +158,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
             <Plus className="w-5 h-5" />
           </div>
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Ghi thu chi</span>
+          <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('addIncomeExpense')}</span>
         </button>
 
         <button
@@ -166,7 +168,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className="p-2.5 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition">
             <Sparkles className="w-5 h-5" />
           </div>
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">LTMsav AI</span>
+          <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('aiAssistant')}</span>
         </button>
 
         <button
@@ -176,7 +178,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className="p-2.5 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
             <Wallet className="w-5 h-5" />
           </div>
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Nguồn tiền</span>
+          <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('moneySourcesCount')}</span>
         </button>
 
         <button
@@ -186,7 +188,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition">
             <TrendingDown className="w-5 h-5" />
           </div>
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Ngân sách</span>
+          <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('budget')}</span>
         </button>
       </div>
 
@@ -195,19 +197,19 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
             <AlertTriangle className="w-4 h-4" />
-            <span>Cảnh Báo Ngân Sách</span>
+            <span>{t('budgetWarnings')}</span>
           </div>
           <div className="space-y-2">
             {budgetAlerts.map((b, i) => (
               <div key={i} className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-600/30 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-300">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-300 shrink-0">
                     <DynamicIcon name={b.icon} className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white block">{b.category}</span>
-                    <span className="text-[11px] text-amber-700 dark:text-amber-200/80">
-                      Đã chi {b.spent.toLocaleString('vi-VN')}₫ / {b.limit.toLocaleString('vi-VN')}₫ ({Math.round(b.pct)}%)
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">{b.category}</span>
+                    <span className="text-[11px] text-amber-700 dark:text-amber-200/80 block truncate">
+                      {t('spent')} {b.spent.toLocaleString('vi-VN')}₫ / {b.limit.toLocaleString('vi-VN')}₫ ({Math.round(b.pct)}%)
                     </span>
                   </div>
                 </div>
@@ -215,7 +217,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   onClick={() => onNavigateTab('budgets')}
                   className="text-xs text-amber-600 dark:text-amber-400 hover:underline font-semibold px-2 py-1 rounded-lg"
                 >
-                  Xem
+                  {t('view')}
                 </button>
               </div>
             ))}
@@ -227,13 +229,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">
-            Giao Dịch Gần Đây
+            {t('recentTransactions')}
           </h2>
           <button
             onClick={() => onNavigateTab('transactions')}
             className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5"
           >
-            <span>Tất cả</span>
+            <span>{t('all')}</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -248,7 +250,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <div
                 key={tx.id}
                 onClick={() => onSelectTransaction(tx)}
-                className="group flex items-center justify-between p-3.5 rounded-2xl glass-card hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer transition active:scale-[0.99]"
+                className="group flex items-center justify-between p-3.5 rounded-2xl glass-card card-interactive hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`p-2.5 rounded-xl shrink-0 ${
@@ -277,7 +279,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     {tx.type === 'expense' ? '-' : tx.type === 'income' ? '+' : ''}
                     {tx.amount.toLocaleString('vi-VN')}₫
                   </span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block">Nhấn để sửa</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block">{t('tapToEdit')}</span>
                 </div>
               </div>
             );

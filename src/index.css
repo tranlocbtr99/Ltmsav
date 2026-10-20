@@ -21,19 +21,23 @@
   }
 
   html, body, #root {
+    min-height: 100dvh;
     min-height: 100vh;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
 
   html.dark, html.dark body, html.dark #root {
     background-color: #090d16 !important;
-    color: #f1f5f9 !important;
+    color: #f8fafc !important;
   }
 
   html:not(.dark), html:not(.dark) body, html:not(.dark) #root {
-    background-color: #f8fafc !important;
+    background-color: #f7f9fc !important;
     color: #0f172a !important;
   }
 }
@@ -55,29 +59,33 @@
 }
 
 /* Glassmorphism helpers with full Light & Dark mode support */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-}
+  .glass-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.95) 100%);
+    backdrop-filter: blur(18px) saturate(1.08);
+    -webkit-backdrop-filter: blur(18px) saturate(1.08);
+    border: 1px solid rgba(203, 213, 225, 0.8);
+    box-shadow: 0 10px 40px -20px rgba(15, 23, 42, 0.6);
+  }
 
-html.dark .glass-panel {
-  background: rgba(15, 23, 42, 0.85) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
+  html.dark .glass-panel {
+    background: linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(9,13,22,0.96) 100%) !important;
+    backdrop-filter: blur(18px) saturate(1.08);
+    -webkit-backdrop-filter: blur(18px) saturate(1.08);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 20px 60px -30px rgba(16, 185, 129, 0.25);
+  }
 
-.glass-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-}
+  .glass-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    box-shadow: 0 30px 60px -40px rgba(15, 23, 42, 0.9);
+  }
 
-html.dark .glass-card {
-  background: rgba(30, 41, 59, 0.7) !important;
-  border: 1px solid rgba(255, 255, 255, 0.07) !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
-}
+  html.dark .glass-card {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.88) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 40px 80px -50px rgba(16, 185, 129, 0.25) !important;
+  }
 
 /* Safe area padding utilities for modern Android/iOS mobile devices */
 .pb-safe {
@@ -85,5 +93,98 @@ html.dark .glass-card {
 }
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ===========================================================
+   Text overflow protection — never wrap breaks / overflow boxes
+   =========================================================== */
+.text-fit {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.text-ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Numbers & currency should never wrap awkwardly */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ===========================================================
+   Motion / animation system
+   =========================================================== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.94) translateY(6px); }
+  60%  { opacity: 1; transform: scale(1.01) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+}
+
+.animate-fade-in-up { animation: fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-in    { animation: fadeIn 0.35s ease both; }
+.animate-scale-in   { animation: scaleIn 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-slide-in   { animation: slideInRight 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-pop-in     { animation: popIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Staggered list reveal */
+.stagger > * { animation: fadeInUp 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1)  { animation-delay: 0.02s; }
+.stagger > *:nth-child(2)  { animation-delay: 0.06s; }
+.stagger > *:nth-child(3)  { animation-delay: 0.10s; }
+.stagger > *:nth-child(4)  { animation-delay: 0.14s; }
+.stagger > *:nth-child(5)  { animation-delay: 0.18s; }
+.stagger > *:nth-child(6)  { animation-delay: 0.22s; }
+.stagger > *:nth-child(7)  { animation-delay: 0.26s; }
+.stagger > *:nth-child(8)  { animation-delay: 0.30s; }
+.stagger > *:nth-child(n+9){ animation-delay: 0.34s; }
+
+/* Card press/hover motion */
+.card-interactive {
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s ease, background-color 0.22s ease, border-color 0.22s ease;
+  will-change: transform;
+}
+.card-interactive:active { transform: scale(0.976); }
+@media (hover: hover) {
+  .card-interactive:hover { transform: translateY(-2px); }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up, .animate-fade-in, .animate-scale-in,
+  .animate-slide-in, .animate-pop-in, .stagger > * {
+    animation: none !important;
+  }
+  .card-interactive { transition: none !important; }
 }
 
