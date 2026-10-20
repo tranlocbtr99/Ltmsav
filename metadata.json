@@ -1,0 +1,8 @@
+{
+  "name": "FinFlow AI - Quản Lý Tài Chính & Sổ Thu Chi Cá Nhân",
+  "description": "Ứng dụng quản lý tài chính cá nhân thông minh FinFlow AI: ghi chép thu chi tự nhiên bằng AI, quản lý ngân sách, tài sản, theo dõi sổ nợ, chỉnh sửa lịch sử giao dịch và hỗ trợ cài đặt Android PWA / APK.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
