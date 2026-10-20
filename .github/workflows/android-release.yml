@@ -34,6 +34,7 @@ jobs:
           echo "ANDROID_HOME: $ANDROID_HOME"
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
           yes | sdkmanager --licenses || true
+          yes | sdkmanager "platforms;android-35" "build-tools;35.0.0" || true
 
       - name: Install Web Dependencies
         run: npm install --no-audit --no-fund
@@ -53,12 +54,12 @@ jobs:
             npx cap sync android
           fi
 
-      - name: Configure Android SDK Level for Google Play (targetSdk 34+)
+      - name: Configure Android SDK Level for Google Play (compileSdk 35 & targetSdk 35)
         working-directory: mobile/android
         run: |
           if [ -f "variables.gradle" ]; then
-            sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 34/' variables.gradle || true
-            sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' variables.gradle || true
+            sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 35/' variables.gradle || true
+            sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 35/' variables.gradle || true
           fi
 
       - name: Generate Release Signing Key
@@ -107,6 +108,12 @@ jobs:
           APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
+          if [ -z "$ZIPALIGN" ]; then
+            ZIPALIGN=$(which zipalign 2>/dev/null || true)
+          fi
+          if [ -z "$APKSIGNER" ]; then
+            APKSIGNER=$(which apksigner 2>/dev/null || true)
+          fi
           
           if [ -f "$APK_RAW" ]; then
             if [ -n "$ZIPALIGN" ] && [ -n "$APKSIGNER" ]; then
