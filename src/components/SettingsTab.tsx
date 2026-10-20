@@ -630,7 +630,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   inputMode="numeric"
                   maxLength={6}
                   value={confirmPin}
-                  onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
+                  onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))}
                   placeholder="••••"
                   className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-base font-bold text-center tracking-widest focus:outline-none focus:border-emerald-500"
                   required

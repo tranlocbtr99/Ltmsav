@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Fingerprint, Lock, ShieldCheck, Delete, KeyRound, AlertCircle, Sparkles } from 'lucide-react';
+import { biometricService } from '../services/biometric';
 
 interface SecurityLockScreenProps {
   correctPin: string;
@@ -20,81 +21,40 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
 
   // Check if phone platform authenticator (fingerprint/face id) is supported
   useEffect(() => {
+    let isMounted = true;
     async function checkBiometrics() {
-      if (
-        window.PublicKeyCredential &&
-        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable
-      ) {
-        try {
-          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-          setBiometricAvailable(available);
-          if (available && biometricEnabled) {
-            triggerBiometricAuth();
-          }
-        } catch (e) {
-          setBiometricAvailable(false);
+      const available = await biometricService.isAvailable();
+      if (isMounted) {
+        setBiometricAvailable(available);
+        if (available && biometricEnabled) {
+          triggerBiometricAuth();
         }
-      } else {
-        setBiometricAvailable(false);
       }
     }
     checkBiometrics();
+    return () => {
+      isMounted = false;
+    };
   }, [biometricEnabled]);
 
-  // WebAuthn Biometric Trigger (Fingerprint / Face ID on Android / iOS)
+  // Biometric Trigger (Native Android Fingerprint / Face ID / WebAuthn)
   const triggerBiometricAuth = async () => {
     if (isAuthenticating) return;
     setIsAuthenticating(true);
     setErrorMessage('');
 
     try {
-      if (!window.PublicKeyCredential) {
-        // Fallback simulation for dev/desktop environments without native authenticator
-        setTimeout(() => {
-          setIsAuthenticating(false);
-          onUnlock();
-        }, 600);
-        return;
-      }
-
-      // Generate challenge
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-
-      // Request biometric credential verification
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          timeout: 60000,
-          userVerification: 'preferred',
-          rpId: window.location.hostname || 'localhost',
-        }
-      }).catch(async () => {
-        // If no credentials registered yet on domain, create a lightweight local device credential
-        const userId = new Uint8Array(16);
-        window.crypto.getRandomValues(userId);
-        return await navigator.credentials.create({
-          publicKey: {
-            challenge,
-            rp: { name: 'LTMsav App', id: window.location.hostname || 'localhost' },
-            user: { id: userId, name: 'ltmsav_user', displayName: 'LocTM User' },
-            pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-            authenticatorSelection: {
-              authenticatorAttachment: 'platform',
-              userVerification: 'required',
-            },
-            timeout: 60000,
-          }
-        });
-      });
-
-      if (credential) {
+      const success = await biometricService.authenticate(
+        'FinFlow Bảo Mật',
+        'Quét vân tay hoặc khuôn mặt để mở khóa ứng dụng'
+      );
+      if (success) {
         onUnlock();
+      } else {
+        setErrorMessage('Không nhận diện được sinh trắc học. Vui lòng nhập mã PIN.');
       }
     } catch (err: any) {
-      console.warn('Biometric authentication failed or was cancelled:', err);
-      // User can always fallback to PIN
-      setErrorMessage('Không nhận diện được sinh trắc học. Vui lòng nhập mã PIN.');
+      setErrorMessage('Xác thực thất bại. Vui lòng nhập mã PIN.');
     } finally {
       setIsAuthenticating(false);
     }

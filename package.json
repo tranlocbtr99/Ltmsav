@@ -9,6 +9,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@capacitor/core": "^7.0.0",
     "@google/genai": "^2.30.0",
     "canvas-confetti": "^1.9.4",
     "dotenv": "^16.4.7",

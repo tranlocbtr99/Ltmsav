@@ -54,6 +54,20 @@ jobs:
             npx cap sync android
           fi
 
+          # Integrate Native Android Biometric (Fingerprint & Face Unlock)
+          mkdir -p android/app/src/main/java/com/ltmsav/app
+          cp custom_android/*.java android/app/src/main/java/com/ltmsav/app/
+
+          # Add androidx.biometric dependency to app/build.gradle
+          if ! grep -q "androidx.biometric:biometric" android/app/build.gradle; then
+            sed -i '/dependencies {/a \    implementation "androidx.biometric:biometric:1.2.0-alpha05"' android/app/build.gradle
+          fi
+
+          # Add USE_BIOMETRIC permission to AndroidManifest.xml
+          if ! grep -q "android.permission.USE_BIOMETRIC" android/app/src/main/AndroidManifest.xml; then
+            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.USE_BIOMETRIC" />' android/app/src/main/AndroidManifest.xml
+          fi
+
       - name: Configure Android SDK Level for Google Play (compileSdk 35 & targetSdk 35)
         working-directory: mobile/android
         run: |
