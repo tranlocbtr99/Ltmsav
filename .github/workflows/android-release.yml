@@ -25,6 +25,7 @@ jobs:
           # Do NOT use cache here — we generate package-lock.json first
 
       - name: Setup Java 17 (Compatible with Android Gradle Plugin 8.x)
+        id: setup-java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -69,19 +70,32 @@ jobs:
             sed -i '/<manifest/a \    <uses-permission android:name="android.permission.USE_BIOMETRIC" />' android/app/src/main/AndroidManifest.xml
           fi
 
-      - name: Configure Android SDK Level for Google Play (compileSdk 35 & targetSdk 35)
+      - name: Configure Android SDK Level and Force Java 17 across ALL subprojects
         working-directory: mobile/android
         run: |
           if [ -f "variables.gradle" ]; then
             sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 35/' variables.gradle || true
             sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 35/' variables.gradle || true
           fi
-          # Fix Java source compatibility in capacitor-generated build.gradle
-          if [ -f "app/build.gradle" ]; then
-            sed -i 's/JavaVersion\.VERSION_21/JavaVersion.VERSION_17/g' app/build.gradle || true
-            sed -i "s/jvmTarget = '21'/jvmTarget = '17'/g" app/build.gradle || true
-            sed -i 's/jvmTarget = "21"/jvmTarget = "17"/g' app/build.gradle || true
-          fi
+
+          # Fix Java version in ALL build.gradle files (app + capacitor-android + plugins)
+          find . -name "build.gradle" -o -name "build.gradle.kts" | while read f; do
+            sed -i 's/JavaVersion\.VERSION_21/JavaVersion.VERSION_17/g' "$f" || true
+            sed -i "s/sourceCompatibility JavaVersion\.VERSION_21/sourceCompatibility JavaVersion.VERSION_17/g" "$f" || true
+            sed -i "s/targetCompatibility JavaVersion\.VERSION_21/targetCompatibility JavaVersion.VERSION_17/g" "$f" || true
+            sed -i "s/jvmTarget = '21'/jvmTarget = '17'/g" "$f" || true
+            sed -i 's/jvmTarget = "21"/jvmTarget = "17"/g' "$f" || true
+            sed -i "s/sourceCompatibility = '21'/sourceCompatibility = '17'/g" "$f" || true
+            sed -i 's/sourceCompatibility = "21"/sourceCompatibility = "17"/g' "$f" || true
+            sed -i "s/targetCompatibility = '21'/targetCompatibility = '17'/g" "$f" || true
+            sed -i 's/targetCompatibility = "21"/targetCompatibility = "17"/g' "$f" || true
+          done
+
+          # Inject root gradle.properties to pin JAVA_HOME for ALL modules
+          echo "" >> gradle.properties
+          echo "# Force Java 17 for all subprojects" >> gradle.properties
+          echo "org.gradle.java.home=$JAVA_HOME_17_X64" >> gradle.properties
+          cat gradle.properties
 
       - name: Generate Release Signing Key
         working-directory: mobile/android
