@@ -214,13 +214,21 @@ NGUYÊN TẮC BẮT BUỘC:
   return res.json(parsedResult);
 });
 
+import http from 'http';
+
 async function startServer() {
   const isDev = process.env.NODE_ENV !== 'production';
+  const httpServer = http.createServer(app);
 
   if (isDev) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true, host: HOST, port: PORT, hmr: false },
+      server: {
+        middlewareMode: true,
+        host: HOST,
+        port: PORT,
+        hmr: false,
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -231,7 +239,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, HOST, () => {
+  httpServer.listen(PORT, HOST, () => {
     console.log(`[LTMsav] Server running at http://${HOST}:${PORT}`);
   });
 }
