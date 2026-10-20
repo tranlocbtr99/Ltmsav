@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Account, Category, Transaction, AiChatResponse, AiParsedCommand } from '../types';
+import { Account, Category, Transaction, AiChatResponse, AiParsedCommand, AppSettings } from '../types';
+import { processAiMessage } from '../services/aiParser';
 import { 
   Sparkles, Send, Bot, User, Check, Edit3, ArrowRight, CornerDownLeft, 
   HelpCircle, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownLeft, ArrowRightLeft 
@@ -9,6 +10,7 @@ import confetti from 'canvas-confetti';
 interface AiChatTabProps {
   accounts: Account[];
   categories: Category[];
+  settings?: AppSettings;
   onAddTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => void;
   onNavigateTab: (tab: string) => void;
 }
@@ -34,6 +36,7 @@ const SAMPLE_PROMPTS = [
 export const AiChatTab: React.FC<AiChatTabProps> = ({
   accounts,
   categories,
+  settings,
   onAddTransaction,
   onNavigateTab,
 }) => {
@@ -73,21 +76,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          accounts: accounts.map(a => a.name),
-          categories: categories.map(c => c.name),
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Lỗi máy chủ khi phân tích AI');
-      }
-
-      const data: AiChatResponse = await response.json();
+      const data: AiChatResponse = await processAiMessage(text, accounts, categories, settings);
 
       let botReply = data.analysis || 'Đã phân tích yêu cầu của bạn.';
       if (data.answer) {

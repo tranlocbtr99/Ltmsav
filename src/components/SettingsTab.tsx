@@ -3,7 +3,7 @@ import { AppSettings, AuditLog } from '../types';
 import { 
   Lock, Fingerprint, KeyRound, HardDrive, RotateCcw, Shield, Check, 
   AlertCircle, History, FileDown, FileUp, Mail, User, Info, Smartphone, 
-  Sun, Moon, Monitor, Database, ShieldCheck, RefreshCw 
+  Sun, Moon, Monitor, Database, ShieldCheck, RefreshCw, Sparkles, Globe
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWA';
 import { storage } from '../services/storage';
@@ -397,6 +397,50 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <span>Bạn có thể nhấn menu trình duyệt và chọn "Thêm vào màn hình chính" bất kỳ lúc nào.</span>
           </div>
         )}
+      </div>
+
+      {/* 4.5. AI & Cloud Sync Configuration */}
+      <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Cấu Hình Trí Tuệ Nhân Tạo (AI)</h3>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Hỗ trợ nhận diện giọng nói & văn bản tự nhiên khi dùng trên điện thoại</p>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-1">
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              Google Gemini API Key (Tùy chọn)
+            </label>
+            <input
+              type="password"
+              placeholder="AIzaSy... (Để trống nếu dùng bộ AI Offline mặc định)"
+              value={settings.geminiApiKey || ''}
+              onChange={(e) => onUpdateSettings({ ...settings, geminiApiKey: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+              Ứng dụng luôn tích hợp sẵn bộ phân tích tiếng Việt cục bộ (Offline). Nhập Gemini API Key nếu muốn AI phân tích các câu lệnh phức tạp.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+              Địa chỉ máy chủ Backend (Tùy chọn)
+            </label>
+            <input
+              type="url"
+              placeholder="https://your-backend-api.com"
+              value={settings.customServerUrl || ''}
+              onChange={(e) => onUpdateSettings({ ...settings, customServerUrl: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
       </div>
 
       {/* 5. Backup and Restore */}

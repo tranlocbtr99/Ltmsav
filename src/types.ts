@@ -78,6 +78,8 @@ export interface AppSettings {
   autoBackupOnUpdate?: boolean;
   storagePersistent?: boolean;
   lastBackupDate?: string;
+  customServerUrl?: string;
+  geminiApiKey?: string;
 }
 
 export interface AiParsedCommand {

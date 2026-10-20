@@ -243,6 +243,7 @@ export const App: React.FC = () => {
           <AiChatTab
             accounts={accounts}
             categories={categories}
+            settings={settings}
             onAddTransaction={handleAddTransaction}
             onNavigateTab={(tab) => setCurrentTab(tab)}
           />

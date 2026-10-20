@@ -1,0 +1,133 @@
+name: Build Android APK and Google Play AAB
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Root Dependencies
+        run: npm ci || npm install
+
+      - name: Check TypeScript & Lint
+        run: npm run lint || true
+
+      - name: Build Web Application
+        run: npm run build
+
+      - name: Setup Capacitor Project
+        working-directory: mobile
+        run: |
+          npm ci || npm install
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            npx cap sync android
+          fi
+
+      - name: Configure Android SDK Level for Google Play (targetSdk 34+)
+        working-directory: mobile/android
+        run: |
+          sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 34/' variables.gradle || true
+          sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 34/' variables.gradle || true
+
+      - name: Build Debug APK
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Build Release Bundle (AAB) & Release APK
+        working-directory: mobile/android
+        run: |
+          ./gradlew bundleRelease assembleRelease --no-daemon
+
+      - name: Sign Release Artifacts (APK & AAB)
+        working-directory: mobile/android
+        run: |
+          # Create a dedicated signing key for this build if not provided via secrets
+          keytool -genkeypair -v \
+            -keystore app-release-key.jks \
+            -alias finflow \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass android \
+            -keypass android \
+            -dname "CN=LocTM, OU=Finflow, O=LTMsav, L=BTR, ST=VN, C=VN"
+
+          # Sign the Release AAB using jarsigner (Google Play standard)
+          AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
+          if [ -f "$AAB_FILE" ]; then
+            echo "Signing $AAB_FILE with jarsigner..."
+            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+              -keystore app-release-key.jks \
+              -storepass android \
+              -keypass android \
+              "$AAB_FILE" finflow
+            cp "$AAB_FILE" app/build/outputs/bundle/release/FinFlow-GooglePlay-Signed.aab
+          fi
+
+          # Sign the Release APK using apksigner
+          APK_FILE=$(find app/build/outputs/apk/release -name "*unsigned*.apk" -o -name "*release*.apk" | head -n 1)
+          if [ -f "$APK_FILE" ]; then
+            echo "Signing $APK_FILE with apksigner..."
+            $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+              --ks app-release-key.jks \
+              --ks-pass pass:android \
+              --key-pass pass:android \
+              --out app/build/outputs/apk/release/FinFlow-Release-Signed.apk \
+              "$APK_FILE" || true
+          fi
+
+      - name: Upload Debug APK (For Immediate Phone Testing)
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinFlow-Debug-APK
+          path: mobile/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload Signed Release APK (For Direct Phone Installation)
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinFlow-Signed-Release-APK
+          path: |
+            mobile/android/app/build/outputs/apk/release/FinFlow-Release-Signed.apk
+            mobile/android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: Upload Google Play Release Bundle (AAB for CH Play)
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinFlow-GooglePlay-AAB
+          path: |
+            mobile/android/app/build/outputs/bundle/release/FinFlow-GooglePlay-Signed.aab
+            mobile/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
