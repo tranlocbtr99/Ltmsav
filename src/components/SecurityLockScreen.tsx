@@ -103,12 +103,12 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
   }, [enteredPin, correctPin]);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white select-none backdrop-blur-xl">
+    <div className="fixed inset-0 z-[80] flex flex-col items-center justify-center gap-4 py-6 px-6 overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white select-none backdrop-blur-xl">
       
       {/* Top Branding */}
       <div className="pt-8 flex flex-col items-center space-y-3">
         <div className="relative">
-          <img src="/icon.svg" alt="LTMsav" className="w-20 h-20 rounded-3xl shadow-2xl shadow-emerald-950 border border-emerald-500/30" />
+          <img src="/logo.png" alt="LTMsav" className="w-20 h-20 rounded-3xl object-contain shadow-2xl shadow-emerald-950 border border-emerald-500/30" />
           <div className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-slate-900 border border-emerald-500/40 text-emerald-400">
             <Lock className="w-4 h-4" />
           </div>

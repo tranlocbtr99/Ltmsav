@@ -162,7 +162,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       {/* Donut Chart and Category Share */}
       <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-          <PieChart className="w-4 h-4 text-emerald-400" />
+          <PieChart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>{t('expenseByCategory')}</span>
         </div>
 

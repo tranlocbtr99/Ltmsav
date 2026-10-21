@@ -1,5 +1,9 @@
 # AGENTS.md — LTMsav / Finflow
 
+## ĐỌC TRƯỚC KHI LÀM GÌ (tiết kiệm token)
+- Khi user yêu cầu cập nhật/thêm tính năng: đọc **`APP_MAP.md`** (bản đồ app, ~150 dòng) thay vì đọc toàn bộ `src/`. Mở thêm tối đa 1–3 file được chỉ trong mục "Chạm vào đâu".
+- Sửa app xong mà có file/tab/key dịch mới → cập nhật luôn `APP_MAP.md`.
+
 ## DATA SAFETY (BẮT BUỘC — never break this)
 - **Tuyệt đối không được ảnh hưởng dữ liệu người dùng khi cập nhật.** Giữ nguyên `accounts`, `transactions`, `debts`, `budgets`, `settings`, `pins`.
 - Không bao giờ `localStorage.clear()` trong flow cập nhật/migration. Chỉ được xóa khi người dùng chủ động xác nhận "XÓA TOÀN BỘ DỮ LIỆU".

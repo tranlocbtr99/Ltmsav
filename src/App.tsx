@@ -15,7 +15,7 @@ import { AddTransactionModal } from './components/AddTransactionModal';
 import { SecurityLockScreen } from './components/SecurityLockScreen';
 import { SplashScreen } from './components/SplashScreen';
 import { useOnlineStatus } from './hooks/usePWA';
-import { BarChart3, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const { t } = useLanguage();
@@ -181,19 +181,6 @@ export const App: React.FC = () => {
     showToast(t('toastDataRestored'));
   };
 
-  const handleDeleteAccount = async () => {
-    await storage.deleteAccountAndAllData();
-    try {
-      const registrations = await navigator.serviceWorker?.getRegistrations?.();
-      registrations?.forEach(r => r.unregister());
-    } catch (_) {}
-    showToast(t('toastAllDeleted'));
-    setTimeout(() => {
-      window.location.href = window.location.origin;
-      window.location.reload();
-    }, 800);
-  };
-
   // If application is locked with PIN / Biometrics
   if (isLocked) {
     return (
@@ -217,7 +204,6 @@ export const App: React.FC = () => {
       
       {/* Top App Bar with theme toggle */}
       <TopHeader
-        onOpenAdd={() => setIsAddModalOpen(true)}
         isOnline={isOnline}
         onNavigateTab={(tab) => setCurrentTab(tab)}
         securityEnabled={settings.securityEnabled}
@@ -229,21 +215,8 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+96px)]">
         
-        {/* Floating Reports Shortcut pill */}
-        {(currentTab === 'overview' || currentTab === 'transactions') && (
-          <div className="flex justify-end mb-2">
-            <button
-              onClick={() => setCurrentTab('reports')}
-              className="flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-slate-100 dark:bg-slate-900/90 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 rounded-full transition shadow-sm"
-            >
-              <BarChart3 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{t('viewReportsChart')}</span>
-            </button>
-          </div>
-        )}
-
         {/* Tab views */}
-        <div key={currentTab} className="animate-fade-in-up">
+        <div key={currentTab} className="animate-fade-in">
           {currentTab === 'overview' && (
             <OverviewTab
               accounts={accounts}
@@ -322,7 +295,6 @@ export const App: React.FC = () => {
               onImportBackup={handleImportBackup}
               onResetData={handleResetData}
               onLockAppNow={() => setIsLocked(true)}
-              onDeleteAccount={handleDeleteAccount}
             />
           )}
         </div>
@@ -332,7 +304,7 @@ export const App: React.FC = () => {
       <BottomNavBar
         currentTab={currentTab}
         onTabChange={(tab) => setCurrentTab(tab)}
-        onOpenAdd={() => setIsAddModalOpen(true)}
+        onOpenAdd={() => setCurrentTab('ai')}
         isOnline={isOnline}
       />
 
@@ -358,7 +330,7 @@ export const App: React.FC = () => {
 
       {/* Notification Toast — appears in the current view, just above the bottom nav */}
       {toastMessage && (
-        <div className="fixed left-0 right-0 z-50 px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] pointer-events-none flex justify-center animate-fade-in-up">
+        <div className="fixed left-0 right-0 z-[60] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] pointer-events-none flex justify-center animate-fade-in-up">
           <div className="w-full max-w-3xl flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 border border-emerald-500/40 text-xs sm:text-sm font-semibold text-white shadow-2xl backdrop-blur-md">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="flex-1 min-w-0">{toastMessage}</span>

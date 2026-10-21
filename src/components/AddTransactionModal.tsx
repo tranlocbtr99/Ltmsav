@@ -79,16 +79,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-pop-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
         
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/80">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`p-2 rounded-xl ${
-              type === 'expense' ? 'bg-rose-500/15 text-rose-400' :
-              type === 'income' ? 'bg-emerald-500/15 text-emerald-400' :
-              type === 'transfer' ? 'bg-blue-500/15 text-blue-400' : 'bg-purple-500/15 text-purple-400'
+              type === 'expense' ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400' :
+              type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+              type === 'transfer' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' : 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
             } shrink-0`}>
               {type === 'expense' ? <ArrowUpRight className="w-5 h-5" /> :
                type === 'income' ? <ArrowDownLeft className="w-5 h-5" /> :

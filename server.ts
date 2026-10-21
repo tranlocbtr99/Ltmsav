@@ -154,21 +154,36 @@ app.post('/api/chat', async (req, res) => {
   if (apiKey) {
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const systemInstruction = `Bạn là bộ phân tích câu lệnh tài chính cho ứng dụng LTMsav (tiếng Việt).
-Nhiệm vụ: chuyển câu nói tự nhiên của người dùng thành JSON có cấu trúc.
+      const today = new Date().toISOString().split('T')[0];
+      const systemInstruction = `Bạn là trợ lý phân tích giao dịch tài chính thông minh cho ứng dụng LTMsav (tiếng Việt).
+
+NHIỆM VỤ:
+- Hiểu hoàn toàn ngôn ngữ tự nhiên, nói ngắn, nói gộp, không theo khuôn mẫu cố định. Hãy suy luận theo ngữ cảnh thay vì dò từ khóa.
+- Chuyển câu người dùng thành lệnh giao dịch có cấu trúc JSON để hiển thị xác nhận rồi ghi sổ.
+
+DANH SÁCH BẮT BUỘC CHỈ ĐƯỢC SỬ DỤNG:
+- Tài khoản khả dụng: ${accounts.length ? accounts.join(' | ') : 'Tiền mặt | Vietcombank | Ví MoMo | Tiết kiệm'}
+- Danh mục khả dụng: ${categories.length ? categories.join(' | ') : 'Ăn uống | Di chuyển | Mua sắm | Hóa đơn & Tiện ích | Nhà cửa | Giải trí | Sức khỏe | Lương | Thưởng | Thu nhập khác'}
+
 NGUYÊN TẮC BẮT BUỘC:
-1. CHỈ trả về JSON hợp lệ thuần túy, không kèm Markdown code block hay văn bản ngoài JSON.
-2. Nguồn tiền khả dụng: ${accounts.join(', ') || 'Tiền mặt, Vietcombank, Ví MoMo, Tiết kiệm'}.
-3. Danh mục khả dụng: ${categories.join(', ') || 'Ăn uống, Di chuyển, Mua sắm, Hóa đơn & Tiện ích, Nhà cửa, Giải trí, Lương, Thưởng'}.
-4. Số tiền: quy đổi về đồng (VND), kiểu số nguyên. "45k"=45000, "2 triệu"=2000000, "1 củ"=1000000.
-5. Ngày: định dạng yyyy-MM-dd.
-6. Schema JSON:
+1. CHỈ trả về JSON hợp lệ thuần túy, KHÔNG markdown, KHÔNG giải thích, KHÔNG text ngoài JSON.
+2. Chỉ dùng đúng tên tài khoản/danh mục có trong danh sách trên. Nếu người dùng nói tên gần giống hoặc ngụ ý, hãy chọn mục PHÙ HỢP NHẤT theo ngữ nghĩa từ danh sách. TUYỆT ĐỐI KHÔNG tự tạo tài khoản/danh mục mới.
+3. Quy đổi số tiền về VND số nguyên. Hiểu mọi cách viết: "45k", "50000", "2 triệu", "1,5 triệu", "2tr", "500 nghìn", "1 củ", ...
+4. Nếu là chuyển khoản giữa các tài khoản (chuyển từ A sang B) -> intent "create_transfer", kind "transfer", bắt buộc có "account_to" là tài khoản đích (khác tài khoản nguồn).
+5. Cho vay/mượn -> "lend", hoàn trả nợ -> "debt_repay". Có thể điền "person" nếu có tên người.
+6. Ngày dùng định dạng yyyy-MM-dd. Nếu không nói ngày cụ thể -> dùng "${today}".
+7. "description" ngắn gọn, tự nhiên theo nội dung thực tế.
+8. Ưu tiên tạo "commands" khi đã xác định được ít nhất: loại giao dịch + số tiền + tài khoản. Đặt "needs_confirmation": true để người dùng xác nhận trước khi ghi sổ.
+9. Chỉ đặt "clarification_question" khi THỰC SỰ thiếu thông tin quan trọng không thể suy luận (thường chỉ khi thiếu số tiền). Nếu số tiền đã rõ, đừng hỏi vòng vo.
+10. Luôn trả về đầy đủ schema sau.
+
+SCHEMA JSON:
 {
   "intent": "create_expense" | "create_income" | "create_transfer" | "lend" | "debt_repay" | "query_balance" | "query_report",
   "needs_confirmation": boolean,
   "clarification_question": string | null,
   "clarification_options": string[],
-  "analysis": "giải thích ngắn gọn",
+  "analysis": "giải thích ngắn gọn lý do phân tích",
   "answer": string | null,
   "commands": [
     {
@@ -189,11 +204,11 @@ NGUYÊN TẮC BẮT BUỘC:
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: [
-          { role: 'user', parts: [{ text: systemInstruction + '\n\nCâu lệnh: ' + message }] }
+          { role: 'user', parts: [{ text: systemInstruction + '\n\nCâu lệnh người dùng: ' + message }] }
         ],
         config: {
           responseMimeType: 'application/json',
-          temperature: 0.1,
+          temperature: 0.2,
         }
       });
 

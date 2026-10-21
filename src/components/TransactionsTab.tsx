@@ -228,10 +228,10 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               
               {/* Day Group Header */}
               <div className="flex items-center justify-between px-2 py-1 text-xs">
-                <span className="font-bold text-slate-700 dark:text-slate-300">
-                  {formatDateLabel(dateKey)} <span className="font-normal text-slate-400 text-[11px]">({dateKey})</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300 min-w-0 truncate">
+                  {formatDateLabel(dateKey)} <span className="font-normal text-slate-500 dark:text-slate-400 text-[11px]">({dateKey})</span>
                 </span>
-                <div className="flex items-center gap-2 text-[11px] font-medium">
+                <div className="flex items-center gap-2 text-[11px] font-medium shrink-0">
                   {group.incomeTotal > 0 && (
                     <span className="text-emerald-600 dark:text-emerald-400 font-semibold">+{group.incomeTotal.toLocaleString('vi-VN')}₫</span>
                   )}

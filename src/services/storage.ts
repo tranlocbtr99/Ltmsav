@@ -1,6 +1,6 @@
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from '../types';
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 const STORAGE_KEYS = {
   SCHEMA_VERSION: 'ltmsav_schema_version',
@@ -45,6 +45,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   biometricEnabled: false,
   theme: 'dark',
   autoBackupOnUpdate: true,
+  geminiApiKey: '',
+  customServerUrl: '',
 };
 
 function getInitialTransactions(): Transaction[] {
@@ -85,6 +87,21 @@ class StorageManager {
       // If version is updated, take an automatic safety snapshot first
       if (storedVersion < SCHEMA_VERSION) {
         this.createAutomaticSnapshot(`Cập nhật ứng dụng lên phiên bản v${SCHEMA_VERSION}`);
+
+        // Ensure new settings fields don't get lost in migration
+        if (storedVersion < 5) {
+          try {
+            const rawSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+            if (rawSettings) {
+              const s = JSON.parse(rawSettings);
+              if (!('geminiApiKey' in s)) s.geminiApiKey = '';
+              if (!('customServerUrl' in s)) s.customServerUrl = '';
+              localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(s));
+            }
+          } catch (e) {
+            console.warn('Failed to patch settings during migration:', e);
+          }
+        }
 
         // v3: Clear demo seed data — only remove keys that still hold demo values
         if (storedVersion < 3) {

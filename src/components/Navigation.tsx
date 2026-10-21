@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  LayoutDashboard, ReceiptText, Sparkles, Target, Wallet, Settings, Plus, WifiOff, Lock, Sun, Moon, Globe 
+  LayoutDashboard, ReceiptText, Sparkles, Target, Wallet, Settings, WifiOff, Lock, Sun, Moon, Globe 
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -12,7 +12,6 @@ interface NavigationProps {
 }
 
 interface TopHeaderProps {
-  onOpenAdd: () => void;
   isOnline: boolean;
   onNavigateTab: (tab: string) => void;
   securityEnabled: boolean;
@@ -74,7 +73,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             title={t(theme === 'dark' ? 'switchToLight' : 'switchToDark')}
           >
             {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
+              <Sun className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             ) : (
               <Moon className="w-4 h-4 text-indigo-500" />
             )}
@@ -90,16 +89,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <Lock className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             </button>
           )}
-
-          {/* LTMsav AI - centered in the top bar */}
-          <button
-            onClick={() => onNavigateTab('ai')}
-            className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white text-xs font-bold shadow-md shadow-purple-950/20 transition active:scale-95"
-            title="LTMsav AI"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>AI</span>
-          </button>
 
           {/* Settings shortcut moved to the top bar */}
           <button
@@ -128,7 +117,7 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
   ];
   const rightTabs = [
     { id: 'budgets', label: t('budget'), icon: Target },
-    { id: 'assets', label: t('assetsAndDebts'), icon: Wallet },
+    { id: 'assets', label: t('assetsNav'), icon: Wallet },
   ];
 
   const renderTab = (tab: { id: string; label: string; icon: typeof LayoutDashboard }) => {
@@ -147,7 +136,7 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
         }`}>
           <Icon className="w-5 h-5" />
         </div>
-        <span className={`text-[10px] font-medium tracking-tight ${
+        <span className={`text-[10px] font-medium tracking-tight w-full text-center truncate ${
           isActive ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
         }`}>
           {tab.label}
@@ -165,15 +154,15 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
           {leftTabs.map(renderTab)}
         </div>
 
-        {/* Center: Add transaction (thumb-friendly) */}
+        {/* Center: AI assistant (thumb-friendly) */}
         <div className="flex-1 flex items-center justify-center">
           <button
             onClick={onOpenAdd}
-            className="flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-emerald-600 to-emerald-500 hover:brightness-110 text-white rounded-full shadow-lg shadow-emerald-900/25 transition active:scale-95"
-            title={t('addTransaction')}
-            aria-label={t('addTransaction')}
+            className="flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-purple-600 to-indigo-500 hover:brightness-110 text-white rounded-full shadow-lg shadow-purple-900/25 transition active:scale-95"
+            title="LTMsav AI"
+            aria-label="LTMsav AI"
           >
-            <Plus className="w-6 h-6" />
+            <Sparkles className="w-6 h-6" />
           </button>
         </div>
 

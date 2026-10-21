@@ -7,6 +7,19 @@ import {
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 
+const ACCOUNT_ICONS = [
+  'Landmark', 'Wallet', 'PiggyBank', 'CreditCard', 'Banknote', 'Coins',
+  'DollarSign', 'Bitcoin', 'Smartphone', 'Building2', 'Briefcase', 'Gem',
+  'TrendingUp', 'HandCoins', 'Receipt', 'ShoppingBag', 'ShoppingCart',
+  'Car', 'Home', 'Plane', 'GraduationCap', 'Heart', 'Gift', 'Shield',
+];
+
+const ACCOUNT_COLORS = [
+  '#10B981', '#0EA5E9', '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E',
+  '#F59E0B', '#EAB308', '#14B8A6', '#3B82F6', '#A855F7', '#64748B',
+];
+
+
 interface AssetsTabProps {
   accounts: Account[];
   debts: DebtOrLoan[];
@@ -161,7 +174,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
             </span>
             <button
               onClick={() => setIsAccountModalOpen(true)}
-              className="flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+              className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300"
             >
               <Plus className="w-4 h-4" />
               <span>{t('addAccount')}</span>
@@ -184,7 +197,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{acc.name}</h4>
-                      <span className="text-[11px] text-slate-400 capitalize">
+                      <span className="text-[11px] text-slate-600 dark:text-slate-400 capitalize">
                         {acc.type === 'cash' ? t('cash') :
                          acc.type === 'bank' ? t('bank') :
                          acc.type === 'wallet' ? t('eWallet') :
@@ -259,12 +272,12 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 shrink-0">
+                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-600 dark:text-blue-400 shrink-0">
                       <User className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{loan.person}</h4>
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-slate-600 dark:text-slate-400">
                         {t('dueDate')}: {loan.dueDate || t('noDueDate')} {loan.note ? `• ${loan.note}` : ''}
                       </span>
                     </div>
@@ -272,8 +285,8 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                     loan.status === 'settled'
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                   }`}>
                     {loan.status === 'settled' ? t('collectedFull') : t('notCollectedFull')}
                   </span>
@@ -333,12 +346,12 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 shrink-0">
+                    <div className="p-2 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 shrink-0">
                       <Landmark className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{debt.person}</h4>
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-slate-600 dark:text-slate-400">
                         {t('term')}: {debt.dueDate || t('noDueDate')} {debt.note ? `• ${debt.note}` : ''}
                       </span>
                     </div>
@@ -346,8 +359,8 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                     debt.status === 'settled'
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                   }`}>
                     {debt.status === 'settled' ? t('paidFull') : t('stillOwe')}
                   </span>
@@ -382,8 +395,8 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
       {/* Modal: Adjust Balance */}
       {isAdjustModalOpen && selectedAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('adjustLedgerTitle')}</h3>
               <button onClick={() => setIsAdjustModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
@@ -442,7 +455,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {/* Modal: Add Account */}
       {isAccountModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('addMoneySource')}</h3>
               <button onClick={() => setIsAccountModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
@@ -467,7 +480,15 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('accountType')}</label>
                 <select
                   value={accType}
-                  onChange={e => setAccType(e.target.value as Account['type'])}
+                  onChange={e => {
+                    const type = e.target.value as Account['type'];
+                    setAccType(type);
+                    const suggested: Record<Account['type'], string> = {
+                      cash: 'Banknote', bank: 'Landmark', wallet: 'Wallet',
+                      savings: 'PiggyBank', credit: 'CreditCard',
+                    };
+                    setAccIcon(suggested[type]);
+                  }}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
                 >
                   <option value="cash">{t('cash')}</option>
@@ -476,6 +497,61 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   <option value="savings">{t('savingsBook')}</option>
                   <option value="credit">{t('creditCard')}</option>
                 </select>
+              </div>
+
+              {/* Icon picker */}
+              <div>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('chooseIcon')}</label>
+                <div className="grid grid-cols-6 gap-1.5 max-h-32 overflow-y-auto p-1 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  {ACCOUNT_ICONS.map(icon => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setAccIcon(icon)}
+                      className={`flex items-center justify-center aspect-square rounded-lg border transition ${
+                        accIcon === icon
+                          ? 'border-transparent text-white'
+                          : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                      style={accIcon === icon ? { backgroundColor: accColor } : undefined}
+                      title={icon}
+                    >
+                      <DynamicIcon name={icon} className="w-4 h-4" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Color picker */}
+              <div>
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('chooseColor')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {ACCOUNT_COLORS.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setAccColor(color)}
+                      className={`w-7 h-7 rounded-full transition active:scale-90 ${
+                        accColor === color ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 ring-slate-900 dark:ring-white' : ''
+                      }`}
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <div className="p-2.5 rounded-xl shrink-0" style={{ backgroundColor: `${accColor}20`, color: accColor }}>
+                  <DynamicIcon name={accIcon} className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block truncate">
+                    {accName.trim() || t('accountNamePlaceholder')}
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">{t('preview')}</span>
+                </div>
               </div>
 
               <div>
@@ -512,7 +588,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {/* Modal: Add Debt/Loan */}
       {isDebtModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 {debtType === 'loan' ? t('addLoanTitle') : t('addDebtTitle')}
@@ -593,7 +669,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {/* Modal: Payment Record */}
       {isPaymentModalOpen && selectedDebt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 {selectedDebt.type === 'loan' ? t('collectFrom') : t('payTo')} {selectedDebt.person}

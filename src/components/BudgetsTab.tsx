@@ -76,12 +76,12 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
       <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
               <Target className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-white">{t('monthlyBudget')}</h2>
-              <p className="text-xs text-slate-400">{t('monthPeriod')} {new Date().toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' })}</p>
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">{t('monthlyBudget')}</h2>
+              <p className="text-xs text-slate-600 dark:text-slate-400">{t('monthPeriod')} {new Date().toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' })}</p>
             </div>
           </div>
 
@@ -99,11 +99,11 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
         </div>
 
         <div>
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-            <span>{t('spentLabel')}: <strong className="text-white">{totalSpentInBudgets.toLocaleString('vi-VN')}₫</strong></span>
-            <span>{t('limitLabel')}: <strong className="text-white">{totalBudgeted.toLocaleString('vi-VN')}₫</strong></span>
+          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5">
+            <span>{t('spentLabel')}: <strong className="text-slate-900 dark:text-white">{totalSpentInBudgets.toLocaleString('vi-VN')}₫</strong></span>
+            <span>{t('limitLabel')}: <strong className="text-slate-900 dark:text-white">{totalBudgeted.toLocaleString('vi-VN')}₫</strong></span>
           </div>
-          <div className="h-3 w-full bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
+          <div className="h-3 w-full bg-slate-200 dark:bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 overallPct >= 100 ? 'bg-rose-500' :
@@ -121,17 +121,17 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
 
       {/* Budget Category Cards */}
       <div className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 px-1">
           {t('limitsByCategory')}
         </h3>
 
         {budgetStats.length === 0 ? (
           <div className="glass-card p-8 rounded-2xl text-center space-y-2">
             <Target className="w-8 h-8 text-slate-500 mx-auto" />
-            <p className="text-xs text-slate-400">{t('noBudgets')}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">{t('noBudgets')}</p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="text-xs text-emerald-400 font-semibold hover:underline"
+              className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
             >
               {t('createLimitNow')}
             </button>
@@ -179,7 +179,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
 
                 {/* Progress bar */}
                 <div>
-                  <div className="h-2 w-full bg-slate-950 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-slate-200 dark:bg-slate-950 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         b.pct >= 100 ? 'bg-rose-500' :
@@ -190,7 +190,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-[11px] mt-1.5">
                     <span className={`font-semibold ${
-                      b.pct >= 100 ? 'text-rose-400' : b.pct >= 75 ? 'text-amber-400' : 'text-emerald-400'
+                      b.pct >= 100 ? 'text-rose-600 dark:text-rose-400' : b.pct >= 75 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                     }`}>
                       {Math.round(b.pct)}%
                     </span>
@@ -208,7 +208,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
       {/* Set Budget Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('setupBudget')}</h3>
               <button

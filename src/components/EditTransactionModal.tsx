@@ -88,16 +88,16 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-pop-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
         
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/80">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`p-2 rounded-xl ${
-              type === 'expense' ? 'bg-rose-500/15 text-rose-400' :
-              type === 'income' ? 'bg-emerald-500/15 text-emerald-400' :
-              type === 'transfer' ? 'bg-blue-500/15 text-blue-400' : 'bg-purple-500/15 text-purple-400'
+              type === 'expense' ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400' :
+              type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+              type === 'transfer' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' : 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
             } shrink-0`}>
               {type === 'expense' ? <ArrowUpRight className="w-5 h-5" /> :
                type === 'income' ? <ArrowDownLeft className="w-5 h-5" /> :
@@ -335,7 +335,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
           {/* Balance Reversal Information Box */}
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-400">
-            <AlertCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <AlertCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="text-slate-600 dark:text-slate-300 font-medium">{t('preserveLedger')}</p>
               <p className="tabular-nums break-all">
@@ -346,8 +346,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
           {/* Delete Confirmation Warning */}
           {showDeleteConfirm && (
-            <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs text-rose-300 space-y-2 animate-in fade-in">
-              <div className="flex items-center gap-2 font-bold text-rose-200">
+            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs text-rose-700 dark:text-rose-300 space-y-2 animate-in fade-in">
+              <div className="flex items-center gap-2 font-bold text-rose-800 dark:text-rose-200">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 {t('confirmDeleteTx')}
               </div>
@@ -383,7 +383,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs sm:text-sm font-medium transition shrink-0"
+              className="flex items-center gap-1.5 px-3 py-2 text-rose-600 dark:text-rose-400 hover:text-rose-500 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs sm:text-sm font-medium transition shrink-0"
             >
               <Trash2 className="w-4 h-4" />
               <span>{t('delete')}</span>
