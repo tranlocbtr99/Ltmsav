@@ -38,7 +38,7 @@ export const RecurringTransactionsTab: React.FC<Props> = ({rules, accounts, cate
       </div>
     </section>)}
     {editing && <RecurringEditor key={editing==='new'?'new':editing.id} rule={editing==='new'?undefined:editing} accounts={accounts} categories={categories} onSave={onSave} onClose={()=>setEditing(null)}/>}
-  </div>, document.body);
+  </div>;
 };
 
 function RecurringEditor({rule, accounts, categories, onSave, onClose}: {rule?:RecurringTransaction;accounts:Account[];categories:Category[];onSave:Props['onSave'];onClose:()=>void}) {
