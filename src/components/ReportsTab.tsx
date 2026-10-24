@@ -1,5 +1,7 @@
+import { forecastSpending, ForecastPeriod } from '../services/forecast';
+import { localDate } from '../services/date';
 import React, { useState, useMemo } from 'react';
-import { Transaction, Category, Account } from '../types';
+import { Transaction, Category, Account, RecurringTransaction } from '../types';
 import { PieChart, TrendingUp, TrendingDown, DollarSign, Calendar, ArrowRight } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -8,26 +10,31 @@ interface ReportsTabProps {
   transactions: Transaction[];
   categories: Category[];
   accounts: Account[];
+  recurring?: RecurringTransaction[];
 }
 
 export const ReportsTab: React.FC<ReportsTabProps> = ({
   transactions,
   categories,
   accounts,
+  recurring = [],
 }) => {
   const { t } = useLanguage();
   const [period, setPeriod] = useState<'thisMonth' | 'last30Days' | 'all'>('thisMonth');
 
+  const [forecastPeriod, setForecastPeriod] = useState<ForecastPeriod>('month');
+  const forecast = forecastSpending(transactions, recurring, forecastPeriod);
+
   // Filter transactions by period
   const filteredTxs = useMemo(() => {
     const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7);
+    const currentMonth = localDate(now).slice(0, 7);
 
     if (period === 'thisMonth') {
-      return transactions.filter(t => t.date.startsWith(currentMonth));
+      return transactions.filter(t => t.date.startsWith(currentMonth) && t.date <= localDate(now));
     } else if (period === 'last30Days') {
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString().split('T')[0];
-      return transactions.filter(t => t.date >= thirtyDaysAgo);
+      const thirtyDaysAgo = localDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29));
+      return transactions.filter(t => t.date >= thirtyDaysAgo && t.date <= localDate(now));
     }
     return transactions;
   }, [transactions, period]);
@@ -100,6 +107,21 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   return (
     <div className="space-y-4 pb-12 stagger">
       
+
+      <section className="glass-panel p-5 rounded-3xl space-y-3 text-slate-900 dark:text-white">
+        <h2 className="font-bold">{t('forecastTitle')}</h2>
+        <div className="flex flex-wrap gap-2">
+          {(['month','quarter','year'] as const).map(p => <button key={p} aria-pressed={forecastPeriod===p} onClick={()=>setForecastPeriod(p)} className={`rounded-full px-3 py-2 text-xs ${forecastPeriod===p?'bg-blue-600 text-white':'bg-slate-100 dark:bg-slate-800'}`}>{t('forecast'+p)}</button>)}
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{forecast.projections[0].month} → {forecast.projections.at(-1)!.month}</p>
+        <p className="text-2xl font-bold break-words">{forecast.total.toLocaleString('vi-VN')}₫</p>
+        <p className="text-xs">{t('forecastRange')}: {forecast.low.toLocaleString('vi-VN')}–{forecast.high.toLocaleString('vi-VN')}₫</p>
+        <p className="text-xs">{t('forecastScheduled')}: {forecast.scheduled.toLocaleString('vi-VN')}₫</p>
+        <p className="text-xs text-slate-600 dark:text-slate-400">{t(forecast.supported?'forecastMethod':'forecastInsufficient', {count:forecast.months.length})}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t('forecastCaution')}</p>
+        <div className="space-y-1">{forecast.projections.map(p=><div key={p.month} className="flex justify-between gap-2 text-xs"><span>{p.month}</span><span>{p.total.toLocaleString('vi-VN')}₫</span></div>)}</div>
+      </section>
+
       {/* Period Filter Buttons */}
       <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-semibold">
         <button

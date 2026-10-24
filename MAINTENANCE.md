@@ -28,7 +28,7 @@
 
 ## Suggested next features (not implemented)
 1. OS due-date notifications for monthly schedules (automatic monthly posting is now implemented).
-2. Savings goals and monthly cash-flow forecast based only on recorded data.
+2. Savings goals; spending forecasts for calendar month/quarter/year are now implemented.
 3. Bank statement CSV import with preview, duplicate matching and reversible batch import.
 4. Encrypted user-controlled cloud backups and recovery-key flow.
 5. An integrity dashboard showing orphan links and mismatched history, offering previewed repairs.
@@ -78,3 +78,11 @@ User explicitly requested a new permanent private signing key and will handle th
 - Migration from schema6 snapshots first and adds only the new recurring key. Existing balances/history/settings/PIN raw values were verified unchanged during migration; backup/restore includes definitions and monthly cursors.
 - APK LTMsav_1.9.1801.apk, versionCode11801, package com.ltmsav.app. Existing fixed certificate fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7 verified with apksigner v1/v2/v3. Bundled UI version and recurring chunk verified.
 - APK SHA256 296164bbbde69b7870fd0514bfc04d8d12a05b4a9aa3e52d7b17760b265551a5; delivered privately. No physical-phone installation test.
+
+
+## AI recognition and calendar spending forecasts (2026-10-24)
+- `forecast.ts` is the shared read-only model for Reports, Overview and local AI queries. Mean of up to 6 completed calendar months, including zero months since first expense; needs 2 months before estimating variable expenses. Current/future transactions, transfers and historical recurring postings excluded; enabled expense schedules added once per forecast month from nextDueDate, using last-day clamping. Paused schedules excluded. Periods mean next calendar month/quarter/year.
+- Range is a scenario band (mean absolute deviation, floor ±20%), not a statistical confidence interval; no claimed predictive accuracy. Assumes complete logging and unchanged schedules. Short history displays schedule-only estimate. No storage/schema/identity changes.
+- Reports entry added to Overview; supports light/dark and VI/EN. Queries for balance/current-month income, expenses and budgets/forecasts compute locally without transmitting ledger contents. No external model required for those queries.
+- Offline recognizer accepts unaccented phrases, TCB/VCB/cash aliases, grouped/decimal/million shorthand amounts, yesterday/day before/tomorrow and explicit dates. Ambiguous accounts, multi-amount messages, negations and recurring requests clarify instead of posting. Remote command output now validates account/category/date/currency/amount before confirmation. Unsupported historical chat report periods ask user to use Reports.
+- Validation: 38 regression tests, TypeScript, production build passed locally. New browser QA covers report horizons at 320px and local AI read-only balance/forecast replies. CI/browser/Android results pending; no device test.

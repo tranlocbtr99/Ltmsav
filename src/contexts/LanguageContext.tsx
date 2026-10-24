@@ -9,6 +9,15 @@ interface LanguageContextType {
 }
 
 const vi: Record<string, string> = {
+  forecastmonth: "Tháng tiếp theo",
+  forecastquarter: "Quý tiếp theo",
+  forecastyear: "Năm tiếp theo",
+  forecastRange: "Khoảng kịch bản",
+  forecastScheduled: "Khoản chi theo lịch hiện tại",
+  forecastMethod: "Ước tính từ trung bình {count} tháng lịch đã kết thúc (tối đa 6 tháng), cộng lịch định kỳ; loại giao dịch chuyển tiền và khoản định kỳ đã ghi để tránh tính trùng.",
+  forecastInsufficient: "Chưa đủ 2 tháng lịch sử. Chỉ hiển thị khoản chi theo lịch; chưa ước tính chi tiêu khác.",
+  forecastCaution: "Khoảng kịch bản dựa trên độ lệch lịch sử, tối thiểu ±20% phần ước tính; không phải khoảng tin cậy thống kê. Giả định ghi sổ đầy đủ và lịch hiện tại không đổi. Không tự tạo giao dịch.",
+
   edit: 'Sửa',
   recurringTitle: "Định kỳ",
   monthlySchedule: "Lịch hằng tháng",
@@ -444,6 +453,15 @@ const vi: Record<string, string> = {
 };
 
 const en: Record<string, string> = {
+  forecastmonth: "Next month",
+  forecastquarter: "Next quarter",
+  forecastyear: "Next year",
+  forecastRange: "Scenario range",
+  forecastScheduled: "Current scheduled expenses",
+  forecastMethod: "Mean of {count} completed calendar months (up to 6), plus current schedules. Transfers and historical recurring postings are excluded to prevent double counting.",
+  forecastInsufficient: "Fewer than 2 historical months. Showing scheduled expenses only; other spending is not estimated.",
+  forecastCaution: "Scenario range uses historical deviation, at least ±20% of estimated spending; it is not a statistical confidence interval. Assumes complete records and unchanged schedules. No transactions are created.",
+
   edit: 'Edit',
   recurringTitle: "Recurring",
   monthlySchedule: "Monthly schedule",

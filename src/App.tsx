@@ -261,6 +261,7 @@ export const App: React.FC = () => {
         <Suspense fallback={<div role="status" className="p-6 text-center animate-pulse">LTMsav…</div>}><div key={currentTab} className="animate-fade-in">
           {currentTab === 'overview' && (
             <OverviewTab
+              recurring={recurring}
               accounts={accounts}
               transactions={transactions}
               categories={categories}
@@ -291,6 +292,9 @@ export const App: React.FC = () => {
 
           {currentTab === 'ai' && (
             <AiChatTab
+              transactions={transactions}
+              recurring={recurring}
+              budgets={budgets}
               accounts={accounts}
               categories={categories}
               settings={settings}
@@ -323,6 +327,7 @@ export const App: React.FC = () => {
 
           {currentTab === 'reports' && (
             <ReportsTab
+              recurring={recurring}
               transactions={transactions}
               categories={categories}
               accounts={accounts}

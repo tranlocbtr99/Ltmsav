@@ -1,6 +1,7 @@
+import { forecastSpending } from '../services/forecast';
 import { localDate } from '../services/date';
 import React, { useMemo, useState } from 'react';
-import { Account, Transaction, Category, Budget, DebtOrLoan } from '../types';
+import { Account, Transaction, Category, Budget, DebtOrLoan, RecurringTransaction } from '../types';
 import { 
   TrendingUp, TrendingDown, Wallet, ArrowRightLeft, Sparkles, Plus, 
   ArrowUpRight, ArrowDownLeft, AlertTriangle, ShieldCheck, ChevronRight,
@@ -10,6 +11,7 @@ import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface OverviewTabProps {
+  recurring: RecurringTransaction[];
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
@@ -23,6 +25,7 @@ interface OverviewTabProps {
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
   accounts,
+  recurring,
   transactions,
   categories,
   budgets,
@@ -149,38 +152,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     return { buckets, barMax, totalIncome, totalExpense, slices };
   }, [transactions, categories, chartPeriod, t]);
 
-  // ---- Next-month expense forecast (weighted recent-months average) ----
   const forecast = useMemo(() => {
-    const now = new Date();
-    const monthly: number[] = [];
-    for (let i = 3; i >= 1; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = monthKey(d);
-      const spent = transactions
-        .filter(t => t.type === 'expense' && t.date.slice(0, 7) === key)
-        .reduce((s, t) => s + t.amount, 0);
-      monthly.push(spent);
-    }
-    const nonZero = monthly.filter(v => v > 0);
-    // Weighted toward the most recent month (1,2,3 → weight recent more)
-    const weights = [1, 2, 3];
-    let wSum = 0, vSum = 0;
-    monthly.forEach((v, i) => { if (v > 0) { wSum += weights[i]; vSum += v * weights[i]; } });
-    const base = wSum > 0 ? vSum / wSum : 0;
-    const avg = nonZero.length > 0 ? nonZero.reduce((s, v) => s + v, 0) / nonZero.length : 0;
-    // simple trend from last two months
-    const last = monthly[2] || 0, prev = monthly[1] || 0;
-    const trendPct = prev > 0 ? ((last - prev) / prev) * 100 : 0;
-    const predicted = Math.max(0, Math.round(base || avg));
-    const delta = predicted - last;
-    return {
-      predicted,
-      lastMonth: last,
-      delta,
-      trendPct,
-      hasData: nonZero.length >= 1,
-    };
-  }, [transactions]);
+    const f=forecastSpending(transactions, recurring, 'month');
+    const now=new Date();
+    const lastKey=monthKey(new Date(now.getFullYear(),now.getMonth()-1,1));
+    const last=transactions.filter(tx=>tx.type==='expense'&&tx.date.startsWith(lastKey)).reduce((s,tx)=>s+tx.amount,0);
+    return {predicted:f.total,lastMonth:last,delta:f.total-last,trendPct:last?(f.total-last)/last*100:0,hasData:f.supported||f.scheduled>0,supported:f.supported,months:f.months.length};
+  }, [transactions, recurring]);
 
   const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
     const toRad = (deg: number) => ((deg - 90) * Math.PI) / 180;
@@ -370,6 +348,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
       </div>
 
+      <button type="button" onClick={() => onNavigateTab('reports')} className="glass-panel w-full rounded-2xl p-4 flex items-center justify-between gap-2 text-sm font-semibold text-blue-700 dark:text-blue-300"><span>{t('reports')} · {t('forecastTitle')}</span><ChevronRight size={18} /></button>
       {/* Next-month expense forecast */}
       {forecast.hasData && (
         <div className="rounded-3xl p-5 border border-indigo-200 dark:border-indigo-500/30 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/20 space-y-3">
@@ -379,7 +358,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <span>{t('forecastTitle')}</span>
             </h2>
             <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
-              {t('forecastBadge')}
+              {t('forecastRange')}
             </span>
           </div>
           <div>
@@ -397,7 +376,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               {forecast.trendPct !== 0 && ` (${forecast.trendPct > 0 ? '+' : ''}${Math.round(forecast.trendPct)}%)`}
             </span>
           </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{t('forecastNote')}</p>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{t(forecast.supported?'forecastMethod':'forecastInsufficient',{count:forecast.months})}</p>
         </div>
       )}
 

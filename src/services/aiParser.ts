@@ -1,143 +1,76 @@
+import { forecastSpending } from './forecast';
 import { localDate } from './date';
-import { Account, Category, AiChatResponse, AppSettings } from '../types';
+import { Account, Category, AiChatResponse, AppSettings, Transaction, RecurringTransaction, Budget } from '../types';
 
 export function parseVietnameseFinancialCommand(
   text: string,
   accountNames: string[],
-  categoryNames: string[]
+  categoryNames: string[],
+  referenceDate = new Date()
 ): AiChatResponse {
-  const lower = text.toLowerCase().trim();
+  return parseNormalized(text, accountNames, categoryNames, referenceDate);
+}
 
-  // Extract amount (more flexible)
-  let amount = 0;
-  // million/trieu
-  const millionMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:triệu|trieu|trieuđ|trđ|củ|cu)\b/);
-  const trMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*tr\b/);
-  // thousand/nghin
-  const thousandMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:nghìn|nghin|ngàn|ngan|k\b)/);
-  // grouped numbers like 1.000.000, 1,000,000
-  const groupedMatch = lower.match(/(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?)/);
-  // standalone 4-9 digit numbers
-  const rawNumberMatch = lower.match(/(\d{4,9})\b/);
+function parseNormalized(text: string, accountNames: string[], categoryNames: string[], referenceDate: Date): AiChatResponse {
+  const normalize = (value: string) => value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+  let lower = text.toLowerCase().trim();
+  const plain = normalize(lower);
+  const clarification = (question: string): AiChatResponse => ({intent:'clarify', needs_confirmation:false, analysis:question, clarification_question:question, commands:[]});
+  if (/(hang thang|dinh ky|moi thang)/.test(plain)) return clarification('Hãy tạo lịch tại Giao dịch → Định kỳ để chọn ngày, tài khoản và số tiền. Câu này chưa được ghi thành giao dịch.');
+  if (/(khong|chua|dung)\s+(ghi|them|chi|chuyen|tao)/.test(plain)) return clarification('Chưa ghi giao dịch. Hãy nêu lại giao dịch bạn muốn thực hiện.');
+  if (/[;\n]/.test(text) || /\s(?:va|rồi|roi)\s/.test(plain)) return clarification('Hãy gửi từng giao dịch riêng để xác nhận đúng số tiền và tài khoản.');
+  const aliases: Record<string,string[]> = {'techcombank':['tcb','techcom'], 'vietcombank':['vcb','vietcom'], 'tien mat':['cash'], 'mb bank':['mbbank','mb']};
+  const matches = (segment: string, name: string) => {
+    const n=normalize(name), value=normalize(segment);
+    const candidates=[n, ...(aliases[n] || [])];
+    return candidates.some(alias => (' '+value.replace(/[^a-z0-9]+/g,' ')+' ').includes(' '+alias.replace(/[^a-z0-9]+/g,' ')+' '));
+  };
+  const mentioned=accountNames.filter(name=>matches(text,name));
+  const sourceText=plain.match(/(?:tu)\s+(.+?)(?:\s+(?:sang|vao|den|qua)\s+)/)?.[1];
+  const targetText=plain.match(/(?:sang|vao|den|qua)\s+(.+)/)?.[1];
+  const transfer=/\bchuyen\b/.test(plain) && !!targetText;
+  const sources=sourceText?accountNames.filter(n=>matches(sourceText,n)):mentioned;
+  const targets=targetText?accountNames.filter(n=>matches(targetText,n)):[];
+  const source=transfer?(sourceText?sources.length===1?sources[0]:undefined:mentioned.filter(n=>!targets.includes(n)).length===1?mentioned.filter(n=>!targets.includes(n))[0]:undefined):mentioned.length===1?mentioned[0]:accountNames.length===1?accountNames[0]:undefined;
+  if (!source || (transfer && (targets.length!==1 || targets[0]===source))) return clarification('Vui lòng chỉ rõ tài khoản nguồn và tài khoản đích khác nhau (nếu chuyển tiền), dùng tên tài khoản trong app.');
+  // Convert common unaccented financial words before intent/category recognition.
+  for(const [a,b] of [['chuyen','chuyển'],['nhan','nhận'],['luong','lương'],['thuong','thưởng'],['thu nhap','thu nhập'],['tra no','trả nợ'],['tien mat','tiền mặt'],['trieu','triệu'],['nghin','nghìn'],['ngan','ngàn'],['an trua','ăn trưa'],['ca phe','cà phê']]) lower=lower.replace(new RegExp('\\b'+a+'\\b','g'),b);
+  // Dates cannot be interpreted as monetary amounts.
+  const originalLower = lower;
+  lower=lower.replace(/\b\d{4}-\d{2}-\d{2}\b/g,'').replace(/\b\d{1,2}[/]\d{1,2}(?:[/]\d{4})?\b/g,'');
 
-  if (millionMatch) {
-    amount = Math.round(parseFloat(millionMatch[1].replace(',', '.')) * 1000000);
-  } else if (trMatch) {
-    amount = Math.round(parseFloat(trMatch[1].replace(',', '.')) * 1000000);
-  } else if (thousandMatch) {
-    amount = Math.round(parseFloat(thousandMatch[1].replace(',', '.')) * 1000);
-  } else if (groupedMatch) {
-    const s = groupedMatch[1];
-    const parts = s.split(/[.,]/);
-    if (parts.length > 2 && parts[parts.length - 1].length === 3) {
-      const clean = s.replace(/\./g, '').replace(/,/g, '');
-      amount = parseInt(clean, 10);
-    } else if (parts.length === 2 && parts[1].length <= 2) {
-      amount = Math.round(parseFloat(s.replace(',', '.')));
-    } else {
-      const clean = s.replace(/\./g, '').replace(/,/g, '');
-      amount = parseInt(clean, 10);
-    }
-  } else if (rawNumberMatch) {
-    amount = parseInt(rawNumberMatch[1], 10);
-  }
-  // also try to find any number before currency words
-  if (amount === 0) {
-    const anyNum = lower.match(/(\d+(?:[.,]\d+)?)\s*(?:đ|vnd|đồng|vnđ)\b/);
-    if (anyNum) {
-      const s = anyNum[1];
-      const parts = s.split(/[.,]/);
-      if (parts.length === 2 && parts[1].length <= 2) {
-        amount = Math.round(parseFloat(s.replace(',', '.')));
-      } else {
-        const clean = s.replace(/\./g, '').replace(/,/g, '');
-        amount = parseInt(clean, 10);
-      }
-    }
-  }
-  // last resort: any number >=1000 that's not too small
-  if (amount === 0 || amount < 1000) {
-    const allNums = lower.match(/(\d{1,3}(?:[.,]\d{3})+|\d{4,9})/g);
-    if (allNums && allNums.length) {
-      for (const n of allNums) {
-        // skip if part of "tr" or "triệu"
-        const idx = lower.indexOf(n);
-        if (idx >= 0) {
-          const after = lower.slice(idx + n.length, idx + n.length + 5);
-          if (/\btr\b|triệu|trieu/.test(after) || after.trim().startsWith('tr')) continue;
-        }
-        const parts = n.split(/[.,]/);
-        let val = 0;
-        if (parts.length > 2 && parts[parts.length - 1].length === 3) {
-          val = parseInt(n.replace(/\./g, '').replace(/,/g, ''), 10);
-        } else if (parts.length === 2 && parts[1].length <= 2) {
-          val = Math.round(parseFloat(n.replace(',', '.')));
-        } else {
-          val = parseInt(n.replace(/\./g, '').replace(/,/g, ''), 10);
-        }
-        if (val > amount && val >= 1000) amount = val;
-      }
-    }
-  }
-  // if still small but user said tr/million context
-  if (amount > 0 && amount < 10000 && (lower.includes('triệu') || lower.includes('trieu') || lower.includes('tr\b'))) {
-    // already handled above, but just in case
-  }
+  // Parse one explicit monetary expression. Never select the largest of multiple amounts.
+  lower=lower.replace(/(\d+)\s*(?:tr|triệu)(\d)(?!\d)/g, '$1,$2 triệu');
+  const expressions = [...lower.matchAll(/(?<![\w.,-])(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*(triệu|trieu|trđ|tr|củ|cu|nghìn|nghin|ngàn|ngan|k|vnd|vnđ|đồng|đ)?/gu)];
+  if(expressions.length!==1) return clarification('Vui lòng nêu một số tiền chính xác cho mỗi giao dịch.');
+  const [,number,unit] = expressions[0];
+  const multiplier=/^(triệu|trieu|trđ|tr|củ|cu)$/.test(unit||'')?1000000:/^(nghìn|nghin|ngàn|ngan|k)$/.test(unit||'')?1000:1;
+  const grouped=/^\d{1,3}(?:[.,]\d{3})+$/.test(number);
+  const amount=Math.round(Number(grouped?number.replace(/[.,]/g,''):number.replace(',','.'))*multiplier);
+  if(!Number.isSafeInteger(amount)||amount<=0||(!unit&&amount<1000)) return clarification('Vui lòng ghi rõ số tiền và đơn vị đồng, nghìn hoặc triệu.');
 
-  // Detect Account
-  let matchedAccount = accountNames[0] || 'Tiền mặt';
-  for (const acc of accountNames) {
-    const accLow = acc.toLowerCase();
-    if (
-      lower.includes(accLow) ||
-      lower.includes(accLow.replace(/\s+/g, '')) ||
-      (accLow.includes('vietcombank') && (lower.includes('vcb') || lower.includes('vietcom'))) ||
-      (accLow.includes('momo') && lower.includes('momo')) ||
-      (accLow.includes('zalopay') && lower.includes('zalopay')) ||
-      (accLow.includes('vnpay') && lower.includes('vnpay')) ||
-      (accLow.includes('tiền mặt') && (lower.includes('tiền mặt') || lower.includes('tien mat') || lower.includes('cash')))
-    ) {
-      matchedAccount = acc;
-      break;
-    }
-  }
-
-  // In explicit "from A to B" commands, list ordering must not reverse the transfer.
-  const sourceSegment = lower.match(/(?:từ|tu)\s+(.+?)(?:\s+(?:sang|vào|đến|qua)\s+)/)?.[1];
-  if (sourceSegment) {
-    const explicitSource = accountNames.find(name => sourceSegment.includes(name.toLowerCase()));
-    if (explicitSource) matchedAccount = explicitSource;
-  }
-
+  const matchedAccount = source;
   // Detect Intent
   let intent = 'create_expense';
   let kind: 'expense' | 'income' | 'transfer' | 'lend' | 'debt_repay' = 'expense';
   let accountTo: string | null = null;
   let person: string | null = null;
 
-  if (lower.includes('chuyển') && (lower.includes('sang') || lower.includes('vào') || lower.includes('đến'))) {
+  if (transfer) {
     intent = 'create_transfer';
     kind = 'transfer';
-    for (const acc of accountNames) {
-      if (acc !== matchedAccount && lower.includes(acc.toLowerCase())) {
-        accountTo = acc;
-        break;
-      }
-    }
-    if (!accountTo) {
-      accountTo = null;
-    }
+    accountTo = targets[0];
   } else if (lower.includes('cho') && (lower.includes('vay') || lower.includes('mượn'))) {
     intent = 'lend';
     kind = 'lend';
     const personMatch = lower.match(/cho\s+([a-zA-Zà-ỹÀ-Ỹ\s]+?)\s+(?:vay|mượn)/i);
     person = personMatch ? personMatch[1].trim() : 'Bạn bè';
   } else if (
-    lower.includes('nhận') ||
+    !lower.includes('trả nợ') && !lower.includes('thanh toán nợ') && (lower.includes('nhận') ||
     lower.includes('lương') ||
     lower.includes('thưởng') ||
     lower.includes('thu nhập') ||
-    lower.includes('được cho')
+    lower.includes('được cho'))
   ) {
     intent = 'create_income';
     kind = 'income';
@@ -172,7 +105,7 @@ export function parseVietnameseFinancialCommand(
   };
 
   for (const [cat, keywords] of Object.entries(categoryKeywords)) {
-    if (keywords.some(k => lower.includes(k))) {
+    if (keywords.some(k => (' '+normalize(lower).replace(/[^a-z0-9]+/g,' ')+' ').includes(' '+normalize(k)+' '))) {
       matchedCategory = cat;
       break;
     }
@@ -186,7 +119,20 @@ export function parseVietnameseFinancialCommand(
   let description = text.replace(/^(hôm nay|vừa|đã|mới)\s+/i, '');
   if (description.length > 50) description = description.substring(0, 50);
 
-  const today = localDate();
+  let today = localDate(referenceDate);
+  const relative = /hom kia/.test(plain)?-2:/hom qua/.test(plain)?-1:/ngay mai/.test(plain)?1:0;
+  if(relative) today=localDate(new Date(referenceDate.getFullYear(),referenceDate.getMonth(),referenceDate.getDate()+relative));
+  const explicit = originalLower.match(/\b(\d{4})-(\d{2})-(\d{2})\b/) || originalLower.match(/\b(\d{1,2})[/](\d{1,2})(?:[/](\d{4}))?\b/);
+  if(explicit){
+    const iso=explicit[1].length===4;
+    const y=iso?+explicit[1]:+(explicit[3]||referenceDate.getFullYear()), m=+explicit[2], d=iso?+explicit[3]:+explicit[1];
+    const date=new Date(y,m-1,d);
+    if(date.getFullYear()!==y || date.getMonth()!==m-1 || date.getDate()!==d) return clarification('Ngày giao dịch không hợp lệ.');
+    today=localDate(date);
+  }
+  const categoryMatches=categoryNames.filter(name=>normalize(text).includes(normalize(name)));
+  if(categoryMatches.length===1) matchedCategory=categoryMatches[0];
+  if(!categoryNames.includes(matchedCategory) && kind!=='transfer') return clarification('Vui lòng chỉ rõ danh mục có trong app.');
 
   return {
     intent,
@@ -216,10 +162,30 @@ export async function processAiMessage(
   message: string,
   accounts: Account[],
   categories: Category[],
-  settings?: AppSettings
+  settings?: AppSettings,
+  context?: {transactions: Transaction[]; recurring: RecurringTransaction[]; budgets: Budget[]}
 ): Promise<AiChatResponse> {
+  const plain=message.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
+  const reply=(answer:string): AiChatResponse=>({intent:'query_report',needs_confirmation:false,analysis:'Tính từ dữ liệu trên thiết bị, không gửi sổ giao dịch ra dịch vụ AI.',answer,commands:[]});
+  const money=(n:number)=>n.toLocaleString('vi-VN')+'₫';
+  if(/(so du|con bao nhieu|tong tien)/.test(plain)) return reply(accounts.map(a=>a.name+': '+money(a.balance)).join('\n')+'\nTổng: '+money(accounts.reduce((s,a)=>s+a.balance,0)));
+  if(context && (/(du bao|du doan)/.test(plain) || (/(thang toi|quy toi|nam toi|thang sau|quy sau|nam sau)/.test(plain) && /(bao nhieu|chi tieu|uoc tinh)/.test(plain)))) {
+    const period=/quy/.test(plain)?'quarter':/nam/.test(plain)?'year':'month';
+    const f=forecastSpending(context.transactions,context.recurring,period);
+    return reply(`Dự báo ${f.projections[0].month} → ${f.projections.at(-1)!.month}: ${money(f.total)}. Trong đó lịch định kỳ: ${money(f.scheduled)}.\n${f.supported?`Trung bình ${f.months.length} tháng lịch sử; khoảng kịch bản ${money(f.low)}–${money(f.high)} (không phải khoảng tin cậy thống kê).`:'Chưa đủ 2 tháng lịch sử: chỉ tính lịch định kỳ, chưa ước tính chi khác.'} Giả định ghi sổ đầy đủ và lịch không đổi.`);
+  }
+  if(context && /(bao cao|phan tich|da chi.*bao nhieu|chi tieu.*bao nhieu|ngan sach)/.test(plain)) {
+    if(/(thang truoc|quy|nam|hom qua)/.test(plain)) return reply('Báo cáo chat hiện hỗ trợ tháng hiện tại. Mở Báo cáo để chọn khoảng thời gian khác.');
+    const month=localDate().slice(0,7);
+    const txs=context.transactions.filter(tx=>tx.date.startsWith(month)&&tx.date<=localDate());
+    const spent=txs.filter(tx=>tx.type==='expense').reduce((s,tx)=>s+tx.amount,0);
+    const income=txs.filter(tx=>tx.type==='income').reduce((s,tx)=>s+tx.amount,0);
+    return reply(`Sổ giao dịch tháng ${month}: thu ${money(income)}, chi ${money(spent)}, chênh lệch ${money(income-spent)}.\n`+context.budgets.map(b=>{const actual=txs.filter(tx=>tx.type==='expense'&&tx.categoryId===b.categoryId).reduce((s,tx)=>s+tx.amount,0);return `${categories.find(c=>c.id===b.categoryId)?.name||b.categoryId}: ${money(actual)} / ${money(b.monthlyLimit)}${actual>b.monthlyLimit?' — vượt ngân sách':''}`;}).join('\n'));
+  }
   const accountNames = accounts.map(a => a.name);
   const categoryNames = categories.map(c => c.name);
+
+  if(/(hang thang|dinh ky|moi thang|(?:khong|chua|dung)\s+(?:ghi|them|chi|chuyen|tao))/.test(plain)) return parseVietnameseFinancialCommand(message,accountNames,categoryNames);
 
   const hasGeminiKey = !!(settings?.geminiApiKey && settings.geminiApiKey.trim());
   const hasCustomServer = !!(settings?.customServerUrl && settings.customServerUrl.trim());
@@ -248,7 +214,7 @@ NGUYÊN TẮC BẮT BUỘC:
 6. Ngày dùng định dạng yyyy-MM-dd. Nếu không nói ngày cụ thể -> dùng "${today}".
 7. "description" ngắn gọn, tự nhiên theo nội dung thực tế.
 8. Ưu tiên tạo "commands" khi đã xác định được ít nhất: loại giao dịch + số tiền + tài khoản. Đặt "needs_confirmation": true để người dùng xác nhận trước khi ghi sổ.
-9. Chỉ đặt "clarification_question" khi THỰC SỰ thiếu thông tin quan trọng không thể suy luận (thường chỉ khi thiếu số tiền). Nếu số tiền đã rõ, đừng hỏi vòng vo.
+9. Khi thiếu số tiền hoặc không xác định duy nhất tài khoản, hỏi lại và trả commands rỗng; không tự chọn tài khoản đầu danh sách. Không tạo giao dịch từ câu hỏi, phủ định hoặc yêu cầu định kỳ. Không tự bịa số dư, báo cáo hay dự báo khi không được cung cấp dữ liệu.
 10. Luôn trả về đầy đủ schema sau.
 
 SCHEMA JSON:
@@ -307,7 +273,7 @@ SCHEMA JSON:
         if (textOutput) {
           try {
             const parsed = JSON.parse(textOutput);
-            return parsed;
+            return validateAiResponse(parsed, accounts, categories);
           } catch (parseErr) {
             console.warn('Gemini JSON parse failed:', parseErr);
           }
@@ -334,7 +300,7 @@ SCHEMA JSON:
       });
       clearTimeout(timeoutId);
       if (res.ok) {
-        return await res.json();
+        return validateAiResponse(await res.json(), accounts, categories);
       }
     } catch (e) {
       console.warn('Custom backend failed, trying other methods:', e);
@@ -353,11 +319,22 @@ SCHEMA JSON:
     });
     clearTimeout(timeoutId);
     if (res.ok) {
-      return await res.json();
+      return validateAiResponse(await res.json(), accounts, categories);
     }
   } catch (e) {
     // Relative endpoint unreachable (e.g. mobile standalone APK)
   }
   // 4. Default: Reliable offline rule-based Vietnamese NLP parser
   return parseVietnameseFinancialCommand(message, accountNames, categoryNames);
+}
+
+/** Model output is untrusted; storage remains the final authority. */
+export function validateAiResponse(value: unknown, accounts: Account[], categories: Category[]): AiChatResponse {
+  const r=value as AiChatResponse;
+  if(!r || typeof r.analysis!=='string' || !Array.isArray(r.commands)) throw new Error('Invalid AI response');
+  for(const c of r.commands){
+    if(!['expense','income','transfer','lend','debt_repay'].includes(c.kind) || !Number.isSafeInteger(c.amount) || c.amount<=0 || c.currency!=='VND' || !accounts.some(a=>a.name===c.account) || !/^\d{4}-\d{2}-\d{2}$/.test(c.date) || !Number.isFinite(Date.parse(c.date)) || localDate(new Date(c.date+'T12:00:00'))!==c.date || typeof c.description!=='string') throw new Error('Invalid AI command');
+    if(c.kind==='transfer' ? !accounts.some(a=>a.name===c.account_to&&a.name!==c.account) : !categories.some(cat=>cat.name===c.category && cat.type===(c.kind==='income'?'income':'expense'))) throw new Error('Invalid AI reference');
+  }
+  return {...r,needs_confirmation:r.commands.length>0};
 }

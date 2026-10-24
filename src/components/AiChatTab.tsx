@@ -1,6 +1,6 @@
 import { localDate } from '../services/date';
 import React, { useState, useRef, useEffect } from 'react';
-import { Account, Category, Transaction, AiChatResponse, AiParsedCommand, AppSettings } from '../types';
+import { Account, Category, Transaction, AiChatResponse, AiParsedCommand, AppSettings, RecurringTransaction, Budget } from '../types';
 import { processAiMessage } from '../services/aiParser';
 import { 
   Sparkles, Send, Bot, User, Check, Edit3, ArrowRight, CornerDownLeft, 
@@ -10,6 +10,9 @@ import confetti from 'canvas-confetti';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface AiChatTabProps {
+  transactions: Transaction[];
+  recurring: RecurringTransaction[];
+  budgets: Budget[];
   accounts: Account[];
   categories: Category[];
   settings?: AppSettings;
@@ -29,6 +32,7 @@ interface ChatMessage {
 
 export const AiChatTab: React.FC<AiChatTabProps> = ({
   accounts,
+  transactions, recurring, budgets,
   categories,
   settings,
   onAddTransaction,
@@ -82,7 +86,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
     setIsLoading(true);
 
     try {
-      const data: AiChatResponse = await processAiMessage(text, accounts, categories, settings);
+      const data: AiChatResponse = await processAiMessage(text, accounts, categories, settings, {transactions, recurring, budgets});
 
       let botReply = data.analysis || t('aiAnalyzed');
       if (data.answer) {
@@ -133,9 +137,9 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
 
     const matchedCategory = categories.find(
       c => c.name.toLowerCase() === cmd.category.toLowerCase()
-    ) || categories[0];
+    );
 
-    if (!matchedAccount || (cmd.kind === 'transfer' && (!matchedTargetAccount || matchedTargetAccount === matchedAccount.id))) throw new Error('Hãy chỉ rõ tài khoản nguồn và đích hợp lệ trước khi xác nhận.');
+    if ((cmd.kind !== 'transfer' && !matchedCategory) || !matchedAccount || (cmd.kind === 'transfer' && (!matchedTargetAccount || matchedTargetAccount === matchedAccount.id))) throw new Error('Hãy chỉ rõ tài khoản nguồn và đích hợp lệ trước khi xác nhận.');
     onAddTransaction({
       type: cmd.kind,
       amount: cmd.amount,
