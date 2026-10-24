@@ -72,10 +72,10 @@ export const App: React.FC = () => {
 
     if (isDark) {
       document.documentElement.classList.add('dark');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#090d16');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#10121b');
     } else {
       document.documentElement.classList.remove('dark');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f8fafc');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f2f4fa');
     }
   }, [settings.theme]);
 
@@ -210,7 +210,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#f7f9fc] dark:bg-[#090d16] text-slate-900 dark:text-slate-50 flex flex-col font-sans transition-colors duration-200">
+    <div className="ios-app min-h-[100dvh] text-slate-900 dark:text-slate-50 flex flex-col font-sans transition-colors duration-200">
       
       {/* Top App Bar with theme toggle */}
       <TopHeader
@@ -223,7 +223,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+96px)]">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-5 pb-[calc(env(safe-area-inset-bottom,0px)+112px)]">
         
         {/* Tab views */}
         <Suspense fallback={<div role="status" className="p-6 text-center animate-pulse">LTMsav…</div>}><div key={currentTab} className="animate-fade-in">

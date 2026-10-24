@@ -9,6 +9,8 @@ interface LanguageContextType {
 }
 
 const vi: Record<string, string> = {
+  mainNavigation: 'Điều hướng chính',
+  newTransaction: 'Thêm giao dịch',
   exportCsv: 'Xuất giao dịch CSV (Excel)',
   appSubtitle: 'Sổ thu chi & Quản lý tài chính',
   language: 'Ngôn ngữ',
@@ -408,6 +410,8 @@ const vi: Record<string, string> = {
 };
 
 const en: Record<string, string> = {
+  mainNavigation: 'Main navigation',
+  newTransaction: 'Add transaction',
   exportCsv: 'Export transactions as CSV (Excel)',
   appSubtitle: 'Finance & Budget Manager',
   language: 'Language',

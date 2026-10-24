@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="base" x1=".1" y1="0" x2=".95" y2="1"><stop stop-color="#2498ff"/><stop offset=".52" stop-color="#166ae5"/><stop offset="1" stop-color="#5553cc"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#fff" stop-opacity=".96"/><stop offset="1" stop-color="#e2edff" stop-opacity=".82"/></linearGradient>
+    <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/></linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#base)"/>
+  <rect x="2" y="2" width="1020" height="1020" rx="222" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="4"/>
+  <path d="M300 338h378a58 58 0 0 1 58 58v264a58 58 0 0 1-58 58H346a58 58 0 0 1-58-58V396a58 58 0 0 1 58-58" fill="url(#lip)"/>
+  <path d="M326 356v248a72 72 0 0 0 72 72h290" fill="none" stroke="url(#glass)" stroke-width="66" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M443 402h196" fill="none" stroke="#fff" stroke-opacity=".86" stroke-width="48" stroke-linecap="round"/>
+</svg>

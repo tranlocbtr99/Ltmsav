@@ -48,3 +48,10 @@ User explicitly requested a new permanent private signing key and will handle th
 - Signing certificate SHA-256: fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7
 - APK and private signing kit were delivered privately as downloadable files. No phone install/restore test was performed.
 - Future releases: retrieve the exact existing key kit; do not generate another key. GitHub signing secrets are not configured by this delivery. Without them CI deliberately produces unsigned artifacts for private signing.
+
+## Liquid Glass UI refresh (2026-10-24)
+- Design entry points: `src/index.css` (ios-* tokens/surfaces), Navigation.tsx (floating dock/header), OverviewTab.tsx (large title/balance), SplashScreen.tsx.
+- Authoritative logo source: `assets/logo-source.svg` (editable minimal L/wallet); update_logo.py renders via CairoSVG + Pillow. CI regenerates all web/PWA/Android icons from this SVG. The previous PNG master is historical only.
+- Added VI/EN keys: mainNavigation, newTransaction.
+- UI-only changes: schema 6 and all storage keys/contracts are unchanged; reuse SIGNING_IDENTITY.json key. No reset/migration added.
+- Browser QA: scripts/visual-qa.mjs uses synthetic data, light/dark screenshots, tab navigation, runtime-error checks and ledger preservation. CI downloads browser; local browser download was unavailable.

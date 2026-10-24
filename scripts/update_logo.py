@@ -47,7 +47,12 @@ MIPMAPS = {
 
 
 def load_source(path: str) -> Image.Image:
-    im = Image.open(path).convert("RGBA")
+    if os.path.splitext(path)[1].lower() == '.svg':
+        import cairosvg
+        import io
+        im = Image.open(io.BytesIO(cairosvg.svg2png(url=path, output_width=1024, output_height=1024))).convert("RGBA")
+    else:
+        im = Image.open(path).convert("RGBA")
     side = max(im.size)
     canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
     canvas.paste(im, ((side - im.width) // 2, (side - im.height) // 2), im)

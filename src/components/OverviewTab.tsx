@@ -1,3 +1,4 @@
+import { localDate } from '../services/date';
 import React, { useMemo, useState } from 'react';
 import { Account, Transaction, Category, Budget, DebtOrLoan } from '../types';
 import { 
@@ -31,7 +32,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onSelectTransaction,
   onNavigateTab,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   // Calculations
   const totalAssets = accounts.reduce((sum, a) => sum + Math.max(0, a.balance), 0);
   const totalDebts = debts
@@ -43,7 +44,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   const netWorth = totalAssets + totalLoans - totalDebts;
 
   // Monthly statistics
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = localDate().slice(0, 7);
   const monthTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
   
   const monthIncome = monthTransactions
@@ -211,36 +212,41 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
   return (
     <div className="space-y-5 pb-6 stagger">
+      <div className="ios-page-heading">
+        <div><p className="ios-eyebrow">{new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())}</p>
+        <h1>{t('overview')}</h1></div>
+        <button type="button" onClick={onOpenAdd} className="ios-add-button" aria-label={t('newTransaction')}><Plus size={23} /></button>
+      </div>
       
       {/* Net Worth Hero Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 p-5 sm:p-6 text-white shadow-xl shadow-emerald-950/20 border border-emerald-500/20">
+      <div className="ios-balance-card relative overflow-hidden p-6 sm:p-7 text-white">
         <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/5 blur-2xl pointer-events-none" />
         
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-200">
+          <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-blue-100">
             <ShieldCheck className="w-4 h-4" />
             <span>{t('netWorth')}</span>
           </div>
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-xs font-medium border border-emerald-400/30">
+          <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-blue-50 text-[10px] font-medium border border-white/20">
             {accounts.length} {t('moneySources')}
           </span>
         </div>
 
         <div className="mb-4">
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">
-            {netWorth.toLocaleString('vi-VN')} <span className="text-lg font-bold text-emerald-200">₫</span>
+          <h1 className="text-[34px] sm:text-[46px] leading-tight font-semibold tracking-[-1.5px] tabular-nums break-all">
+            {netWorth.toLocaleString('vi-VN')} <span className="text-xl font-medium text-blue-100">₫</span>
           </h1>
         </div>
 
         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10 text-xs">
           <div>
-            <span className="text-emerald-200/80 block">{t('totalAssets')}:</span>
+            <span className="text-blue-100/90 block">{t('totalAssets')}:</span>
             <span className="font-bold text-white text-sm tabular-nums break-all">
               {totalAssets.toLocaleString('vi-VN')}₫
             </span>
           </div>
           <div>
-            <span className="text-emerald-200/80 block">{t('totalDebtToPay')}:</span>
+            <span className="text-blue-100/90 block">{t('totalDebtToPay')}:</span>
             <span className="font-bold text-rose-300 text-sm tabular-nums break-all">
               {totalDebts > 0 ? `-${totalDebts.toLocaleString('vi-VN')}₫` : '0₫'}
             </span>
