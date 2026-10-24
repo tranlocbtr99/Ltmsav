@@ -34,15 +34,21 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Require original release key
+      - name: Select fixed-key signing or local signing
+        id: key
         env:
           KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          test -n "$KEYSTORE" && test -n "$STORE_PASSWORD" && test -n "$ALIAS" && test -n "$KEY_PASSWORD" || { echo 'Configure the ORIGINAL release keystore secrets. Never generate a replacement key for an installed app.'; exit 1; }
-          printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/ltmsav-release.jks"
+          if [ -n "$KEYSTORE" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            printf '%s' "$KEYSTORE" | base64 --decode > "$RUNNER_TEMP/ltmsav-release.jks"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo 'Compiling unsigned artifacts for private local signing; no key will be generated in CI.'
+          fi
       - run: npm ci
       - run: npm ci --prefix mobile
       - name: Generate Android project
@@ -77,6 +83,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease --no-daemon
       - name: Sign and verify
+        if: steps.key.outputs.available == 'true'
         env:
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -92,9 +99,20 @@ jobs:
           jarsigner -verify release/LTMsav-*.aab
           "$TOOLS/aapt" dump badging release/LTMsav-*.apk | head -1
           rm release/aligned.apk
+      - name: Prepare unsigned local-signing kit
+        if: steps.key.outputs.available != 'true'
+        run: |
+          TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          mkdir -p release
+          "$TOOLS/zipalign" -P 16 -f 4 mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk release/LTMsav-unsigned.apk
+          cp mobile/android/app/build/outputs/bundle/release/app-release.aab release/LTMsav-unsigned.aab
+          cp "$TOOLS/lib/apksigner.jar" release/apksigner.jar
+          cp src/release.json release/version.json
+          git rev-parse HEAD > release/source-commit.txt
+          sha256sum release/* > release/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: LTMsav-${{ steps.version.outputs.version }}
+          name: LTMsav-${{ steps.version.outputs.version }}-${{ steps.key.outputs.available == 'true' && 'signed' || 'unsigned' }}
           path: release/*
           if-no-files-found: error
           retention-days: 30

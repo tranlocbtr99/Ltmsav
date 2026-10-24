@@ -36,3 +36,6 @@
 
 ## Next-session retrieval
 Read this file first. UI → APP_MAP table; money/restore → storage.ts + storage tests; AI → aiParser.ts + parser tests; releases → RELEASE.md + workflow/version script. Update this handoff at the end, without claiming more coverage than was run.
+
+## Signing identity change authorized 2026-10-24
+User explicitly requested a new permanent private signing key and will handle the one-time backup/reinstallation. This overrides the original-key-only rule for this transition. A new RSA-4096 key was generated once and delivered privately as LTMsav_Signing_Kit_20261024.zip; no private key/password belongs in git. Keep this identity for future releases. CI may build explicitly unsigned packages for local signing when repository secrets are absent; unsigned packages are never described as installable releases.
