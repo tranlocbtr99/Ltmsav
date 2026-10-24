@@ -27,7 +27,7 @@
 - Debt ledger remains separate from cash transactions (existing behavior). Automatic linking requires a deliberate schema/data reconciliation design; do not retroactively recalculate balances.
 
 ## Suggested next features (not implemented)
-1. Recurring bills and due-date reminders, with opt-in permissions and no duplicate transactions.
+1. OS due-date notifications for monthly schedules (automatic monthly posting is now implemented).
 2. Savings goals and monthly cash-flow forecast based only on recorded data.
 3. Bank statement CSV import with preview, duplicate matching and reversible batch import.
 4. Encrypted user-controlled cloud backups and recovery-key flow.
@@ -71,3 +71,10 @@ User explicitly requested a new permanent private signing key and will handle th
 - Scheduler runs on app open/unlock, foreground return and every 60 seconds while visible. It catches up due months; no background service, OS notifications or bank integration. Expenses with insufficient funds remain due. Resuming a paused schedule skips paused months. Web Locks serialize scheduler runs where available.
 - Tests: recurring.test.ts covers clamping/leap/year boundaries, catch-up/idempotency, insufficiency/retry, pause/resume, deletion/edit behavior, journal failure, backup and schema 6 migration. Browser QA creates a due rule, verifies one debit and pauses it in both themes at 320px.
 - Future change scope: types.ts, recurrence.ts, storage.ts, RecurringTransactionsTab.tsx, App.tsx and corresponding translations/tests. Reuse existing signing key.
+
+## Verified recurring release 1.9.1801
+- Source 2b331b7a0d865d44c4f1e7c4894fae7082eb7ce5, Actions run 40077101722. All 29 tests, TypeScript, web build, browser QA and Android build passed.
+- Browser QA uses HTTPS to match production secure-context APIs; recurring editor uses a document-body portal above navigation. Verified create → one due posting → pause in both themes at 320px, no runtime errors; screenshots inspected.
+- Migration from schema6 snapshots first and adds only the new recurring key. Existing balances/history/settings/PIN raw values were verified unchanged during migration; backup/restore includes definitions and monthly cursors.
+- APK LTMsav_1.9.1801.apk, versionCode11801, package com.ltmsav.app. Existing fixed certificate fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7 verified with apksigner v1/v2/v3. Bundled UI version and recurring chunk verified.
+- APK SHA256 296164bbbde69b7870fd0514bfc04d8d12a05b4a9aa3e52d7b17760b265551a5; delivered privately. No physical-phone installation test.
