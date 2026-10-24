@@ -88,7 +88,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
     setIsLoading(true);
 
     try {
-      const data: AiChatResponse = await processAiMessage(text, accounts, categories, settings, {transactions, recurring, budgets});
+      const data: AiChatResponse = await processAiMessage(text, accounts, categories, settings, {transactions, recurring, budgets,completeMonths:settings?.completeMonths});
 
       let botReply = data.analysis || t('aiAnalyzed');
       if (data.answer) {

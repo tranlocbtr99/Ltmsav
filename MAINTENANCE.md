@@ -2,7 +2,7 @@
 
 ## Current implementation
 - Baseline inspected: `0493c02` / previous CI version 1.5.11; APK 1.8.2 mentioned in prior work is NOT proven to be present in this repository.
-- Source dev version: 1.9.0-dev; schema 7 (non-destructive replacement for legacy demo-ID cleanup).
+- Source dev version: 1.9.0-dev; schema 8 (additive forecast/reminder preferences; non-destructive replacement for legacy demo-ID cleanup).
 - Canonical architecture: React 19 / localStorage / Vite PWA / Capacitor 7; Express provides optional Gemini endpoint.
 - `npm run check`: TypeScript + regression tests + production web build. Capacitor sync and version generation were also checked locally; Gradle APK signing has not been run.
 - No production credentials, signing key, installed APK certificate or real-user backup was available in this checkout.
@@ -94,3 +94,13 @@ User explicitly requested a new permanent private signing key and will handle th
 - Light/dark 320px browser checks cover all forecast horizons, actual local balance/forecast answers, ledger preservation, recurring create/post-once/pause and visible chat heading/input. Stable screenshots inspected. Chat scroll stays inside message history.
 - Signed APK LTMsav_1.9.2201.apk, versionCode12201, package com.ltmsav.app. Bundled UI version 1.9.2201 verified. Signing v1/v2/v3 passed with existing fixed certificate fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7.
 - APK SHA256 e3b5885cb6292ecdb2093aac323307bf5c579fcd9caecca902a724a28f44e4b8. Delivered privately. No schema/storage-key changes, no migration/reset; no physical-phone installation or real-model API test performed.
+
+
+## Priority improvements after 1.9.2201
+- AI: refunds/gifts map to other income rather than salary; category recognition scores specific words over generic purchase words. Existing transactions are never recategorized automatically.
+- Undo: only the latest manually/AI-created transaction can be undone for 15 seconds. `undoCreatedTransaction` checks exact current record, rejects edited/recurring records and spent incoming money, and atomically reverses balances/history/audit while retaining unrelated writes. No bulk snapshot rollback.
+- Cashflow: `cashflow.ts` projects enabled schedules over 90 days per account, including overdue occurrences. Expenses precede income on the same day (conservative); excludes unscheduled spending and assumed transfers. Read-only.
+- Forecast: users mark fully recorded months in Reports (last36 months). Unconfirmed months are excluded, confirmed zero months count; at least 2 confirmed months required for variable estimate. Mean uses last6 confirmed; bounded/damped trend requires6 consecutive months; seasonal needs2 prior observations for the target calendar month. Trend/seasonal selected only after >=3 holdouts and >10% improvement in MAE against the baseline on identical targets. Historical MAE is not a future accuracy guarantee. UI/Overview/AI share this contract.
+- Schema8: optional AppSettings.completeMonths / recurringReminders only. Migration snapshots first and changes only schema marker for schema7 data. Existing raw settings, PIN, balances, ledger, schedules are unchanged. Backup/restore validates new preferences. Legacy snapshots/backups remain supported.
+- Android reminders: Settings opt-in + runtime POST_NOTIFICATIONS permission; custom NativeRemindersPlugin / ReminderReceiver / ReminderDates, registered in MainActivity. Generic notifications around9am due day use inexact AlarmManager PendingIntent; no background ledger writes. Persisted native schedule reschedules on boot/timezone/time/package replacement; per-rule delivered-month avoids bursts/duplicates. Force-stop requires reopening; OS may delay alarms. JS serializes sync and cancels paused/deleted/disabled rules. No new third-party dependency or exact-alarm permission.
+- Native build: after Capacitor generation run `node scripts/configure-reminders.mjs`; CI does this and runs `node scripts/test-reminder-dates.mjs` under JDK21 before Android build. TypeScript/regression/web tests pass locally; browser/Android/device results pending. No real phone notification delivery test yet.

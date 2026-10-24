@@ -49,6 +49,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - run: node scripts/test-reminder-dates.mjs
       - name: Select fixed-key signing or local signing
         id: key
         env:
@@ -78,6 +79,7 @@ jobs:
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.USE_BIOMETRIC" />' android/app/src/main/AndroidManifest.xml
           sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 35/;s/targetSdkVersion = [0-9]*/targetSdkVersion = 35/' android/variables.gradle
           sed -i 's/>ltmsav-android</>LTMsav</g' android/app/src/main/res/values/strings.xml
+      - run: node scripts/configure-reminders.mjs
       - name: Set automatic version
         id: version
         run: node scripts/release-version.mjs

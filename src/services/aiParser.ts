@@ -70,7 +70,7 @@ function parseNormalized(text: string, accountNames: string[], categoryNames: st
     lower.includes('lương') ||
     lower.includes('thưởng') ||
     lower.includes('thu nhập') ||
-    lower.includes('được cho'))
+    lower.includes('được cho') || /(?:hoan tien|duoc tang|qua tang)/.test(plain))
   ) {
     intent = 'create_income';
     kind = 'income';
@@ -90,7 +90,7 @@ function parseNormalized(text: string, accountNames: string[], categoryNames: st
   }
 
   // Detect Category (improved)
-  let matchedCategory = kind === 'income' ? 'Lương' : 'Ăn uống';
+  let matchedCategory = kind === 'income' ? 'Thu nhập khác' : '';
   const categoryKeywords: Record<string, string[]> = {
     'Ăn uống': ['ăn', 'uống', 'bữa', 'trưa', 'sáng', 'tối', 'cà phê', 'cafe', 'cf', 'trà sữa', 'trà', 'cơm', 'phở', 'bún', 'nhậu', 'buffet', 'bánh', 'snack', 'ăn vặt'],
     'Di chuyển': ['xăng', 'grab', 'gojek', 'be', 'taxi', 'xe', 'gửi xe', 'vé xe', 'vé', 'bảo dưỡng', 'sửa xe', 'đổ xăng'],
@@ -104,16 +104,14 @@ function parseNormalized(text: string, accountNames: string[], categoryNames: st
     'Thu nhập khác': ['bán đồ', 'tiền lãi', 'cho thuê', 'thu nhập'],
   };
 
-  for (const [cat, keywords] of Object.entries(categoryKeywords)) {
-    if (keywords.some(k => (' '+normalize(lower).replace(/[^a-z0-9]+/g,' ')+' ').includes(' '+normalize(k)+' '))) {
-      matchedCategory = cat;
-      break;
-    }
-  }
-  // if income but still defaulted oddly, try to be smarter
-  if (kind === 'income' && matchedCategory === 'Ăn uống') {
-    matchedCategory = 'Thu nhập khác';
-  }
+  const incomeCategories = new Set(['Lương','Thưởng','Thu nhập khác','Đầu tư & Sinh lời']);
+  const normalizedWords = ' '+normalize(lower).replace(/[^a-z0-9]+/g,' ')+' ';
+  const scored = Object.entries(categoryKeywords)
+    .filter(([cat]) => incomeCategories.has(cat) === (kind === 'income') && categoryNames.includes(cat))
+    .map(([cat,words]) => ({cat,score:Math.max(0,...words.filter(word=>normalizedWords.includes(' '+normalize(word)+' ')).map(word=>word==='mua'?1:10+normalize(word).length))}))
+    .filter(item=>item.score>0).sort((a,b)=>b.score-a.score);
+  if(scored.length && (!scored[1] || scored[0].score>scored[1].score)) matchedCategory=scored[0].cat;
+  if(kind==='income' && /(?:hoan tien|duoc tang|duoc cho|qua tang)/.test(plain)) matchedCategory='Thu nhập khác';
 
   // Clean description
   let description = text.replace(/^(hôm nay|vừa|đã|mới)\s+/i, '');
@@ -163,7 +161,7 @@ export async function processAiMessage(
   accounts: Account[],
   categories: Category[],
   settings?: AppSettings,
-  context?: {transactions: Transaction[]; recurring: RecurringTransaction[]; budgets: Budget[]}
+  context?: {transactions: Transaction[]; recurring: RecurringTransaction[]; budgets: Budget[]; completeMonths?: string[]}
 ): Promise<AiChatResponse> {
   const plain=message.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const reply=(answer:string): AiChatResponse=>({intent:'query_report',needs_confirmation:false,analysis:'Tính từ dữ liệu trên thiết bị, không gửi sổ giao dịch ra dịch vụ AI.',answer,commands:[]});
@@ -171,8 +169,8 @@ export async function processAiMessage(
   if(/(so du|con bao nhieu|tong tien)/.test(plain)) return reply(accounts.map(a=>a.name+': '+money(a.balance)).join('\n')+'\nTổng: '+money(accounts.reduce((s,a)=>s+a.balance,0)));
   if(context && (/(du bao|du doan)/.test(plain) || (/(thang toi|quy toi|nam toi|thang sau|quy sau|nam sau)/.test(plain) && /(bao nhieu|chi tieu|uoc tinh)/.test(plain)))) {
     const period=/quy/.test(plain)?'quarter':/nam/.test(plain)?'year':'month';
-    const f=forecastSpending(context.transactions,context.recurring,period);
-    return reply(`Dự báo ${f.projections[0].month} → ${f.projections.at(-1)!.month}: ${money(f.total)}. Trong đó lịch định kỳ: ${money(f.scheduled)}.\n${f.supported?`Trung bình ${f.months.length} tháng lịch sử; khoảng kịch bản ${money(f.low)}–${money(f.high)} (không phải khoảng tin cậy thống kê).`:'Chưa đủ 2 tháng lịch sử: chỉ tính lịch định kỳ, chưa ước tính chi khác.'} Giả định ghi sổ đầy đủ và lịch không đổi.`);
+    const f=forecastSpending(context.transactions,context.recurring,period,localDate(),context.completeMonths);
+    return reply(`Dự báo ${f.projections[0].month} → ${f.projections.at(-1)!.month}: ${money(f.total)}. Trong đó lịch định kỳ: ${money(f.scheduled)}.\n${f.supported?`Dựa trên ${f.months.length} tháng đã xác nhận ghi đủ; khoảng kịch bản ${money(f.low)}–${money(f.high)} (không phải khoảng tin cậy thống kê).`:'Chưa đủ 2 tháng xác nhận ghi đủ: chỉ tính lịch định kỳ, chưa ước tính chi khác.'} Giả định ghi sổ đầy đủ và lịch không đổi.`);
   }
   if(context && /(bao cao|phan tich|da chi.*bao nhieu|chi tieu.*bao nhieu|ngan sach)/.test(plain)) {
     if(/(thang truoc|quy|nam|hom qua)/.test(plain)) return reply('Báo cáo chat hiện hỗ trợ tháng hiện tại. Mở Báo cáo để chọn khoảng thời gian khác.');

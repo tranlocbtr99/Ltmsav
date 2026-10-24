@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseVietnameseFinancialCommand as parse } from '../src/services/aiParser';
 test('missing amount never invents a transaction',()=> {const r=parse('ăn trưa',['Tiền mặt'],['Ăn uống']);assert.equal(r.commands?.length,0);assert.ok(r.clarification_question);});
-test('amount units',()=> {for(const [text,amount] of [['ăn trưa 45k',45000],['nhận lương 2tr',2000000],['nhận 1,5 triệu',1500000]] as const)assert.equal(parse(text,['Tiền mặt'],['Ăn uống','Lương']).commands?.[0].amount,amount);});
+test('amount units',()=> {for(const [text,amount] of [['ăn trưa 45k',45000],['nhận lương 2tr',2000000],['nhận 1,5 triệu',1500000]] as const)assert.equal(parse(text,['Tiền mặt'],['Ăn uống','Lương','Thu nhập khác']).commands?.[0].amount,amount);});
 test('unknown transfer destination cannot be guessed',()=> {const r=parse('chuyển 50k từ Tiền mặt sang ngân hàng lạ',['Tiền mặt','Techcombank'],[]);assert.equal(r.commands?.length,0);assert.ok(r.clarification_question);});
 test('transfer source follows sentence rather than account list order',()=>{const r=parse('chuyển 50k từ Techcombank sang Tiền mặt',['Tiền mặt','Techcombank'],[]);assert.equal(r.commands?.[0].account,'Techcombank');assert.equal(r.commands?.[0].account_to,'Tiền mặt');});
 test('ambiguous account, multiple amounts, negation and recurring ask rather than write',()=>{
@@ -22,4 +22,12 @@ test('grouped amounts and decimal units are not dates',()=>{
 test('compact million shorthand and year boundary relative date',()=>{
  assert.equal(parse('ăn trưa 2tr5',['Tiền mặt'],['Ăn uống']).commands?.[0].amount,2500000);
  assert.equal(parse('ăn trưa 45k hôm qua',['Tiền mặt'],['Ăn uống'],new Date(2027,0,1)).commands?.[0].date,'2026-12-31');
+});
+
+test('refunds are other income and specific expense words beat generic purchase',()=>{
+ const categories=['Ăn uống','Mua sắm','Sức khỏe','Lương','Thu nhập khác'];
+ assert.equal(parse('Nhận hoàn tiền 200k tiền mặt',['Tiền mặt'],categories).commands?.[0].category,'Thu nhập khác');
+ assert.equal(parse('Mua thuốc 50k tiền mặt',['Tiền mặt'],categories).commands?.[0].category,'Sức khỏe');
+ assert.equal(parse('Nhận quà tặng 300k tiền mặt',['Tiền mặt'],categories).commands?.[0].category,'Thu nhập khác');
+ assert.equal(parse('Nhận lương 10tr tiền mặt',['Tiền mặt'],categories).commands?.[0].category,'Lương');
 });

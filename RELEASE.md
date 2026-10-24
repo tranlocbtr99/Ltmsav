@@ -21,3 +21,7 @@ CI sets both UI and Android versions from the same script: `versionCode = 10000 
 Before distributing the first fixed build, compare old/new APK signing SHA-256 and applicationId, install over the previous APK on a test phone, and compare all account balances, transactions, debts, budgets, settings and PIN. Export a JSON backup first. Do not promise continuity solely from CI success.
 
 The root `android/` native prototype and zipped historical sources are retained for reference only. Do not package them as the updated application.
+
+
+## Reminder integration (schema8+)
+After generating the canonical mobile/android project and copying custom_android/*.java, run `node scripts/configure-reminders.mjs` before sync/build. This adds notification/boot permissions and the receiver declaration. MainActivity registers both native plugins. Run `node scripts/test-reminder-dates.mjs` with JDK21 for calendar regression checks. Phone tests must additionally verify permission denial/grant, notification delivery with app closed, pause/delete cancellation, reboot/timezone behavior and same-key upgrade data preservation; compilation is not a device delivery test.

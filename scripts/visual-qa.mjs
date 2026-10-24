@@ -46,10 +46,17 @@ for(const theme of ['light','dark']) {
  await page.getByRole('heading',{name:'Dự Báo Chi Tiêu',exact:true}).waitFor();
  for(const period of ['Tháng tiếp theo','Quý tiếp theo','Năm tiếp theo']) {
   await page.getByRole('button',{name:period,exact:true}).click();
-  assert.ok(await page.getByText('Chưa đủ 2 tháng lịch sử.',{exact:false}).count());
+  assert.ok(await page.getByText('Chưa đủ 2 tháng xác nhận ghi đủ.',{exact:false}).count());
   await page.setViewportSize({width:320,height:740});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Forecast overflow');
  }
+ await page.locator('summary').filter({hasText:'Xác nhận tháng đã ghi sổ đầy đủ'}).click();
+ const completeBoxes=page.getByRole('checkbox',{name:/Đã ghi đủ tháng/});
+ await completeBoxes.nth(0).check();await completeBoxes.nth(1).check();
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_settings_v1')).completeMonths.length),2);
+ assert.ok(await page.getByText(/Mô hình: trung bình/).count());
+ await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-forecast-confirmed.png`});
+ await completeBoxes.nth(0).uncheck();await completeBoxes.nth(1).uncheck();
  await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-forecast-year.png`});
  await page.locator('.ios-tab').first().click();
  await page.locator('main').getByRole('button',{name:'LTMsav AI',exact:true}).click();
@@ -57,7 +64,7 @@ for(const theme of ['light','dark']) {
  await input.fill('Số dư còn bao nhiêu?');await input.press('Enter');
  await page.getByText(/Tổng: 16.930.000/).waitFor();
  await input.fill('Dự báo chi tiêu quý tiếp theo');await input.press('Enter');
- await page.getByText(/Chưa đủ 2 tháng lịch sử: chỉ tính lịch định kỳ/).waitFor();
+ await page.getByText(/Chưa đủ 2 tháng xác nhận ghi đủ: chỉ tính lịch định kỳ/).waitFor();
  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]),before,'AI queries modified ledger');
  await page.waitForTimeout(800);
  const chatHeading=await page.locator('main h2').first().boundingBox();
@@ -70,6 +77,13 @@ for(const theme of ['light','dark']) {
  await page.setViewportSize({width:320,height:740});await page.reload();await page.locator('.ios-dock').waitFor();await page.waitForTimeout(1200);
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${theme}: 320px overflow`);
  await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-320-overview.png`});
+ await page.locator('.ios-tab').first().click();
+ await page.locator('main').getByRole('button',{name:'LTMsav AI',exact:true}).click();
+ const undoInput=page.locator('input[placeholder]');
+ await undoInput.fill('Ăn trưa 50k tiền mặt');await undoInput.press('Enter');
+ await page.getByRole('button',{name:/Xác Nhận.*Ghi Sổ/i}).first().click();
+ await page.getByRole('button',{name:/Hoàn tác giao dịch vừa ghi/}).click();
+ assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]),before,'Undo must restore exact ledger');
  await page.locator('.ios-tab').nth(1).click();
  await page.getByRole('button',{name:'Định kỳ',exact:true}).click();await page.waitForTimeout(800);
  await page.getByRole('button',{name:'Thêm lịch định kỳ',exact:true}).first().click();

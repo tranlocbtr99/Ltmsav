@@ -70,6 +70,8 @@ export interface AuditLog {
 }
 
 export interface AppSettings {
+  completeMonths?: string[];
+  recurringReminders?: boolean;
   currency: string;
   allowNegativeBalance: boolean;
   autoConfirmAi: boolean;

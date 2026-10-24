@@ -7,6 +7,8 @@ import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface ReportsTabProps {
+  completeMonths: string[];
+  onCompleteMonthsChange:(months:string[])=>void;
   transactions: Transaction[];
   categories: Category[];
   accounts: Account[];
@@ -15,6 +17,7 @@ interface ReportsTabProps {
 
 export const ReportsTab: React.FC<ReportsTabProps> = ({
   transactions,
+  completeMonths,onCompleteMonthsChange,
   categories,
   accounts,
   recurring = [],
@@ -23,7 +26,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   const [period, setPeriod] = useState<'thisMonth' | 'last30Days' | 'all'>('thisMonth');
 
   const [forecastPeriod, setForecastPeriod] = useState<ForecastPeriod>('month');
-  const forecast = forecastSpending(transactions, recurring, forecastPeriod);
+  const forecast = forecastSpending(transactions, recurring, forecastPeriod,localDate(),completeMonths);
 
   // Filter transactions by period
   const filteredTxs = useMemo(() => {
@@ -113,6 +116,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
         <div className="flex flex-wrap gap-2">
           {(['month','quarter','year'] as const).map(p => <button key={p} aria-pressed={forecastPeriod===p} onClick={()=>setForecastPeriod(p)} className={`rounded-full px-3 py-2 text-xs ${forecastPeriod===p?'bg-blue-600 text-white':'bg-slate-100 dark:bg-slate-800'}`}>{t('forecast'+p)}</button>)}
         </div>
+        <details className="text-xs space-y-2"><summary className="cursor-pointer font-semibold py-2">{t('completeMonthsTitle')}</summary><p className="text-slate-500 dark:text-slate-400">{t('completeMonthsNote')}</p><div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto py-2">{Array.from({length:36},(_,i)=>{const now=new Date(),d=new Date(now.getFullYear(),now.getMonth()-i-1,1),key=localDate(d).slice(0,7);return <label key={key} className="flex items-center gap-1 p-2 rounded-lg bg-slate-100 dark:bg-slate-800"><input type="checkbox" aria-label={t('completeMonthLabel',{month:key})} checked={completeMonths.includes(key)} onChange={e=>onCompleteMonthsChange(e.target.checked?[...completeMonths,key]:completeMonths.filter(m=>m!==key))}/>{key}</label>;})}</div></details>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t('forecastModel'+forecast.model)}</p>
+        {forecast.mae!==null&&<p className="text-xs text-slate-500 dark:text-slate-400">{t('forecastBacktest',{count:forecast.backtestCount,amount:Math.round(forecast.mae).toLocaleString('vi-VN')})}</p>}
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t('forecastMissing',{count:forecast.unconfirmedCount})}</p>
         <p className="text-xs text-slate-500 dark:text-slate-400">{forecast.projections[0].month} → {forecast.projections.at(-1)!.month}</p>
         <p className="text-2xl font-bold break-words">{forecast.total.toLocaleString('vi-VN')}₫</p>
         <p className="text-xs">{t('forecastRange')}: {forecast.low.toLocaleString('vi-VN')}–{forecast.high.toLocaleString('vi-VN')}₫</p>

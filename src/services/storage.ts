@@ -3,7 +3,7 @@ import { monthlyDate, followingMonth, nextOnOrAfter } from './recurrence';
 import release from '../release.json';
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings, RecurringTransaction, RecurringInput } from '../types';
 
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 const STORAGE_KEYS = {
   SCHEMA_VERSION: 'ltmsav_schema_version',
@@ -408,6 +408,17 @@ class StorageManager {
     return true;
   }
 
+  /** Undo only the exact newly-created record; never overwrite intervening edits. */
+  undoCreatedTransaction(expected: Transaction): boolean {
+    const current = this.getTransactions().find(tx => tx.id === expected.id);
+    if (!current || JSON.stringify(current) !== JSON.stringify(expected) || current.recurringRuleId) throw new Error('UNDO_CHANGED');
+    const before=this.getAccounts();
+    const after=this.applyBalanceChange(before,current,-1);
+    if(!this.getSettings().allowNegativeBalance && after.some(a=>a.balance<0 && a.balance<(before.find(b=>b.id===a.id)?.balance??0))) throw new Error('UNDO_SPENT');
+    this.atomicWrite(()=>{this.saveAccounts(after);this.saveTransactions(this.getTransactions().filter(tx=>tx.id!==current.id));this.addAuditLog('DELETE','TRANSACTION',current.id,`Hoàn tác giao dịch: ${current.description}`);});
+    return true;
+  }
+
   // --- Monthly recurrence: definition, posting and cursor commit together ---
   getRecurringTransactions(): RecurringTransaction[] {
     return this.get<RecurringTransaction[]>(STORAGE_KEYS.RECURRING, []);
@@ -638,6 +649,8 @@ class StorageManager {
       if (d.categories?.some((c: any) => typeof c.name !== 'string' || !['income','expense'].includes(c.type))) throw new Error('Danh mục không hợp lệ.');
       if (d.settings !== undefined && (!d.settings || typeof d.settings !== 'object' || Array.isArray(d.settings))) throw new Error('Cài đặt không hợp lệ.');
       if (d.settings && (['securityEnabled', 'biometricEnabled', 'allowNegativeBalance', 'autoConfirmAi'].some(key => d.settings[key] !== undefined && typeof d.settings[key] !== 'boolean') || (d.settings.pinCode !== undefined && (typeof d.settings.pinCode !== 'string' || !/^(|\d{4,6})$/.test(d.settings.pinCode))) || (d.settings.securityEnabled && !/^\d{4,6}$/.test(d.settings.pinCode)))) throw new Error('Thiết lập PIN hoặc bảo mật không hợp lệ.');
+      if(d.settings?.completeMonths !== undefined && (!Array.isArray(d.settings.completeMonths) || d.settings.completeMonths.some((m:any)=>typeof m!=='string'||!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) || new Set(d.settings.completeMonths).size!==d.settings.completeMonths.length)) throw new Error('Danh sách tháng ghi sổ không hợp lệ.');
+      if(d.settings?.recurringReminders !== undefined && typeof d.settings.recurringReminders!=='boolean') throw new Error('Cài đặt nhắc lịch không hợp lệ.');
       this.createAutomaticSnapshot('Sao lưu tự động trước khi khôi phục tệp JSON');
       this.atomicWrite(() => {
       this.saveAccounts(parsed.data.accounts);

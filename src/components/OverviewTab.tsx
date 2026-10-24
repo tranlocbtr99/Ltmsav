@@ -1,3 +1,4 @@
+import { scheduledCashflow } from '../services/cashflow';
 import { forecastSpending } from '../services/forecast';
 import { localDate } from '../services/date';
 import React, { useMemo, useState } from 'react';
@@ -11,6 +12,7 @@ import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface OverviewTabProps {
+  completeMonths?: string[];
   recurring: RecurringTransaction[];
   accounts: Account[];
   transactions: Transaction[];
@@ -26,6 +28,7 @@ interface OverviewTabProps {
 export const OverviewTab: React.FC<OverviewTabProps> = ({
   accounts,
   recurring,
+  completeMonths,
   transactions,
   categories,
   budgets,
@@ -153,12 +156,12 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   }, [transactions, categories, chartPeriod, t]);
 
   const forecast = useMemo(() => {
-    const f=forecastSpending(transactions, recurring, 'month');
+    const f=forecastSpending(transactions, recurring, 'month',localDate(),completeMonths);
     const now=new Date();
     const lastKey=monthKey(new Date(now.getFullYear(),now.getMonth()-1,1));
     const last=transactions.filter(tx=>tx.type==='expense'&&tx.date.startsWith(lastKey)).reduce((s,tx)=>s+tx.amount,0);
     return {predicted:f.total,lastMonth:last,delta:f.total-last,trendPct:last?(f.total-last)/last*100:0,hasData:f.supported||f.scheduled>0,supported:f.supported,months:f.months.length};
-  }, [transactions, recurring]);
+  }, [transactions, recurring, completeMonths]);
 
   const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
     const toRad = (deg: number) => ((deg - 90) * Math.PI) / 180;
@@ -349,6 +352,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       </div>
 
       <button type="button" onClick={() => onNavigateTab('reports')} className="glass-panel w-full rounded-2xl p-4 flex items-center justify-between gap-2 text-sm font-semibold text-blue-700 dark:text-blue-300"><span>{t('reports')} · {t('forecastTitle')}</span><ChevronRight size={18} /></button>
+      <section className="glass-panel rounded-3xl p-4 space-y-2">
+        <h2 className="text-sm font-bold">{t('cashflowTitle')}</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t('cashflowNote')}</p>
+        {scheduledCashflow(accounts,recurring).map(item=><div key={item.accountId} className="text-xs p-2 rounded-xl bg-slate-100 dark:bg-slate-800"><span className="font-semibold">{item.name}</span><p>{t('cashflowEnding')}: {item.endingBalance.toLocaleString('vi-VN')}₫</p>{item.shortfallDate&&<p className="text-rose-700 dark:text-rose-300">{t('cashflowShortfall',{date:item.shortfallDate,amount:Math.abs(item.minimumBalance).toLocaleString('vi-VN')})}</p>}</div>)}
+      </section>
       {/* Next-month expense forecast */}
       {forecast.hasData && (
         <div className="rounded-3xl p-5 border border-indigo-200 dark:border-indigo-500/30 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/20 space-y-3">

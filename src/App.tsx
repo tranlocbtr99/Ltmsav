@@ -1,6 +1,7 @@
+import { reminderService } from './services/reminders';
 import { downloadText } from './services/csv';
 import { localDate } from './services/date';
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { storage } from './services/storage';
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings, RecurringTransaction, RecurringInput } from './types';
 import { TopHeader, BottomNavBar } from './components/Navigation';
@@ -46,11 +47,15 @@ export const App: React.FC = () => {
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedTxForEdit, setSelectedTxForEdit] = useState<Transaction | null>(null);
+  const [undoTransaction,setUndoTransaction] = useState<Transaction|null>(null);
+  const toastTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+  const undoTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
+    if(toastTimer.current) clearTimeout(toastTimer.current);
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    toastTimer.current=setTimeout(() => setToastMessage(null), 4000);
   };
 
   useEffect(() => {
@@ -66,6 +71,13 @@ export const App: React.FC = () => {
     document.addEventListener('visibilitychange', lockOnBackground);
     return () => document.removeEventListener('visibilitychange', lockOnBackground);
   }, []);
+
+  useEffect(()=>()=>{if(toastTimer.current)clearTimeout(toastTimer.current);if(undoTimer.current)clearTimeout(undoTimer.current);},[]);
+  useEffect(()=>{if(isLocked)setUndoTransaction(null);},[isLocked]);
+  useEffect(()=>{
+    if(isLocked||showSplash) return;
+    void reminderService.sync(recurring,!!settings.recurringReminders,t('reminderNotificationTitle'),t('reminderNotificationBody')).catch(()=>showToast(t('reminderSyncFailed')));
+  },[recurring,settings.recurringReminders,isLocked,showSplash,t]);
 
   // Sync theme with document element
   useEffect(() => {
@@ -139,7 +151,16 @@ export const App: React.FC = () => {
   const handleAddTransaction = (txData: Omit<Transaction, 'id' | 'createdAt'>) => {
     const created = storage.addTransaction(txData);
     reloadData();
+    setUndoTransaction(created);
+    if(undoTimer.current)clearTimeout(undoTimer.current);
+    undoTimer.current=setTimeout(()=>setUndoTransaction(null),15000);
     showToast(`${t('toastTxAdded')}: ${created.description}`);
+  };
+
+  const handleUndoCreated = () => {
+    if(!undoTransaction)return;
+    try {storage.undoCreatedTransaction(undoTransaction);reloadData();setUndoTransaction(null);showToast(t('undoSuccess'));}
+    catch(error){setUndoTransaction(null);const code=(error as Error).message;showToast(code==='UNDO_CHANGED'?t('undoChanged'):code==='UNDO_SPENT'?t('undoSpent'):code);}
   };
 
   const handleEditTransaction = (id: string, updated: Partial<Transaction>) => {
@@ -209,6 +230,7 @@ export const App: React.FC = () => {
   };
 
   const handleImportBackup = (json: string) => {
+    setUndoTransaction(null);
     const res = storage.importBackup(json);
     if (res.success) {
       reloadData();
@@ -218,6 +240,7 @@ export const App: React.FC = () => {
   };
 
   const handleResetData = () => {
+    setUndoTransaction(null);
     storage.resetToDefault();
     reloadData();
     showToast(t('toastDataRestored'));
@@ -261,6 +284,7 @@ export const App: React.FC = () => {
         <Suspense fallback={<div role="status" className="p-6 text-center animate-pulse">LTMsav…</div>}><div key={currentTab} className="animate-fade-in">
           {currentTab === 'overview' && (
             <OverviewTab
+              completeMonths={settings.completeMonths}
               recurring={recurring}
               accounts={accounts}
               transactions={transactions}
@@ -327,6 +351,8 @@ export const App: React.FC = () => {
 
           {currentTab === 'reports' && (
             <ReportsTab
+              completeMonths={settings.completeMonths || []}
+              onCompleteMonthsChange={months=>{const s={...settings,completeMonths:months};storage.saveSettings(s);setSettings(s);}}
               recurring={recurring}
               transactions={transactions}
               categories={categories}
@@ -380,6 +406,7 @@ export const App: React.FC = () => {
         onDelete={handleDeleteTransaction}
       />
 
+      {undoTransaction && <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+140px)] left-3 right-3 z-[89] flex justify-center"><button onClick={handleUndoCreated} className="rounded-2xl px-4 py-3 shadow-lg bg-blue-600 text-white text-sm font-semibold">{t('undoCreated')} · {undoTransaction.amount.toLocaleString('vi-VN')}₫</button></div>}
       {/* Notification Toast — appears in the current view, just above the bottom nav */}
       {toastMessage && (
         <div role="status" aria-live="polite" className="fixed bottom-0 left-0 right-0 z-[90] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] pointer-events-none flex justify-center animate-fade-in-up">

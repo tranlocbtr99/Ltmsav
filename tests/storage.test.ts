@@ -49,7 +49,7 @@ test('v2 migration preserves user-owned demo IDs, PIN, budgets and debts', () =>
  assert.equal(storage.getAccounts()[0].balance,123456);
  assert.equal(storage.getSettings().pinCode,'1234');
  assert.equal(storage.getSettings().securityEnabled,true);
- assert.equal(data.get('ltmsav_schema_version'),'7');
+ assert.equal(data.get('ltmsav_schema_version'),'8');
  assert.equal(storage.getAutoSnapshots()[0].data.accounts[0].balance,123456);
 });
 test('migration stops when safety snapshot cannot be saved', () => {
@@ -65,3 +65,33 @@ test('recover interrupted write restores original raw data', () => {
 });
 test('account with history cannot be removed',()=>{ storage.addTransaction(tx); assert.throws(()=>storage.deleteAccount('a')); assert.equal(storage.getAccounts().length,2); });
 test('many AI commands receive distinct IDs',()=>{ const ids=new Set(Array.from({length:20},()=>storage.addTransaction({...tx,type:'income',amount:1}).id));assert.equal(ids.size,20); });
+test('undo new transfers and income preserves subsequent unrelated work and is single-use',()=>{
+ const created=storage.addTransaction(tx);
+ const unrelated=storage.addTransaction({type:'income',amount:10,accountId:'a',categoryId:'cat_salary',date:'2026-10-24',description:'income'});
+ assert.equal(storage.undoCreatedTransaction(created),true);
+ assert.deepEqual(storage.getAccounts().map(a=>a.balance),[110,0]);
+ assert.equal(storage.getTransactions()[0].id,unrelated.id);
+ assert.throws(()=>storage.undoCreatedTransaction(created));
+});
+test('undo refuses edited records and spent income; write failures roll back everything',()=>{
+ const created=storage.addTransaction(tx);storage.editTransaction(created.id,{amount:20});
+ assert.throws(()=>storage.undoCreatedTransaction(created));
+ const income=storage.addTransaction({type:'income',amount:50,accountId:'b',categoryId:'cat_salary',date:'2026-10-24',description:'income'});
+ storage.addTransaction({type:'expense',amount:60,accountId:'b',categoryId:'cat_food',date:'2026-10-24',description:'spent'});
+ assert.throws(()=>storage.undoCreatedTransaction(income));
+ const expense=storage.addTransaction({type:'expense',amount:10,accountId:'a',categoryId:'cat_food',date:'2026-10-24',description:'food'});
+ const before=storage.exportBackup();failKey='ltmsav_audit_logs_v1';assert.throws(()=>storage.undoCreatedTransaction(expense));assert.deepEqual(JSON.parse(storage.exportBackup()).data,JSON.parse(before).data);
+});
+test('schema7 to8 snapshots before migration and preserves all old raw data and PIN',()=>{
+ data.set('ltmsav_schema_version','7');storage.saveSettings({...storage.getSettings(),pinCode:'5678',securityEnabled:true});
+ const keys=['ltmsav_accounts_v1','ltmsav_transactions_v1','ltmsav_settings_v1','ltmsav_debts_v1','ltmsav_budgets_v1','ltmsav_recurring_v1'];
+ const before=keys.map(k=>data.get(k));(storage as any).runDataMigration();assert.equal(data.get('ltmsav_schema_version'),'8');assert.deepEqual(keys.map(k=>data.get(k)),before);
+ assert.equal(storage.getAutoSnapshots()[0].data.settings.pinCode,'5678');
+});
+test('new preferences round-trip backup and reject malformed values before mutation',()=>{
+ storage.saveSettings({...storage.getSettings(),completeMonths:['2026-08','2026-09'],recurringReminders:true});
+ const backup=storage.exportBackup();assert.equal(storage.importBackup(backup).success,true);assert.deepEqual(storage.getSettings().completeMonths,['2026-08','2026-09']);
+ for(const patch of [{completeMonths:['2026-99']},{completeMonths:['2026-08','2026-08']},{recurringReminders:'true'}]){
+  const b=JSON.parse(backup);Object.assign(b.data.settings,patch);const before=storage.exportBackup();assert.equal(storage.importBackup(JSON.stringify(b)).success,false);assert.deepEqual(JSON.parse(storage.exportBackup()).data,JSON.parse(before).data);
+ }
+});

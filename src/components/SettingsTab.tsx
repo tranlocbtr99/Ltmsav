@@ -1,10 +1,11 @@
+import { reminderService } from '../services/reminders';
 import { transactionsCsv, downloadText } from '../services/csv';
 import { localDate } from '../services/date';
 import React, { useState, useRef, useEffect } from 'react';
 import { AppSettings, AuditLog } from '../types';
-import { 
-  Lock, Fingerprint, KeyRound, HardDrive, RotateCcw, Shield, Check, 
-  AlertCircle, History, FileDown, FileUp, Mail, User, 
+import {
+  Lock, Fingerprint, KeyRound, HardDrive, RotateCcw, Shield, Check,
+  AlertCircle, History, FileDown, FileUp, Mail, User,
   Sun, Moon, Monitor, Database, ShieldCheck, RefreshCw, Sparkles, Globe,
   Heart, Copy, X
 } from 'lucide-react';
@@ -35,6 +36,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   onLockAppNow,
 }) => {
   const { language, setLanguage, t } = useLanguage();
+  const [reminderMessage,setReminderMessage]=useState<string|null>(null);
+  const [reminderBusy,setReminderBusy]=useState(false);
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [importMessage, setImportMessage] = useState<{ text: string; isError: boolean } | null>(null);
@@ -124,7 +127,22 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
   return (
     <div className="space-y-4 pb-12">
-      
+      <section className="glass-panel p-5 rounded-3xl space-y-3">
+        <h2 className="font-bold">{t('remindersTitle')}</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{t('remindersNote')}</p>
+        <button type="button" disabled={!reminderService.available()||reminderBusy} aria-pressed={!!settings.recurringReminders} onClick={async()=>{
+          if(reminderBusy)return;setReminderBusy(true);setReminderMessage(null);
+          try {
+            if(!settings.recurringReminders && !await reminderService.enable()){setReminderMessage(t('reminderDenied'));return;}
+            onUpdateSettings({...settings,recurringReminders:!settings.recurringReminders});
+          }catch{setReminderMessage(t('reminderSyncFailed'));}finally{setReminderBusy(false);}
+        }} className="px-4 py-3 rounded-2xl bg-blue-600 text-white text-sm disabled:opacity-50">{t(settings.recurringReminders?'disableReminders':'enableReminders')}</button>
+        {!reminderService.available()&&<p className="text-xs text-slate-500 dark:text-slate-400">{t('remindersAndroidOnly')}</p>}
+
+        {reminderMessage&&<p role="alert" className="text-xs text-rose-700 dark:text-rose-300">{reminderMessage}</p>}
+</section>
+
+
       {/* 1. Theme Configuration (Giao diện Sáng / Tối) */}
       <div className="glass-card p-5 rounded-3xl border space-y-3.5">
         <div className="flex items-center gap-2.5">
