@@ -1,3 +1,4 @@
+import { localDate } from '../services/date';
 import React, { useState, useRef, useEffect } from 'react';
 import { Account, Category, Transaction, AiChatResponse, AiParsedCommand, AppSettings } from '../types';
 import { processAiMessage } from '../services/aiParser';
@@ -23,6 +24,7 @@ interface ChatMessage {
   timestamp: string;
   response?: AiChatResponse;
   executed?: boolean;
+  executedCommands?: number[];
 }
 
 export const AiChatTab: React.FC<AiChatTabProps> = ({
@@ -53,6 +55,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const executedCommandsRef = useRef(new Set<string>());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -114,10 +117,12 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
     }
   };
 
-  const handleExecuteCommand = (messageId: string, cmd: AiParsedCommand) => {
+  const handleExecuteCommand = (messageId: string, cmd: AiParsedCommand, commandIndex: number) => {
+    const executionKey = `${messageId}:${commandIndex}`;
+    if (executedCommandsRef.current.has(executionKey)) return;
     const matchedAccount = accounts.find(
       a => a.name.toLowerCase() === cmd.account.toLowerCase()
-    ) || accounts[0];
+    );
 
     let matchedTargetAccount = undefined;
     if (cmd.account_to) {
@@ -130,19 +135,25 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
       c => c.name.toLowerCase() === cmd.category.toLowerCase()
     ) || categories[0];
 
+    if (!matchedAccount || (cmd.kind === 'transfer' && (!matchedTargetAccount || matchedTargetAccount === matchedAccount.id))) throw new Error('Hãy chỉ rõ tài khoản nguồn và đích hợp lệ trước khi xác nhận.');
     onAddTransaction({
       type: cmd.kind,
       amount: cmd.amount,
-      accountId: matchedAccount?.id || accounts[0].id,
+      accountId: matchedAccount.id,
       targetAccountId: matchedTargetAccount,
-      categoryId: matchedCategory?.id || categories[0].id,
-      date: cmd.date || new Date().toISOString().split('T')[0],
+      categoryId: matchedCategory?.id || '',
+      date: cmd.date || localDate(),
       description: cmd.description || t('aiTransaction'),
       note: cmd.note || undefined,
       person: cmd.person || undefined,
     });
 
-    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, executed: true } : m));
+    executedCommandsRef.current.add(executionKey);
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const executedCommands = [...(m.executedCommands || []), commandIndex];
+      return { ...m, executedCommands, executed: executedCommands.length === m.response?.commands?.length };
+    }));
 
     try {
       confetti({
@@ -274,10 +285,10 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
                         </div>
                       </div>
 
-                      {!msg.executed && (
+                      {!msg.executedCommands?.includes(idx) && (
                         <div className="pt-2 flex items-center justify-end gap-2">
                           <button
-                            onClick={() => handleExecuteCommand(msg.id, cmd)}
+                            onClick={() => handleExecuteCommand(msg.id, cmd, idx)}
                             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-[11px] sm:text-xs shadow-md shadow-emerald-950 transition active:scale-95 whitespace-nowrap"
                           >
                             <Check className="w-3.5 h-3.5 shrink-0" />

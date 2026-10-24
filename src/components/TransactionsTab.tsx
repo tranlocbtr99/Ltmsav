@@ -1,3 +1,4 @@
+import { localDate } from '../services/date';
 import React, { useState, useMemo } from 'react';
 import { Transaction, Account, Category, TransactionType } from '../types';
 import { 
@@ -69,7 +70,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   }, [filteredTransactions]);
 
   const formatDateLabel = (dateStr: string) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDate();
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
     if (dateStr === today) return t('today');

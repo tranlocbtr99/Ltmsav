@@ -76,7 +76,8 @@ def main():
     os.makedirs(ASSETS, exist_ok=True)
     ext = os.path.splitext(src)[1].lower() or ".png"
     master = os.path.join(ASSETS, f"logo-source{ext}")
-    shutil.copy2(src, master)
+    if os.path.realpath(src) != os.path.realpath(master):
+        shutil.copy2(src, master)
     print(f"Master logo saved verbatim -> {os.path.relpath(master, ROOT)}")
 
     im = load_source(master)

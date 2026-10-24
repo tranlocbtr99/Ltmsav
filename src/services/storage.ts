@@ -1,6 +1,7 @@
+import release from '../release.json';
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from '../types';
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 const STORAGE_KEYS = {
   SCHEMA_VERSION: 'ltmsav_schema_version',
@@ -55,6 +56,7 @@ function getInitialTransactions(): Transaction[] {
 
 class StorageManager {
   constructor() {
+    this.recoverPendingWrite();
     this.runDataMigration();
     this.requestPersistentStorage();
   }
@@ -103,55 +105,12 @@ class StorageManager {
           }
         }
 
-        // v3: Clear demo seed data — only remove keys that still hold demo values
-        if (storedVersion < 3) {
-          const demoAccountIds = ['acc_cash', 'acc_vcb', 'acc_momo', 'acc_tcb', 'acc_saving'];
-          const demoTxIds = ['tx_1','tx_2','tx_3','tx_4','tx_5','tx_6','tx_7','tx_8'];
-          const demoDebtIds = ['loan_1','debt_1'];
-          const demoBudgetIds = ['b_1','b_2','b_3','b_4'];
-
-          try {
-            const rawAccounts = localStorage.getItem(STORAGE_KEYS.ACCOUNTS);
-            if (rawAccounts) {
-              const accounts: any[] = JSON.parse(rawAccounts);
-              const userAccounts = accounts.filter((a: any) => !demoAccountIds.includes(a.id));
-              localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(userAccounts));
-            }
-            const rawTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-            if (rawTx) {
-              const txs: any[] = JSON.parse(rawTx);
-              const userTxs = txs.filter((t: any) => !demoTxIds.includes(t.id));
-              localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(userTxs));
-            }
-            const rawDebts = localStorage.getItem(STORAGE_KEYS.DEBTS);
-            if (rawDebts) {
-              const debts: any[] = JSON.parse(rawDebts);
-              const userDebts = debts.filter((d: any) => !demoDebtIds.includes(d.id));
-              localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(userDebts));
-            }
-            const rawBudgets = localStorage.getItem(STORAGE_KEYS.BUDGETS);
-            if (rawBudgets) {
-              const budgets: any[] = JSON.parse(rawBudgets);
-              const userBudgets = budgets.filter((b: any) => !demoBudgetIds.includes(b.id));
-              localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(userBudgets));
-            }
-            // Clear demo PIN — reset to empty (user must set their own PIN)
-            const rawSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-            if (rawSettings) {
-              const s = JSON.parse(rawSettings);
-              if (s.pinCode === '1234') {
-                s.pinCode = '';
-                s.securityEnabled = false;
-                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(s));
-              }
-            }
-          } catch (_) {}
-        }
+        // Preserve all historical IDs and PINs. Demo IDs may contain real user data.
 
         localStorage.setItem(STORAGE_KEYS.SCHEMA_VERSION, SCHEMA_VERSION.toString());
       }
     } catch (e) {
-      console.warn('Migration check error:', e);
+      console.warn('Migration paused; existing data preserved:', e);
     }
   }
 
@@ -187,6 +146,7 @@ class StorageManager {
           budgets: this.getBudgets(),
           debts: this.getDebtsAndLoans(),
           settings: this.getSettings(),
+          auditLogs: this.getAuditLogs(),
         }
       };
       snapshots.unshift(currentData);
@@ -194,7 +154,7 @@ class StorageManager {
       if (snapshots.length > 5) snapshots.pop();
       localStorage.setItem(STORAGE_KEYS.SNAPSHOTS, JSON.stringify(snapshots));
     } catch (e) {
-      console.warn('Auto snapshot failed:', e);
+      throw new Error('Không thể tạo bản sao an toàn. Thao tác đã dừng để bảo vệ dữ liệu.');
     }
   }
 
@@ -213,7 +173,7 @@ class StorageManager {
       if (data) return JSON.parse(data);
       const legacyKey = key.replace('ltmsav_', 'finflow_');
       const legacyData = localStorage.getItem(legacyKey);
-      return legacyData ? JSON.parse(legacyData) : defaultValue;
+      return legacyData ? JSON.parse(legacyData) : structuredClone(defaultValue);
     } catch (e) {
       console.warn(`Error reading ${key} from localStorage:`, e);
       return defaultValue;
@@ -224,8 +184,41 @@ class StorageManager {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
-      console.error(`Error saving ${key} to localStorage:`, e);
+      throw new Error('Không thể lưu dữ liệu. Bộ nhớ có thể đã đầy; hãy xuất bản sao lưu.');
     }
+  }
+
+  private recoverPendingWrite(): void {
+    const raw = localStorage.getItem('ltmsav_pending_write');
+    if (!raw) return;
+    const previous = JSON.parse(raw) as Record<string, string | null>;
+    for (const [key, value] of Object.entries(previous)) {
+      if (!Object.values(STORAGE_KEYS).includes(key)) throw new Error('Nhật ký dữ liệu không hợp lệ.');
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+    }
+    localStorage.removeItem('ltmsav_pending_write');
+  }
+
+  private atomicWrite(action: () => void): void {
+    this.recoverPendingWrite();
+    const previous = Object.fromEntries(Object.values(STORAGE_KEYS).filter(key => key !== STORAGE_KEYS.SNAPSHOTS).map(key => [key, localStorage.getItem(key)]));
+    localStorage.setItem('ltmsav_pending_write', JSON.stringify(previous));
+    try {
+      action();
+      localStorage.removeItem('ltmsav_pending_write');
+    } catch (error) {
+      this.recoverPendingWrite();
+      throw error;
+    }
+  }
+
+  private validateTransaction(tx: Transaction, accounts: Account[]): void {
+    if (!['income', 'expense', 'transfer', 'lend', 'debt_repay'].includes(tx.type)) throw new Error('Loại giao dịch không hợp lệ.');
+    if (!Number.isSafeInteger(tx.amount) || tx.amount <= 0) throw new Error('Số tiền phải là số nguyên dương hợp lệ.');
+    if (!accounts.some(a => a.id === tx.accountId)) throw new Error('Hãy chọn tài khoản nguồn hợp lệ.');
+    if (tx.type === 'transfer' && (tx.accountId === tx.targetAccountId || !accounts.some(a => a.id === tx.targetAccountId))) throw new Error('Hãy chọn tài khoản đích khác tài khoản nguồn.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(tx.date) || Number.isNaN(Date.parse(tx.date)) || new Date(tx.date).toISOString().slice(0, 10) !== tx.date) throw new Error('Ngày giao dịch không hợp lệ.');
   }
 
   // --- Accounts ---
@@ -241,7 +234,7 @@ class StorageManager {
     const accounts = this.getAccounts();
     const newAccount: Account = {
       ...account,
-      id: 'acc_' + Date.now(),
+      id: 'acc_' + crypto.randomUUID(),
     };
     accounts.push(newAccount);
     this.saveAccounts(accounts);
@@ -263,6 +256,7 @@ class StorageManager {
     const accounts = this.getAccounts();
     const account = accounts.find(a => a.id === id);
     if (!account) return false;
+    if (this.getTransactions().some(t => t.accountId === id || t.targetAccountId === id) || this.getDebtsAndLoans().some(d => d.accountId === id)) throw new Error('Tài khoản có lịch sử giao dịch hoặc công nợ. Hãy giữ lại để bảo toàn sổ sách.');
     const filtered = accounts.filter(a => a.id !== id);
     this.saveAccounts(filtered);
     this.addAuditLog('DELETE', 'ACCOUNT', id, `Xóa tài khoản nguồn tiền: ${account.name}`);
@@ -273,6 +267,7 @@ class StorageManager {
     const accounts = this.getAccounts();
     const account = accounts.find(a => a.id === id);
     if (!account) return false;
+    if (!Number.isSafeInteger(newBalance)) throw new Error('Số dư không hợp lệ.');
     const oldBalance = account.balance;
     account.balance = newBalance;
     this.saveAccounts(accounts);
@@ -293,7 +288,7 @@ class StorageManager {
     const categories = this.getCategories();
     const newCategory: Category = {
       ...cat,
-      id: 'cat_' + Date.now(),
+      id: 'cat_' + crypto.randomUUID(),
     };
     categories.push(newCategory);
     this.saveCategories(categories);
@@ -317,7 +312,7 @@ class StorageManager {
   }
 
   private applyBalanceChange(accounts: Account[], tx: Transaction, factor: 1 | -1): Account[] {
-    const updated = [...accounts];
+    const updated = accounts.map(account => ({ ...account }));
     const sourceAcc = updated.find(a => a.id === tx.accountId);
     const targetAcc = tx.targetAccountId ? updated.find(a => a.id === tx.targetAccountId) : null;
 
@@ -343,15 +338,15 @@ class StorageManager {
 
     const newTx: Transaction = {
       ...txData,
-      id: 'tx_' + Date.now(),
+      id: 'tx_' + crypto.randomUUID(),
       createdAt: new Date().toISOString(),
     };
 
+    this.validateTransaction(newTx, accounts);
     accounts = this.applyBalanceChange(accounts, newTx, 1);
-    this.saveAccounts(accounts);
-
+    if (!this.getSettings().allowNegativeBalance && accounts.some(a => a.balance < 0 && a.balance < (this.getAccounts().find(old => old.id === a.id)?.balance ?? 0))) throw new Error('Số dư không đủ để thực hiện giao dịch.');
     transactions.unshift(newTx);
-    this.saveTransactions(transactions);
+    this.atomicWrite(() => { this.saveAccounts(accounts); this.saveTransactions(transactions); });
 
     this.addAuditLog('CREATE', 'TRANSACTION', newTx.id, `Ghi giao dịch [${newTx.type}]: ${newTx.description} (${newTx.amount.toLocaleString('vi-VN')}₫)`);
     return newTx;
@@ -375,11 +370,11 @@ class StorageManager {
       updatedAt: new Date().toISOString(),
     };
 
+    this.validateTransaction(newTx, accounts);
     accounts = this.applyBalanceChange(accounts, newTx, 1);
-    this.saveAccounts(accounts);
-
+    if (!this.getSettings().allowNegativeBalance && accounts.some(a => a.balance < 0 && a.balance < (this.getAccounts().find(old => old.id === a.id)?.balance ?? 0))) throw new Error('Số dư không đủ để sửa giao dịch.');
     transactions[index] = newTx;
-    this.saveTransactions(transactions);
+    this.atomicWrite(() => { this.saveAccounts(accounts); this.saveTransactions(transactions); });
 
     this.addAuditLog(
       'UPDATE',
@@ -398,10 +393,8 @@ class StorageManager {
 
     let accounts = this.getAccounts();
     accounts = this.applyBalanceChange(accounts, tx, -1);
-    this.saveAccounts(accounts);
-
     const filtered = transactions.filter(t => t.id !== id);
-    this.saveTransactions(filtered);
+    this.atomicWrite(() => { this.saveAccounts(accounts); this.saveTransactions(filtered); });
 
     this.addAuditLog('DELETE', 'TRANSACTION', id, `Xóa giao dịch và đảo số dư: ${tx.description} (${tx.amount.toLocaleString('vi-VN')}₫)`);
     return true;
@@ -417,6 +410,7 @@ class StorageManager {
   }
 
   setBudget(categoryId: string, monthlyLimit: number): Budget {
+    if (!Number.isSafeInteger(monthlyLimit) || monthlyLimit <= 0) throw new Error('Hạn mức ngân sách không hợp lệ.');
     const budgets = this.getBudgets();
     const existing = budgets.find(b => b.categoryId === categoryId);
     if (existing) {
@@ -425,7 +419,7 @@ class StorageManager {
       return existing;
     } else {
       const newBudget: Budget = {
-        id: 'b_' + Date.now(),
+        id: 'b_' + crypto.randomUUID(),
         categoryId,
         monthlyLimit,
       };
@@ -450,10 +444,11 @@ class StorageManager {
   }
 
   addDebtOrLoan(item: Omit<DebtOrLoan, 'id' | 'createdAt' | 'status' | 'remainingAmount'>): DebtOrLoan {
+    if (!Number.isSafeInteger(item.amount) || item.amount <= 0 || !this.getAccounts().some(a => a.id === item.accountId)) throw new Error('Số tiền hoặc tài khoản công nợ không hợp lệ.');
     const items = this.getDebtsAndLoans();
     const newItem: DebtOrLoan = {
       ...item,
-      id: (item.type === 'loan' ? 'loan_' : 'debt_') + Date.now(),
+      id: (item.type === 'loan' ? 'loan_' : 'debt_') + crypto.randomUUID(),
       remainingAmount: item.amount,
       status: 'active',
       createdAt: new Date().toISOString(),
@@ -468,7 +463,8 @@ class StorageManager {
     const item = items.find(i => i.id === id);
     if (!item) return false;
 
-    item.remainingAmount = Math.max(0, item.remainingAmount - paymentAmount);
+    if (!Number.isSafeInteger(paymentAmount) || paymentAmount <= 0 || paymentAmount > item.remainingAmount) throw new Error('Số tiền thanh toán phải lớn hơn 0 và không vượt quá dư nợ.');
+    item.remainingAmount -= paymentAmount;
     if (item.remainingAmount === 0) {
       item.status = 'settled';
     }
@@ -511,7 +507,8 @@ class StorageManager {
   // --- Backup & Restore ---
   exportBackup(): string {
     const payload = {
-      version: '1.2.1',
+      schemaVersion: SCHEMA_VERSION,
+      version: release.version,
       app: 'LTMsav',
       exportedAt: new Date().toISOString(),
       data: {
@@ -530,10 +527,23 @@ class StorageManager {
   importBackup(jsonString: string): { success: boolean; message: string } {
     try {
       const parsed = JSON.parse(jsonString);
-      if (!parsed.data || !parsed.data.accounts || !parsed.data.transactions) {
+      if (!parsed.data || !Array.isArray(parsed.data.accounts) || !Array.isArray(parsed.data.transactions)) {
         return { success: false, message: 'Tệp sao lưu không đúng định dạng LTMsav.' };
       }
+      if (parsed.schemaVersion && (!Number.isInteger(parsed.schemaVersion) || parsed.schemaVersion > SCHEMA_VERSION)) throw new Error('Bản sao lưu thuộc phiên bản ứng dụng mới hơn. Hãy cập nhật ứng dụng trước.');
+      const d = parsed.data;
+      for (const key of ['accounts', 'transactions', 'categories', 'budgets', 'debts', 'auditLogs']) {
+        if (d[key] !== undefined && (!Array.isArray(d[key]) || d[key].some((item: any) => !item || typeof item.id !== 'string') || new Set(d[key].map((item: any) => item.id)).size !== d[key].length)) throw new Error(`Dữ liệu ${key} không hợp lệ hoặc trùng ID.`);
+      }
+      if (d.accounts.some((a: any) => typeof a.name !== 'string' || !Number.isFinite(a.balance))) throw new Error('Số dư tài khoản không hợp lệ.');
+      for (const tx of d.transactions) this.validateTransaction(tx, d.accounts);
+      if (d.budgets?.some((b: any) => !Number.isFinite(b.monthlyLimit) || b.monthlyLimit <= 0 || typeof b.categoryId !== 'string')) throw new Error('Ngân sách không hợp lệ.');
+      if (d.debts?.some((item: any) => !Number.isFinite(item.amount) || item.amount <= 0 || !Number.isFinite(item.remainingAmount) || item.remainingAmount < 0 || item.remainingAmount > item.amount || !['loan', 'debt'].includes(item.type) || !['active', 'settled'].includes(item.status) || typeof item.person !== 'string')) throw new Error('Công nợ không hợp lệ.');
+      if (d.categories?.some((c: any) => typeof c.name !== 'string' || !['income','expense'].includes(c.type))) throw new Error('Danh mục không hợp lệ.');
+      if (d.settings !== undefined && (!d.settings || typeof d.settings !== 'object' || Array.isArray(d.settings))) throw new Error('Cài đặt không hợp lệ.');
+      if (d.settings && (['securityEnabled', 'biometricEnabled', 'allowNegativeBalance', 'autoConfirmAi'].some(key => d.settings[key] !== undefined && typeof d.settings[key] !== 'boolean') || (d.settings.pinCode !== undefined && (typeof d.settings.pinCode !== 'string' || !/^(|\d{4,6})$/.test(d.settings.pinCode))) || (d.settings.securityEnabled && !/^\d{4,6}$/.test(d.settings.pinCode)))) throw new Error('Thiết lập PIN hoặc bảo mật không hợp lệ.');
       this.createAutomaticSnapshot('Sao lưu tự động trước khi khôi phục tệp JSON');
+      this.atomicWrite(() => {
       this.saveAccounts(parsed.data.accounts);
       if (parsed.data.categories) this.saveCategories(parsed.data.categories);
       this.saveTransactions(parsed.data.transactions);
@@ -541,6 +551,7 @@ class StorageManager {
       if (parsed.data.debts) this.saveDebtsAndLoans(parsed.data.debts);
       if (parsed.data.settings) this.saveSettings({ ...DEFAULT_SETTINGS, ...parsed.data.settings });
       if (parsed.data.auditLogs) this.set(STORAGE_KEYS.AUDIT_LOGS, parsed.data.auditLogs);
+      });
       return { success: true, message: 'Khôi phục toàn bộ dữ liệu thành công!' };
     } catch (e: any) {
       return { success: false, message: 'Lỗi đọc tệp JSON: ' + (e?.message || 'Tệp không hợp lệ') };
@@ -549,6 +560,8 @@ class StorageManager {
 
   resetToDefault(): void {
     this.createAutomaticSnapshot('Sao lưu tự động trước khi đặt lại mặc định');
+    const legacyKeys = Object.values(STORAGE_KEYS).map(key => key.replace('ltmsav_', 'finflow_'));
+    legacyKeys.forEach(key => localStorage.removeItem(key));
     localStorage.removeItem(STORAGE_KEYS.ACCOUNTS);
     localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
     localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);

@@ -1,3 +1,5 @@
+import { transactionsCsv, downloadText } from '../services/csv';
+import { localDate } from '../services/date';
 import React, { useState, useRef, useEffect } from 'react';
 import { AppSettings, AuditLog } from '../types';
 import { 
@@ -9,7 +11,8 @@ import {
 import { storage } from '../services/storage';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const APP_VERSION = '1.5.9';
+import release from '../release.json';
+const APP_VERSION = release.version;
 
 interface SettingsTabProps {
   settings: AppSettings;
@@ -453,6 +456,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           />
         </div>
 
+        <button type="button"
+          onClick={() => downloadText(transactionsCsv(storage.getTransactions(), storage.getAccounts(), storage.getCategories()), `LTMsav_${localDate()}.csv`, 'text/csv;charset=utf-8')}
+          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs font-semibold hover:bg-emerald-50 dark:hover:bg-slate-800 transition">
+          <FileDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />{t('exportCsv')}
+        </button>
+
         {/* Snapshot controls */}
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
           <button
@@ -502,8 +511,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   type="button"
                   onClick={() => {
                     if (confirm(t('restoreSnapshotConfirm'))) {
-                      storage.importBackup(JSON.stringify({ data: s.data }));
-                      window.location.reload();
+                      const result = onImportBackup(JSON.stringify({ data: s.data }));
+                      if (!result.success) setImportMessage({ text: result.message, isError: true });
                     }
                   }}
                   className="shrink-0 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-700 dark:text-emerald-300 hover:text-white rounded-lg text-[11px] font-medium transition"

@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { downloadText } from './services/csv';
+import { localDate } from './services/date';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { storage } from './services/storage';
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from './types';
 import { TopHeader, BottomNavBar } from './components/Navigation';
 import { useLanguage } from './contexts/LanguageContext';
 import { OverviewTab } from './components/OverviewTab';
 import { TransactionsTab } from './components/TransactionsTab';
-import { AiChatTab } from './components/AiChatTab';
+const AiChatTab = lazy(() => import('./components/AiChatTab').then(module => ({ default: module.AiChatTab })));
 import { BudgetsTab } from './components/BudgetsTab';
 import { AssetsTab } from './components/AssetsTab';
-import { ReportsTab } from './components/ReportsTab';
-import { SettingsTab } from './components/SettingsTab';
+const ReportsTab = lazy(() => import('./components/ReportsTab').then(module => ({ default: module.ReportsTab })));
+const SettingsTab = lazy(() => import('./components/SettingsTab').then(module => ({ default: module.SettingsTab })));
 import { EditTransactionModal } from './components/EditTransactionModal';
 import { AddTransactionModal } from './components/AddTransactionModal';
 import { SecurityLockScreen } from './components/SecurityLockScreen';
@@ -47,6 +49,20 @@ export const App: React.FC = () => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  useEffect(() => {
+    const showError = (event: ErrorEvent) => { showToast(event.error?.message || event.message); event.preventDefault(); };
+    const showRejection = (event: PromiseRejectionEvent) => { showToast(event.reason?.message || 'Không thể hoàn thành thao tác.'); event.preventDefault(); };
+    window.addEventListener('error', showError);
+    window.addEventListener('unhandledrejection', showRejection);
+    return () => { window.removeEventListener('error', showError); window.removeEventListener('unhandledrejection', showRejection); };
+  }, []);
+
+  useEffect(() => {
+    const lockOnBackground = () => { if (document.hidden && storage.getSettings().securityEnabled) setIsLocked(true); };
+    document.addEventListener('visibilitychange', lockOnBackground);
+    return () => document.removeEventListener('visibilitychange', lockOnBackground);
+  }, []);
 
   // Sync theme with document element
   useEffect(() => {
@@ -156,13 +172,7 @@ export const App: React.FC = () => {
 
   const handleExportBackup = () => {
     const json = storage.exportBackup();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `LTMsav_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadText(json, `LTMsav_Backup_${localDate()}.json`, 'application/json');
     showToast(t('toastBackupExported'));
   };
 
@@ -185,7 +195,7 @@ export const App: React.FC = () => {
   if (isLocked) {
     return (
       <SecurityLockScreen
-        correctPin={settings.pinCode || '1234'}
+        correctPin={settings.pinCode}
         biometricEnabled={settings.biometricEnabled}
         onUnlock={() => {
           setIsLocked(false);
@@ -216,7 +226,7 @@ export const App: React.FC = () => {
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+96px)]">
         
         {/* Tab views */}
-        <div key={currentTab} className="animate-fade-in">
+        <Suspense fallback={<div role="status" className="p-6 text-center animate-pulse">LTMsav…</div>}><div key={currentTab} className="animate-fade-in">
           {currentTab === 'overview' && (
             <OverviewTab
               accounts={accounts}
@@ -297,7 +307,7 @@ export const App: React.FC = () => {
               onLockAppNow={() => setIsLocked(true)}
             />
           )}
-        </div>
+        </div></Suspense>
       </main>
 
       {/* Android Bottom Navigation */}
@@ -330,7 +340,7 @@ export const App: React.FC = () => {
 
       {/* Notification Toast — appears in the current view, just above the bottom nav */}
       {toastMessage && (
-        <div className="fixed left-0 right-0 z-[60] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] pointer-events-none flex justify-center animate-fade-in-up">
+        <div role="status" aria-live="polite" className="fixed bottom-0 left-0 right-0 z-[90] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] pointer-events-none flex justify-center animate-fade-in-up">
           <div className="w-full max-w-3xl flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 border border-emerald-500/40 text-xs sm:text-sm font-semibold text-white shadow-2xl backdrop-blur-md">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="flex-1 min-w-0">{toastMessage}</span>

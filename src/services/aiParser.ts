@@ -1,3 +1,4 @@
+import { localDate } from './date';
 import { Account, Category, AiChatResponse, AppSettings } from '../types';
 
 export function parseVietnameseFinancialCommand(
@@ -101,6 +102,13 @@ export function parseVietnameseFinancialCommand(
     }
   }
 
+  // In explicit "from A to B" commands, list ordering must not reverse the transfer.
+  const sourceSegment = lower.match(/(?:từ|tu)\s+(.+?)(?:\s+(?:sang|vào|đến|qua)\s+)/)?.[1];
+  if (sourceSegment) {
+    const explicitSource = accountNames.find(name => sourceSegment.includes(name.toLowerCase()));
+    if (explicitSource) matchedAccount = explicitSource;
+  }
+
   // Detect Intent
   let intent = 'create_expense';
   let kind: 'expense' | 'income' | 'transfer' | 'lend' | 'debt_repay' = 'expense';
@@ -117,7 +125,7 @@ export function parseVietnameseFinancialCommand(
       }
     }
     if (!accountTo) {
-      accountTo = accountNames.find(a => a !== matchedAccount) || accountNames[1] || 'Vietcombank';
+      accountTo = null;
     }
   } else if (lower.includes('cho') && (lower.includes('vay') || lower.includes('mượn'))) {
     intent = 'lend';
@@ -178,19 +186,19 @@ export function parseVietnameseFinancialCommand(
   let description = text.replace(/^(hôm nay|vừa|đã|mới)\s+/i, '');
   if (description.length > 50) description = description.substring(0, 50);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDate();
 
   return {
     intent,
     needs_confirmation: true,
-    clarification_question: amount === 0 ? 'Vui lòng xác nhận lại số tiền giao dịch chính xác.' : null,
+    clarification_question: amount === 0 ? 'Vui lòng cho biết số tiền giao dịch chính xác.' : kind === 'transfer' && !accountTo ? 'Vui lòng chỉ rõ tài khoản đích có trong danh sách tài khoản của bạn.' : null,
     clarification_options: [],
     analysis: `Đã phân tích giao dịch: ${kind.toUpperCase()} ${amount.toLocaleString('vi-VN')}₫ vào danh mục [${matchedCategory}] qua [${matchedAccount}].`,
     answer: null,
-    commands: [
+    commands: amount > 0 && (kind !== 'transfer' || !!accountTo) ? [
       {
         kind,
-        amount: amount || 50000,
+        amount,
         currency: 'VND',
         account: matchedAccount,
         account_to: accountTo,
@@ -200,7 +208,7 @@ export function parseVietnameseFinancialCommand(
         person,
         note: `Tạo qua AI: "${text}"`,
       },
-    ],
+    ] : [],
   };
 }
 
@@ -220,7 +228,7 @@ export async function processAiMessage(
   if (hasGeminiKey) {
     try {
       const apiKey = settings!.geminiApiKey!.trim();
-      const today = new Date().toISOString().split('T')[0];
+      const today = localDate();
       const systemInstruction = `Bạn là trợ lý phân tích giao dịch tài chính thông minh cho ứng dụng LTMsav (tiếng Việt).
 
 NHIỆM VỤ:
