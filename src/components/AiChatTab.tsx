@@ -61,9 +61,11 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const executedCommandsRef = useRef(new Set<string>());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -169,7 +171,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-140px)] sm:h-[calc(100dvh-160px)] pb-2">
+    <div className="flex flex-col h-[calc(100dvh-220px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] pb-2">
       
       {/* Header bar */}
       <div className="p-3.5 glass-panel rounded-2xl flex items-center justify-between mb-3 border border-slate-200 dark:border-slate-800">
@@ -205,7 +207,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
       </div>
 
       {/* Messages stream */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3.5 pr-1">
+      <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-3.5 pr-1">
         {messages.map(msg => (
           <div
             key={msg.id}

@@ -60,6 +60,11 @@ for(const theme of ['light','dark']) {
  await page.getByText(/Chưa đủ 2 tháng lịch sử: chỉ tính lịch định kỳ/).waitFor();
  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]),before,'AI queries modified ledger');
  await page.waitForTimeout(800);
+ const chatHeading=await page.locator('main h2').first().boundingBox();
+ const header=await page.locator('header').boundingBox();
+ assert.ok(chatHeading.y>=header.y+header.height,'Chat header scrolled behind app toolbar');
+ const inputBounds=await input.boundingBox(), dock=await page.locator('.ios-dock').boundingBox();
+ assert.ok(inputBounds.y+inputBounds.height<dock.y,'AI input hidden by navigation');
  await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-ai-forecast.png`});
  assert.deepEqual(errors,[],`${theme}: browser errors`);
  await page.setViewportSize({width:320,height:740});await page.reload();await page.locator('.ios-dock').waitFor();await page.waitForTimeout(1200);
