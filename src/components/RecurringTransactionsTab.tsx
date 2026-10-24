@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CalendarClock, Plus, Pause, Play, Pencil, Trash2, X, Check, AlertCircle } from 'lucide-react';
 import type { Account, Category, RecurringTransaction, RecurringInput } from '../types';
 import { localDate } from '../services/date';
@@ -37,7 +38,7 @@ export const RecurringTransactionsTab: React.FC<Props> = ({rules, accounts, cate
       </div>
     </section>)}
     {editing && <RecurringEditor key={editing==='new'?'new':editing.id} rule={editing==='new'?undefined:editing} accounts={accounts} categories={categories} onSave={onSave} onClose={()=>setEditing(null)}/>}
-  </div>;
+  </div>, document.body);
 };
 
 function RecurringEditor({rule, accounts, categories, onSave, onClose}: {rule?:RecurringTransaction;accounts:Account[];categories:Category[];onSave:Props['onSave'];onClose:()=>void}) {
@@ -52,7 +53,7 @@ function RecurringEditor({rule, accounts, categories, onSave, onClose}: {rule?:R
   const submit=async(e:React.FormEvent)=>{e.preventDefault();if(busy)return;setBusy(true);setError('');try {
     await onSave({type,description,amount:Number(amount),accountId,categoryId,dayOfMonth:day,nextDueDate:monthlyDate(month,day),enabled:rule?.enabled??true},rule?.id);onClose();
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}};
-  return <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-labelledby="recurring-editor-title" onKeyDown={e=>{if(e.key==='Escape'&&!busy)onClose();}}>
+  return createPortal(<div className="fixed inset-0 z-[100] text-slate-900 dark:text-slate-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-labelledby="recurring-editor-title" onKeyDown={e=>{if(e.key==='Escape'&&!busy)onClose();}}>
     <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5 sm:p-6 bg-white dark:bg-slate-900 rounded-[30px] space-y-4">
       <div className="flex items-center justify-between gap-2"><h2 id="recurring-editor-title" className="text-lg font-bold">{rule?t('editRecurring'):t('addRecurring')}</h2><button type="button" disabled={busy} onClick={onClose} className="ios-tool" aria-label={t('close')}><X size={20}/></button></div>
       <form onSubmit={submit} className="space-y-3">
@@ -68,5 +69,5 @@ function RecurringEditor({rule, accounts, categories, onSave, onClose}: {rule?:R
         <button type="submit" disabled={busy||!accounts.length} className="w-full rounded-full py-3 bg-blue-600 text-white font-semibold text-sm flex items-center justify-center gap-2"><Check size={18}/>{busy?t('recurringSaving'):t('saveRecurring')}</button>
       </form>
     </div>
-  </div>;
+  </div>, document.body);
 }

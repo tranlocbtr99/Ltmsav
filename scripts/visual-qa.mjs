@@ -27,7 +27,7 @@ for(const theme of ['light','dark']) {
   localStorage.setItem('ltmsav_settings_v1',JSON.stringify({theme,securityEnabled:false,pinCode:'',biometricEnabled:false,allowNegativeBalance:false}));
  },{theme});
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('http://ltmsav.test/');await page.locator('.ios-dock').waitFor();await page.waitForTimeout(1200);
+ await page.goto('https://ltmsav.test/');await page.locator('.ios-dock').waitFor();await page.waitForTimeout(1200);
  assert.ok(await page.locator('.ios-balance-card').evaluate(element=>element.getBoundingClientRect().height < 290),'Balance hero is too tall');
  const before=await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]);
  for(const [index,name] of ['overview','transactions','ai','budgets','assets'].entries()) {
@@ -51,7 +51,7 @@ for(const theme of ['light','dark']) {
  await page.getByLabel('Số tiền (VND)',{exact:true}).fill('50000');
  await page.screenshot({path:`ui-preview/${theme}-recurring-editor.png`});
  await page.getByRole('button',{name:'Lưu lịch định kỳ',exact:true}).click();
- await page.getByRole('heading',{name:'Hóa đơn định kỳ mẫu',exact:true}).waitFor();
+ try { await page.getByRole('heading',{name:'Hóa đơn định kỳ mẫu',exact:true}).waitFor({timeout:10000}); } catch(error) { await page.screenshot({path:`ui-preview/${theme}-recurring-error.png`}); console.log('Recurring alerts:',await page.locator('[role=alert]').allTextContents()); throw error; }
  const posted=await page.evaluate(()=>({accounts:JSON.parse(localStorage.getItem('ltmsav_accounts_v1')),tx:JSON.parse(localStorage.getItem('ltmsav_transactions_v1')),rules:JSON.parse(localStorage.getItem('ltmsav_recurring_v1'))}));
  assert.equal(posted.accounts[0].balance,1200000,'Monthly expense must debit exactly once');
  assert.equal(posted.tx.filter(tx=>tx.recurringRuleId).length,1,'Exactly one due occurrence');
