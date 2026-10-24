@@ -19,6 +19,8 @@ for(const theme of ['light','dark']) {
   try {await route.fulfill({body:await fs.readFile(target),contentType:type});}catch{await route.fulfill({status:404,body:''});}
  });
  await context.addInitScript(({theme})=>{
+  if(localStorage.getItem('ltmsav_qa_seeded'))return;
+  localStorage.setItem('ltmsav_qa_seeded','true');
   const accounts=[{id:'preview_cash',name:'Tiền mặt',type:'cash',balance:1250000,currency:'VND',iconName:'Wallet',color:'#30b882'},{id:'preview_bank',name:'Tài khoản ngân hàng',type:'bank',balance:15680000,currency:'VND',iconName:'Landmark',color:'#2686ed'}];
   const date=new Date();const today=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const transactions=[{id:'preview_1',type:'expense',amount:65000,accountId:'preview_cash',categoryId:'cat_food',date:today,description:'Ăn trưa',createdAt:date.toISOString()},{id:'preview_2',type:'income',amount:18000000,accountId:'preview_bank',categoryId:'cat_salary',date:today,description:'Lương tháng',createdAt:date.toISOString()},{id:'preview_3',type:'expense',amount:450000,accountId:'preview_bank',categoryId:'cat_shopping',date:today,description:'Mua sắm',createdAt:date.toISOString()}];
