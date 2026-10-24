@@ -28,19 +28,8 @@ export const biometricService = {
       }
     }
 
-    // 2. Web browser WebAuthn platform authenticator
-    if (
-      typeof window !== 'undefined' &&
-      window.PublicKeyCredential &&
-      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable
-    ) {
-      try {
-        return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-      } catch (e) {
-        return false;
-      }
-    }
-
+    // Web enrollment requires a credential bound to this app/user. Until implemented,
+    // use the existing PIN instead of accepting arbitrary/new WebAuthn credentials.
     return false;
   },
 
@@ -60,44 +49,6 @@ export const biometricService = {
         return !!res?.success;
       } catch (err) {
         console.warn('Native biometric authentication failed or cancelled:', err);
-        return false;
-      }
-    }
-
-    // 2. Web browser fallback with WebAuthn
-    if (typeof window !== 'undefined' && window.PublicKeyCredential) {
-      try {
-        const challenge = new Uint8Array(32);
-        window.crypto.getRandomValues(challenge);
-
-        const credential = await navigator.credentials.get({
-          publicKey: {
-            challenge,
-            timeout: 60000,
-            userVerification: 'preferred',
-            rpId: window.location.hostname || 'localhost',
-          },
-        }).catch(async () => {
-          const userId = new Uint8Array(16);
-          window.crypto.getRandomValues(userId);
-          return await navigator.credentials.create({
-            publicKey: {
-              challenge,
-              rp: { name: 'LTMsav', id: window.location.hostname || 'localhost' },
-              user: { id: userId, name: 'ltmsav_user', displayName: 'LTMsav User' },
-              pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-              authenticatorSelection: {
-                authenticatorAttachment: 'platform',
-                userVerification: 'required',
-              },
-              timeout: 60000,
-            },
-          });
-        });
-
-        return !!credential;
-      } catch (e) {
-        console.warn('WebAuthn failed:', e);
         return false;
       }
     }

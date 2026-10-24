@@ -41,7 +41,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
 
   // Biometric Trigger (Native Android Fingerprint / Face ID / WebAuthn)
   const triggerBiometricAuth = async () => {
-    if (isAuthenticating) return;
+    if (isAuthenticating || !biometricEnabled || !biometricAvailable) return;
     setIsAuthenticating(true);
     setErrorMessage('');
 
@@ -157,7 +157,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
         <button
           type="button"
           onClick={triggerBiometricAuth}
-          disabled={isAuthenticating}
+          disabled={isAuthenticating || !biometricEnabled || !biometricAvailable}
           className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-emerald-400 border border-emerald-500/20 shadow-md transition active:scale-95"
         >
           <Fingerprint className="w-4 h-4 animate-pulse" />
@@ -183,6 +183,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
           <button
             type="button"
             onClick={triggerBiometricAuth}
+            disabled={!biometricEnabled || !biometricAvailable}
             className="h-16 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:bg-slate-800 active:scale-95 text-emerald-400 flex flex-col items-center justify-center transition"
             title={t('scanBiometricTitle')}
           >

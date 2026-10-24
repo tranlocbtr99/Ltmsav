@@ -1,3 +1,4 @@
+import { localDate } from '../services/date';
 import React, { useState } from 'react';
 import { Account, Category, TransactionType, Transaction } from '../types';
 import { X, Check, ArrowRightLeft, ArrowUpRight, ArrowDownLeft, Plus } from 'lucide-react';
@@ -20,17 +21,22 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  if (!isOpen) return null;
-
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState<string>('');
   const [accountId, setAccountId] = useState<string>(accounts[0]?.id || '');
   const [targetAccountId, setTargetAccountId] = useState<string>(accounts[1]?.id || accounts[0]?.id || '');
   const [categoryId, setCategoryId] = useState<string>(categories.find(c => c.type === 'expense')?.id || '');
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState<string>(localDate());
   const [description, setDescription] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [person, setPerson] = useState<string>('');
+
+  React.useEffect(() => {
+    if (!accounts.some(a => a.id === accountId)) setAccountId(accounts[0]?.id || '');
+    if (!accounts.some(a => a.id === targetAccountId && a.id !== accountId)) setTargetAccountId(accounts.find(a => a.id !== accountId)?.id || '');
+  }, [accounts, accountId, targetAccountId]);
+
+  if (!isOpen) return null;
 
   const numAmount = Math.max(0, parseInt(amount.replace(/\D/g, ''), 10) || 0);
 

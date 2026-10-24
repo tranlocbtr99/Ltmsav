@@ -9,16 +9,7 @@
 - **An toàn mặc định**: Không bao giờ gọi `localStorage.clear()` trong flow cập nhật. Chỉ dùng trong "XÓA TOÀN BỘ DỮ LIỆU" có xác nhận rõ ràng của người dùng.
 
 ## 2) Quản lý phiên bản (Android)
-Mỗi lần phát hành cập nhật **PHẢI** tăng cả hai giá trị trong `mobile/android/app/build.gradle`:
-
-```groovy
-versionCode <tăng +1 so với versionCode hiện tại>
-versionName "<tăng theo semantic versioning, ví dụ 1.3.1 -> 1.3.2>"
-```
-
-- `versionCode`: tăng dần không đảo ngược, bắt buộc để Play Store chấp nhận cập nhật.
-- `versionName`: hiển thị cho người dùng.
-- Sau khi thay đổi, rebuild APK/AAB và xác nhận bằng `aapt dump badging` hoặc log install.
+Version UI và Android được tạo tự động cùng lúc bằng `scripts/release-version.mjs` trong CI. Xem `RELEASE.md` để biết công thức và khóa ký gốc bắt buộc. Không chỉnh Gradle thủ công; `mobile/android/` là dự án được sinh khi đóng gói. Không dùng root `android/` làm bản phát hành.
 
 ## 3) Quản lý Schema
 File: `src/services/storage.ts`
@@ -32,7 +23,7 @@ File: `src/services/storage.ts`
 
 ## 4) Checklist trước mỗi build release
 - [ ] `storage.ts`: migration không xóa dữ liệu user
-- [ ] `mobile/android/app/build.gradle`: `versionCode` + `versionName` đã tăng
+- [ ] CI sinh version UI/Android thống nhất và versionCode lớn hơn APK đang cài
 - [ ] Build web: `npm run build` thành công
 - [ ] `cap sync android` thành công
 - [ ] `./gradlew assembleRelease bundleRelease` thành công
@@ -44,4 +35,4 @@ File: `src/services/storage.ts`
 - **Quên tăng version**: bắt buộc check `versionCode/versionName` trước khi xuất file release.
 - **Migrate sai**: luôn backup snapshot + test với dữ liệu có sẵn trước khi release.
 
-**KẾT LUẬN: Mỗi lần cập nhật = tăng version + migration an toàn. KHÔNG ĐƯỢC ẢNH HƯỞNG DỮ LIỆU NGƯỜI DÙNG.**
+**Quy tắc: Mỗi lần cập nhật = tăng version + migration an toàn. KHÔNG ĐƯỢC ẢNH HƯỞNG DỮ LIỆU NGƯỜI DÙNG.**

@@ -47,7 +47,12 @@ MIPMAPS = {
 
 
 def load_source(path: str) -> Image.Image:
-    im = Image.open(path).convert("RGBA")
+    if os.path.splitext(path)[1].lower() == '.svg':
+        import cairosvg
+        import io
+        im = Image.open(io.BytesIO(cairosvg.svg2png(url=path, output_width=1024, output_height=1024))).convert("RGBA")
+    else:
+        im = Image.open(path).convert("RGBA")
     side = max(im.size)
     canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
     canvas.paste(im, ((side - im.width) // 2, (side - im.height) // 2), im)
@@ -76,7 +81,8 @@ def main():
     os.makedirs(ASSETS, exist_ok=True)
     ext = os.path.splitext(src)[1].lower() or ".png"
     master = os.path.join(ASSETS, f"logo-source{ext}")
-    shutil.copy2(src, master)
+    if os.path.realpath(src) != os.path.realpath(master):
+        shutil.copy2(src, master)
     print(f"Master logo saved verbatim -> {os.path.relpath(master, ROOT)}")
 
     im = load_source(master)

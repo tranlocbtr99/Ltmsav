@@ -25,17 +25,15 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  if (!isOpen || !transaction) return null;
-
-  const [type, setType] = useState<TransactionType>(transaction.type);
-  const [amount, setAmount] = useState<string>(transaction.amount.toString());
-  const [accountId, setAccountId] = useState<string>(transaction.accountId);
-  const [targetAccountId, setTargetAccountId] = useState<string>(transaction.targetAccountId || accounts.find(a => a.id !== transaction.accountId)?.id || '');
-  const [categoryId, setCategoryId] = useState<string>(transaction.categoryId);
-  const [date, setDate] = useState<string>(transaction.date);
-  const [description, setDescription] = useState<string>(transaction.description);
-  const [note, setNote] = useState<string>(transaction.note || '');
-  const [person, setPerson] = useState<string>(transaction.person || '');
+  const [type, setType] = useState<TransactionType>(transaction?.type ?? 'expense');
+  const [amount, setAmount] = useState<string>(transaction?.amount.toString() ?? '');
+  const [accountId, setAccountId] = useState<string>(transaction?.accountId ?? '');
+  const [targetAccountId, setTargetAccountId] = useState<string>(transaction?.targetAccountId || accounts.find(a => a.id !== transaction?.accountId)?.id || '');
+  const [categoryId, setCategoryId] = useState<string>(transaction?.categoryId ?? '');
+  const [date, setDate] = useState<string>(transaction?.date ?? '');
+  const [description, setDescription] = useState<string>(transaction?.description ?? '');
+  const [note, setNote] = useState<string>(transaction?.note || '');
+  const [person, setPerson] = useState<string>(transaction?.person || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
@@ -43,7 +41,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       setType(transaction.type);
       setAmount(transaction.amount.toString());
       setAccountId(transaction.accountId);
-      setTargetAccountId(transaction.targetAccountId || accounts.find(a => a.id !== transaction.accountId)?.id || '');
+      setTargetAccountId(transaction?.targetAccountId || accounts.find(a => a.id !== transaction?.accountId)?.id || '');
       setCategoryId(transaction.categoryId);
       setDate(transaction.date);
       setDescription(transaction.description);
@@ -52,6 +50,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       setShowDeleteConfirm(false);
     }
   }, [transaction]);
+
+  if (!isOpen || !transaction) return null;
 
   const numAmount = Math.max(0, parseInt(amount.replace(/\D/g, ''), 10) || 0);
 

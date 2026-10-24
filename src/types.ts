@@ -36,6 +36,8 @@ export interface Transaction {
   person?: string;
   createdAt: string;
   updatedAt?: string;
+  recurringRuleId?: string;
+  recurringMonth?: string;
 }
 
 export interface Budget {
@@ -104,3 +106,17 @@ export interface AiChatResponse {
   answer?: string | null;
   commands?: AiParsedCommand[];
 }
+
+export interface RecurringTransaction {
+  id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  accountId: string;
+  categoryId: string;
+  description: string;
+  dayOfMonth: number;
+  nextDueDate: string;
+  enabled: boolean;
+  lastProcessedMonth?: string;
+}
+export type RecurringInput = Omit<RecurringTransaction, 'id' | 'lastProcessedMonth'>;

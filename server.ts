@@ -1,3 +1,4 @@
+import { localDate } from './src/services/date';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,136 +11,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const HOST = '0.0.0.0';
 
 app.use(express.json());
 
-// Built-in rule-based Vietnamese financial NLP parser (matches LTMsav logic)
-function parseVietnameseFinancialCommand(text: string, accounts: string[], categories: string[]) {
-  const lower = text.toLowerCase().trim();
-  
-  // Extract amount
-  let amount = 0;
-  const millionMatch = lower.match(/(\d+(?:[\.,]\d+)?)\s*(?:triệu|trieu|tr|củ|cu)\b/);
-  const thousandMatch = lower.match(/(\d+(?:[\.,]\d+)?)\s*(?:k|nghìn|nghin|ngàn|ngan)\b/);
-  const rawNumberMatch = lower.match(/(?:(?:hết|nhận|chuyển|vay|trả|tiêu)\s+)?(\d{1,3}(?:\.\d{3})+|\d+)\s*(?:đ|vnd|đồng)?\b/);
-
-  if (millionMatch) {
-    amount = Math.round(parseFloat(millionMatch[1].replace(',', '.')) * 1000000);
-  } else if (thousandMatch) {
-    amount = Math.round(parseFloat(thousandMatch[1].replace(',', '.')) * 1000);
-  } else if (rawNumberMatch) {
-    const cleanNum = rawNumberMatch[1].replace(/\./g, '').replace(/,/g, '');
-    const val = parseInt(cleanNum, 10);
-    if (!isNaN(val) && val > 0) {
-      amount = val;
-    }
-  }
-
-  // Detect Account
-  let matchedAccount = accounts[0] || 'Tiền mặt';
-  for (const acc of accounts) {
-    const accLow = acc.toLowerCase();
-    if (lower.includes(accLow) || 
-       (accLow.includes('vietcombank') && (lower.includes('vcb') || lower.includes('vietcom'))) ||
-       (accLow.includes('momo') && lower.includes('momo')) ||
-       (accLow.includes('tiền mặt') && (lower.includes('tiền mặt') || lower.includes('tien mat')))) {
-      matchedAccount = acc;
-      break;
-    }
-  }
-
-  // Detect Intent
-  let intent = 'create_expense';
-  let kind: 'expense' | 'income' | 'transfer' | 'lend' | 'debt_repay' = 'expense';
-  let accountTo: string | null = null;
-  let person: string | null = null;
-
-  if (lower.includes('chuyển') && (lower.includes('sang') || lower.includes('vào') || lower.includes('đến'))) {
-    intent = 'create_transfer';
-    kind = 'transfer';
-    for (const acc of accounts) {
-      if (acc !== matchedAccount && lower.includes(acc.toLowerCase())) {
-        accountTo = acc;
-        break;
-      }
-    }
-    if (!accountTo) {
-      accountTo = accounts.find(a => a !== matchedAccount) || accounts[1] || 'Vietcombank';
-    }
-  } else if (lower.includes('cho') && (lower.includes('vay') || lower.includes('mượn'))) {
-    intent = 'lend';
-    kind = 'lend';
-    const personMatch = lower.match(/cho\s+([a-zA-Zà-ỹÀ-Ỹ\s]+?)\s+(?:vay|mượn)/i);
-    person = personMatch ? personMatch[1].trim() : 'Bạn bè';
-  } else if (lower.includes('nhận') || lower.includes('lương') || lower.includes('thưởng') || lower.includes('thu nhập') || lower.includes('được cho')) {
-    intent = 'create_income';
-    kind = 'income';
-  } else if (lower.includes('trả nợ') || lower.includes('thanh toán nợ')) {
-    intent = 'debt_repay';
-    kind = 'debt_repay';
-  } else if (lower.includes('số dư') || lower.includes('còn bao nhiêu') || lower.includes('tổng tiền')) {
-    return {
-      intent: 'query_balance',
-      needs_confirmation: false,
-      clarification_question: null,
-      clarification_options: [],
-      analysis: 'Người dùng đang hỏi về số dư hiện tại của các tài khoản.',
-      answer: 'Dưới đây là thông tin số dư theo sổ cái LTMsav của bạn.',
-      commands: []
-    };
-  }
-
-  // Detect Category
-  let matchedCategory = kind === 'income' ? 'Lương' : 'Ăn uống';
-  const categoryKeywords: Record<string, string[]> = {
-    'Ăn uống': ['ăn', 'uống', 'trưa', 'sáng', 'tối', 'cà phê', 'cafe', 'cf', 'trà sữa', 'nhậu', 'buffet', 'bánh'],
-    'Di chuyển': ['xăng', 'grab', 'xe', 'taxi', 'be', 'gửi xe', 'vé', 'bảo dưỡng', 'sửa xe'],
-    'Mua sắm': ['mua', 'quần', 'áo', 'giày', 'shopee', 'lazada', 'tiki', 'đồ gia dụng', 'siêu thị'],
-    'Hóa đơn & Tiện ích': ['điện', 'nước', 'internet', 'wifi', 'rác', 'tiền mạng', 'cước'],
-    'Giải trí': ['phim', 'game', 'du lịch', 'netflix', 'spotify', 'hát', 'karaoke'],
-    'Lương': ['lương', 'salary'],
-    'Thưởng': ['thưởng', 'bonus'],
-    'Thu nhập khác': ['bán đồ', 'tiền lãi', 'thu nhập'],
-  };
-
-  for (const [cat, keywords] of Object.entries(categoryKeywords)) {
-    if (keywords.some(k => lower.includes(k))) {
-      matchedCategory = cat;
-      break;
-    }
-  }
-
-  // Clean description
-  let description = text.replace(/^(hôm nay|vừa|đã|mới)\s+/i, '');
-  if (description.length > 50) description = description.substring(0, 50);
-
-  const today = new Date().toISOString().split('T')[0];
-
-  return {
-    intent,
-    needs_confirmation: true,
-    clarification_question: amount === 0 ? 'Vui lòng xác nhận lại số tiền giao dịch chính xác.' : null,
-    clarification_options: [],
-    analysis: `Đã phân tích giao dịch: ${kind.toUpperCase()} ${amount.toLocaleString('vi-VN')}₫ vào danh mục [${matchedCategory}] qua [${matchedAccount}].`,
-    answer: null,
-    commands: [
-      {
-        kind,
-        amount: amount || 50000,
-        currency: 'VND',
-        account: matchedAccount,
-        account_to: accountTo,
-        category: matchedCategory,
-        date: today,
-        description: description || 'Giao dịch mới',
-        person,
-        note: `Tạo qua LTMsav AI: "${text}"`,
-      }
-    ]
-  };
-}
+import { parseVietnameseFinancialCommand } from './src/services/aiParser';
 
 // AI Chat endpoint
 app.post('/api/chat', async (req, res) => {
@@ -149,12 +26,14 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'Nội dung tin nhắn không hợp lệ' });
   }
 
+  if (message.length > 4000 || !Array.isArray(accounts) || !Array.isArray(categories) || accounts.length > 200 || categories.length > 200 || [...accounts, ...categories].some(value => typeof value !== 'string' || value.length > 200)) return res.status(400).json({ error: 'Dữ liệu đầu vào không hợp lệ hoặc quá dài.' });
+
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (apiKey) {
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const today = new Date().toISOString().split('T')[0];
+      const today = localDate();
       const systemInstruction = `Bạn là trợ lý phân tích giao dịch tài chính thông minh cho ứng dụng LTMsav (tiếng Việt).
 
 NHIỆM VỤ:
