@@ -33,11 +33,11 @@ for(const theme of ['light','dark']) {
  for(const [index,name] of ['overview','transactions','ai','budgets','assets'].entries()) {
   await page.locator('.ios-tab').nth(index).click();await page.waitForTimeout(1200);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${theme}/${name}: horizontal overflow`);
-  await page.screenshot({path:`ui-preview/${theme}-${name}.png`});
+  await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-${name}.png`});
  }
- await page.getByRole('button',{name:'Cài đặt',exact:true}).click();await page.waitForTimeout(1200);await page.screenshot({path:`ui-preview/${theme}-settings.png`});
+ await page.getByRole('button',{name:'Cài đặt',exact:true}).click();await page.waitForTimeout(1200);await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-settings.png`});
  await page.locator('.ios-tab').first().click();
- await page.getByRole('button',{name:'Thêm giao dịch',exact:true}).click();await page.waitForTimeout(1200);await page.screenshot({path:`ui-preview/${theme}-add-dialog.png`});
+ await page.getByRole('button',{name:'Thêm giao dịch',exact:true}).click();await page.waitForTimeout(1200);await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-add-dialog.png`});
  await page.getByRole('button',{name:'Hủy',exact:true}).click();
  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]),before,'UI navigation modified ledger');
 
@@ -50,7 +50,7 @@ for(const theme of ['light','dark']) {
   await page.setViewportSize({width:320,height:740});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Forecast overflow');
  }
- await page.screenshot({path:`ui-preview/${theme}-forecast-year.png`});
+ await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-forecast-year.png`});
  await page.locator('.ios-tab').first().click();
  await page.locator('main').getByRole('button',{name:'LTMsav AI',exact:true}).click();
  const input=page.locator('input[placeholder]');
@@ -59,26 +59,27 @@ for(const theme of ['light','dark']) {
  await input.fill('Dự báo chi tiêu quý tiếp theo');await input.press('Enter');
  await page.getByText(/Chưa đủ 2 tháng lịch sử: chỉ tính lịch định kỳ/).waitFor();
  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]),before,'AI queries modified ledger');
- await page.screenshot({path:`ui-preview/${theme}-ai-forecast.png`});
+ await page.waitForTimeout(800);
+ await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-ai-forecast.png`});
  assert.deepEqual(errors,[],`${theme}: browser errors`);
  await page.setViewportSize({width:320,height:740});await page.reload();await page.locator('.ios-dock').waitFor();await page.waitForTimeout(1200);
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${theme}: 320px overflow`);
- await page.screenshot({path:`ui-preview/${theme}-320-overview.png`});
+ await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-320-overview.png`});
  await page.locator('.ios-tab').nth(1).click();
  await page.getByRole('button',{name:'Định kỳ',exact:true}).click();await page.waitForTimeout(800);
  await page.getByRole('button',{name:'Thêm lịch định kỳ',exact:true}).first().click();
  await page.getByLabel('Tên khoản thu / chi',{exact:true}).fill('Hóa đơn định kỳ mẫu');
  await page.getByLabel('Số tiền (VND)',{exact:true}).fill('50000');
- await page.screenshot({path:`ui-preview/${theme}-recurring-editor.png`});
+ await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-recurring-editor.png`});
  await page.getByRole('button',{name:'Lưu lịch định kỳ',exact:true}).click();
- try { await page.getByRole('heading',{name:'Hóa đơn định kỳ mẫu',exact:true}).waitFor({timeout:10000}); } catch(error) { await page.screenshot({path:`ui-preview/${theme}-recurring-error.png`}); console.log('Recurring alerts:',await page.locator('[role=alert]').allTextContents()); throw error; }
+ try { await page.getByRole('heading',{name:'Hóa đơn định kỳ mẫu',exact:true}).waitFor({timeout:10000}); } catch(error) { await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-recurring-error.png`}); console.log('Recurring alerts:',await page.locator('[role=alert]').allTextContents()); throw error; }
  const posted=await page.evaluate(()=>({accounts:JSON.parse(localStorage.getItem('ltmsav_accounts_v1')),tx:JSON.parse(localStorage.getItem('ltmsav_transactions_v1')),rules:JSON.parse(localStorage.getItem('ltmsav_recurring_v1'))}));
  assert.equal(posted.accounts[0].balance,1200000,'Monthly expense must debit exactly once');
  assert.equal(posted.tx.filter(tx=>tx.recurringRuleId).length,1,'Exactly one due occurrence');
  assert.equal(posted.rules.length,1);assert.ok(posted.rules[0].lastProcessedMonth);
  await page.getByRole('button',{name:'Tạm dừng lịch: Hóa đơn định kỳ mẫu',exact:true}).click();
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_recurring_v1'))[0].enabled),false);
- await page.waitForTimeout(500);await page.screenshot({path:`ui-preview/${theme}-recurring-list.png`});
+ await page.waitForTimeout(500);await page.screenshot({animations:'disabled',path:`ui-preview/${theme}-recurring-list.png`});
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Recurring UI overflow at 320px');
  assert.deepEqual(errors,[],'Recurring flow browser errors');
  results.push({recurringCreatedAndPostedOnce:true,recurringPaused:true,theme,viewport:'390x844 + 320x740' ,views:7,ledgerPreserved:true,errors});await context.close();
