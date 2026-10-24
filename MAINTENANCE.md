@@ -86,4 +86,11 @@ User explicitly requested a new permanent private signing key and will handle th
 - Reports entry added to Overview; supports light/dark and VI/EN. Queries for balance/current-month income, expenses and budgets/forecasts compute locally without transmitting ledger contents. No external model required for those queries.
 - Offline recognizer accepts unaccented phrases, TCB/VCB/cash aliases, grouped/decimal/million shorthand amounts, yesterday/day before/tomorrow and explicit dates. Ambiguous accounts, multi-amount messages, negations and recurring requests clarify instead of posting. Remote command output now validates account/category/date/currency/amount before confirmation. Unsupported historical chat report periods ask user to use Reports.
 - Chat now scrolls its message container instead of the document, and fits available viewport space above the navigation. Browser checks ensure the chat header/input remain visible.
-- Validation: 38 regression tests, TypeScript, production build passed locally. New browser QA covers report horizons at 320px and local AI read-only balance/forecast replies. CI/browser/Android results pending; no device test.
+- Validation: 38 regression tests, TypeScript, production build passed locally. New browser QA covers report horizons at 320px and local AI read-only balance/forecast replies. CI/browser/Android results passed for the release below; no device test.
+
+
+## Verified AI/forecast release 1.9.2201
+- Source 4c314e4f3c272d58a7c37e93ba635eb0b5b40e30; Actions run 40080474168 completed successfully. All 38 tests, TypeScript, web build, browser checks and Android build passed.
+- Light/dark 320px browser checks cover all forecast horizons, actual local balance/forecast answers, ledger preservation, recurring create/post-once/pause and visible chat heading/input. Stable screenshots inspected. Chat scroll stays inside message history.
+- Signed APK LTMsav_1.9.2201.apk, versionCode12201, package com.ltmsav.app. Bundled UI version 1.9.2201 verified. Signing v1/v2/v3 passed with existing fixed certificate fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7.
+- APK SHA256 e3b5885cb6292ecdb2093aac323307bf5c579fcd9caecca902a724a28f44e4b8. Delivered privately. No schema/storage-key changes, no migration/reset; no physical-phone installation or real-model API test performed.
