@@ -38,7 +38,7 @@ for(const theme of ['light','dark']) {
  await page.getByRole('button',{name:'Cài đặt',exact:true}).click();await page.waitForTimeout(1200);await page.screenshot({path:`ui-preview/${theme}-settings.png`});
  await page.locator('.ios-tab').first().click();
  await page.getByRole('button',{name:'Thêm giao dịch',exact:true}).click();await page.waitForTimeout(1200);await page.screenshot({path:`ui-preview/${theme}-add-dialog.png`});
- await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:'Hủy',exact:true}).click();
  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]),before,'UI navigation modified ledger');
 
  await page.locator('.ios-tab').first().click();
