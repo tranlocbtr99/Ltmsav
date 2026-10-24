@@ -39,3 +39,12 @@ Read this file first. UI → APP_MAP table; money/restore → storage.ts + stora
 
 ## Signing identity change authorized 2026-10-24
 User explicitly requested a new permanent private signing key and will handle the one-time backup/reinstallation. This overrides the original-key-only rule for this transition. A new RSA-4096 key was generated once and delivered privately as LTMsav_Signing_Kit_20261024.zip; no private key/password belongs in git. Keep this identity for future releases. CI may build explicitly unsigned packages for local signing when repository secrets are absent; unsigned packages are never described as installable releases.
+
+## Verified release 2026-10-24
+- APK: LTMsav_1.9.1301.apk, versionCode 11301, package com.ltmsav.app; built from f11c6ccfaf0affe6d2e8852d931ad6177749e589.
+- GitHub Actions run 40071749267 passed validation and Android APK/AAB compilation.
+- APK was signed privately with the fixed key above. apksigner verified v1/v2/v3; certificate matched the delivered keystore certificate. APK manifest and bundled UI both report 1.9.1301.
+- APK SHA-256: fca6cc6d51a69abb35e51c46e02c7f8a84bef4558350fc92cfd49d93b4d3ea16
+- Signing certificate SHA-256: fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7
+- APK and private signing kit were delivered privately as downloadable files. No phone install/restore test was performed.
+- Future releases: retrieve the exact existing key kit; do not generate another key. GitHub signing secrets are not configured by this delivery. Without them CI deliberately produces unsigned artifacts for private signing.
