@@ -49,7 +49,7 @@ test('v2 migration preserves user-owned demo IDs, PIN, budgets and debts', () =>
  assert.equal(storage.getAccounts()[0].balance,123456);
  assert.equal(storage.getSettings().pinCode,'1234');
  assert.equal(storage.getSettings().securityEnabled,true);
- assert.equal(data.get('ltmsav_schema_version'),'6');
+ assert.equal(data.get('ltmsav_schema_version'),'7');
  assert.equal(storage.getAutoSnapshots()[0].data.accounts[0].balance,123456);
 });
 test('migration stops when safety snapshot cannot be saved', () => {

@@ -1,7 +1,9 @@
+import { localDate } from './date';
+import { monthlyDate, followingMonth, nextOnOrAfter } from './recurrence';
 import release from '../release.json';
-import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from '../types';
+import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings, RecurringTransaction, RecurringInput } from '../types';
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 const STORAGE_KEYS = {
   SCHEMA_VERSION: 'ltmsav_schema_version',
@@ -13,6 +15,7 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: 'ltmsav_audit_logs_v1',
   SETTINGS: 'ltmsav_settings_v1',
   SNAPSHOTS: 'ltmsav_auto_snapshots_v1',
+  RECURRING: 'ltmsav_recurring_v1',
 };
 
 // Initial default data seed — empty for new users
@@ -105,6 +108,8 @@ class StorageManager {
           }
         }
 
+        if (storedVersion < 7 && localStorage.getItem(STORAGE_KEYS.RECURRING) === null) this.set(STORAGE_KEYS.RECURRING, []);
+
         // Preserve all historical IDs and PINs. Demo IDs may contain real user data.
 
         localStorage.setItem(STORAGE_KEYS.SCHEMA_VERSION, SCHEMA_VERSION.toString());
@@ -147,6 +152,7 @@ class StorageManager {
           debts: this.getDebtsAndLoans(),
           settings: this.getSettings(),
           auditLogs: this.getAuditLogs(),
+          recurringTransactions: this.getRecurringTransactions(),
         }
       };
       snapshots.unshift(currentData);
@@ -256,6 +262,7 @@ class StorageManager {
     const accounts = this.getAccounts();
     const account = accounts.find(a => a.id === id);
     if (!account) return false;
+    if (this.getRecurringTransactions().some(rule => rule.accountId === id)) throw new Error('Tài khoản đang được dùng trong lịch định kỳ. Hãy xóa hoặc đổi lịch trước.');
     if (this.getTransactions().some(t => t.accountId === id || t.targetAccountId === id) || this.getDebtsAndLoans().some(d => d.accountId === id)) throw new Error('Tài khoản có lịch sử giao dịch hoặc công nợ. Hãy giữ lại để bảo toàn sổ sách.');
     const filtered = accounts.filter(a => a.id !== id);
     this.saveAccounts(filtered);
@@ -296,6 +303,7 @@ class StorageManager {
   }
 
   deleteCategory(id: string): boolean {
+    if (this.getRecurringTransactions().some(rule => rule.categoryId === id)) throw new Error('Danh mục đang được dùng trong lịch định kỳ.');
     let categories = this.getCategories();
     categories = categories.filter(c => c.id !== id);
     this.saveCategories(categories);
@@ -398,6 +406,92 @@ class StorageManager {
 
     this.addAuditLog('DELETE', 'TRANSACTION', id, `Xóa giao dịch và đảo số dư: ${tx.description} (${tx.amount.toLocaleString('vi-VN')}₫)`);
     return true;
+  }
+
+  // --- Monthly recurrence: definition, posting and cursor commit together ---
+  getRecurringTransactions(): RecurringTransaction[] {
+    return this.get<RecurringTransaction[]>(STORAGE_KEYS.RECURRING, []);
+  }
+
+  private validateRecurringRule(rule: RecurringTransaction): void {
+    if (!rule || typeof rule.id !== 'string' || !rule.id || !['income', 'expense'].includes(rule.type) || !Number.isSafeInteger(rule.amount) || rule.amount <= 0 || typeof rule.accountId !== 'string' || typeof rule.categoryId !== 'string' || typeof rule.description !== 'string' || !rule.description.trim() || typeof rule.enabled !== 'boolean') throw new Error('Lịch giao dịch định kỳ không hợp lệ.');
+    if (typeof rule.nextDueDate !== 'string' || monthlyDate(rule.nextDueDate.slice(0, 7), rule.dayOfMonth) !== rule.nextDueDate) throw new Error('Ngày đến hạn không hợp lệ.');
+    if (rule.lastProcessedMonth !== undefined && !/^\d{4}-(0[1-9]|1[0-2])$/.test(rule.lastProcessedMonth)) throw new Error('Kỳ đã xử lý không hợp lệ.');
+  }
+
+  upsertRecurringTransaction(input: RecurringInput, id?: string, today = localDate()): RecurringTransaction {
+    if (Number(localStorage.getItem(STORAGE_KEYS.SCHEMA_VERSION) || 1) < 7) throw new Error('Chưa thể nâng cấp dữ liệu an toàn. Hãy giải phóng bộ nhớ và mở lại ứng dụng.');
+    const rules = this.getRecurringTransactions();
+    const existing = id ? rules.find(rule => rule.id === id) : undefined;
+    if (id && !existing) throw new Error('Không tìm thấy lịch định kỳ.');
+    const rule: RecurringTransaction = { ...input, description: input.description.trim(), id: existing?.id ?? 'rec_' + crypto.randomUUID(), lastProcessedMonth: existing?.lastProcessedMonth };
+    this.validateRecurringRule(rule);
+    if (rule.nextDueDate < today) throw new Error('Hãy chọn kỳ bắt đầu từ hôm nay trở đi.');
+    if (!this.getAccounts().some(a => a.id === rule.accountId) || !this.getCategories().some(c => c.id === rule.categoryId && c.type === rule.type)) throw new Error('Tài khoản hoặc danh mục không phù hợp.');
+    if (existing) rules[rules.findIndex(r => r.id === id)] = rule;
+    else rules.push(rule);
+    this.set(STORAGE_KEYS.RECURRING, rules);
+    return rule;
+  }
+
+  toggleRecurringTransaction(id: string, today = localDate()): void {
+    const rules = this.getRecurringTransactions();
+    const rule = rules.find(rule => rule.id === id);
+    if (!rule) throw new Error('Không tìm thấy lịch định kỳ.');
+    rule.enabled = !rule.enabled;
+    // Paused months are intentionally skipped, not charged in a lump when resumed.
+    if (rule.enabled) rule.nextDueDate = nextOnOrAfter(today > rule.nextDueDate ? today : rule.nextDueDate, rule.dayOfMonth);
+    this.set(STORAGE_KEYS.RECURRING, rules);
+  }
+
+  deleteRecurringTransaction(id: string): void {
+    this.set(STORAGE_KEYS.RECURRING, this.getRecurringTransactions().filter(rule => rule.id !== id));
+  }
+
+  async processRecurringWithLock(today = localDate()): Promise<{ created: number; pending: number }> {
+    const run = () => this.processRecurringTransactions(today);
+    if (typeof navigator !== 'undefined' && navigator.locks) return navigator.locks.request('ltmsav-recurring-posting', run);
+    return run();
+  }
+
+  processRecurringTransactions(today = localDate()): { created: number; pending: number } {
+    let created = 0, pending = 0;
+    if (Number(localStorage.getItem(STORAGE_KEYS.SCHEMA_VERSION) || 1) < 7) return {created, pending};
+    const ruleIds = this.getRecurringTransactions().filter(rule => rule.enabled).sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate) || (a.type === b.type ? a.id.localeCompare(b.id) : a.type === 'income' ? -1 : 1)).map(rule => rule.id);
+    for (const id of ruleIds) {
+      for (let iteration = 0; iteration < 120; iteration++) {
+        const rules = this.getRecurringTransactions();
+        const rule = rules.find(item => item.id === id);
+        if (!rule || !rule.enabled || rule.nextDueDate > today) break;
+        this.validateRecurringRule(rule);
+        const month = rule.nextDueDate.slice(0, 7);
+        const txId = `tx_recurring_${rule.id}_${month}`;
+        const transactions = this.getTransactions();
+        if ((rule.lastProcessedMonth && month <= rule.lastProcessedMonth) || transactions.some(tx => tx.id === txId || (tx.recurringRuleId === rule.id && tx.recurringMonth === month))) {
+          rule.lastProcessedMonth = rule.lastProcessedMonth && rule.lastProcessedMonth > month ? rule.lastProcessedMonth : month;
+          rule.nextDueDate = followingMonth(rule.nextDueDate, rule.dayOfMonth);
+          this.set(STORAGE_KEYS.RECURRING, rules);
+          continue;
+        }
+        const accounts = this.getAccounts();
+        const account = accounts.find(a => a.id === rule.accountId);
+        if (!account || !this.getCategories().some(c => c.id === rule.categoryId && c.type === rule.type) || (rule.type === 'expense' && !this.getSettings().allowNegativeBalance && account.balance < rule.amount)) { pending++; break; }
+        const tx: Transaction = { id: txId, type: rule.type, amount: rule.amount, accountId: rule.accountId, categoryId: rule.categoryId, date: rule.nextDueDate, description: rule.description, recurringRuleId: rule.id, recurringMonth: month, createdAt: new Date().toISOString() };
+        this.validateTransaction(tx, accounts);
+        const balances = this.applyBalanceChange(accounts, tx, 1);
+        transactions.unshift(tx);
+        rule.lastProcessedMonth = month;
+        rule.nextDueDate = followingMonth(rule.nextDueDate, rule.dayOfMonth);
+        this.atomicWrite(() => {
+          this.saveAccounts(balances);
+          this.saveTransactions(transactions);
+          this.set(STORAGE_KEYS.RECURRING, rules);
+          this.addAuditLog('CREATE', 'TRANSACTION', tx.id, `Định kỳ ${month}: ${rule.description}`);
+        });
+        created++;
+      }
+    }
+    return { created, pending };
   }
 
   // --- Budgets ---
@@ -519,6 +613,7 @@ class StorageManager {
         debts: this.getDebtsAndLoans(),
         settings: this.getSettings(),
         auditLogs: this.getAuditLogs(),
+        recurringTransactions: this.getRecurringTransactions(),
       }
     };
     return JSON.stringify(payload, null, 2);
@@ -532,9 +627,10 @@ class StorageManager {
       }
       if (parsed.schemaVersion && (!Number.isInteger(parsed.schemaVersion) || parsed.schemaVersion > SCHEMA_VERSION)) throw new Error('Bản sao lưu thuộc phiên bản ứng dụng mới hơn. Hãy cập nhật ứng dụng trước.');
       const d = parsed.data;
-      for (const key of ['accounts', 'transactions', 'categories', 'budgets', 'debts', 'auditLogs']) {
+      for (const key of ['accounts', 'transactions', 'categories', 'budgets', 'debts', 'auditLogs', 'recurringTransactions']) {
         if (d[key] !== undefined && (!Array.isArray(d[key]) || d[key].some((item: any) => !item || typeof item.id !== 'string') || new Set(d[key].map((item: any) => item.id)).size !== d[key].length)) throw new Error(`Dữ liệu ${key} không hợp lệ hoặc trùng ID.`);
       }
+      for (const rule of d.recurringTransactions || []) this.validateRecurringRule(rule);
       if (d.accounts.some((a: any) => typeof a.name !== 'string' || !Number.isFinite(a.balance))) throw new Error('Số dư tài khoản không hợp lệ.');
       for (const tx of d.transactions) this.validateTransaction(tx, d.accounts);
       if (d.budgets?.some((b: any) => !Number.isFinite(b.monthlyLimit) || b.monthlyLimit <= 0 || typeof b.categoryId !== 'string')) throw new Error('Ngân sách không hợp lệ.');
@@ -551,6 +647,9 @@ class StorageManager {
       if (parsed.data.debts) this.saveDebtsAndLoans(parsed.data.debts);
       if (parsed.data.settings) this.saveSettings({ ...DEFAULT_SETTINGS, ...parsed.data.settings });
       if (parsed.data.auditLogs) this.set(STORAGE_KEYS.AUDIT_LOGS, parsed.data.auditLogs);
+      // Legacy backups contain no schedules. Preserve local definitions but pause them
+      // so restoring an older balance cannot silently trigger unrelated payments.
+      this.set(STORAGE_KEYS.RECURRING, parsed.data.recurringTransactions ?? this.getRecurringTransactions().map(rule => ({ ...rule, enabled: false })));
       });
       return { success: true, message: 'Khôi phục toàn bộ dữ liệu thành công!' };
     } catch (e: any) {
@@ -569,6 +668,7 @@ class StorageManager {
     localStorage.removeItem(STORAGE_KEYS.DEBTS);
     localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+    localStorage.removeItem(STORAGE_KEYS.RECURRING);
   }
 
   // Permanently delete every trace of local data (account erasure, GDPR-style)
@@ -589,6 +689,7 @@ class StorageManager {
       localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
       localStorage.removeItem(STORAGE_KEYS.SETTINGS);
       localStorage.removeItem(STORAGE_KEYS.SNAPSHOTS);
+      localStorage.removeItem(STORAGE_KEYS.RECURRING);
 
       const legacyKeys = [
         'finflow_accounts_v1', 'finflow_categories_v1', 'finflow_transactions_v1',

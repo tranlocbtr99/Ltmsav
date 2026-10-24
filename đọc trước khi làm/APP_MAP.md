@@ -1,9 +1,10 @@
 # APP_MAP — LTMsav
+> Monthly schedules: `src/components/RecurringTransactionsTab.tsx` via Transactions → Recurring; `src/services/recurrence.ts` calendar helpers; storage.ts CRUD/posting/backup. App.tsx owns schedule state + foreground scheduler. Tests: recurring.test.ts. New key `ltmsav_recurring_v1`; schema7 adds it after snapshot.
 > Liquid Glass: `src/index.css` ios-* tokens; Navigation.tsx, OverviewTab.tsx, SplashScreen.tsx. Logo master `assets/logo-source.svg`; run `npm run logo -- assets/logo-source.svg` (Pillow + CairoSVG). UI QA: `scripts/visual-qa.mjs`. New VI/EN keys: mainNavigation, newTransaction, aiModeLabel, aiModeLocal, aiModeGemini, disableGemini, geminiKeyApplied.
 > Current status and limitations: root `MAINTENANCE.md`; release: `RELEASE.md`; rules: root `AGENTS.md`. These take precedence over historical notes below.
 > New files: `src/services/date.ts` (local day), `csv.ts` (CSV + download), `src/release.json` (generated version), `scripts/release-version.mjs`, `tests/*.test.ts`.
 > New i18n key: `exportCsv` (VI/EN). Settings now exports CSV.
-> Schema = 6. Tests exist: `npm run check`. Root android is historical; mobile/ is canonical.
+> Schema = 7. Tests exist: `npm run check`. Root android is historical; mobile/ is canonical.
 > **QUY TẮC DÙNG FILE NÀY**: khi user yêu cầu cập nhật tính năng → đọc file này trước (≈150 dòng), KHÔNG đọc cả app. Chỉ mở đúng 1–3 file liên quan được liệt kê ở mục "Chạm vào đâu". Sau khi sửa app mà cấu trúc thay đổi (file mới, tab mới, key mới) → cập nhật luôn file này.
 
 ## 1. App là gì
@@ -14,7 +15,7 @@ App chi tiêu cá nhân **LTMsav** (tên cũ Finflow), offline-first, chạy c�
 - Dev: `npm run dev` (tsx server.ts, cổng 3000 — vừa serve Vite vừa API). `npm run lint` = `tsc --noEmit`. **Có regression tests trong `tests/`.**
 
 ## 2. Kiến trúc dữ liệu (đọc kỹ trước khi thêm field)
-Tất cả nằm trên `localStorage`, khóa tiền tố `ltmsav_*` (legacy `finflow_*` được tự migrate). Singleton `storage` trong `src/services/storage.ts`, `SCHEMA_VERSION = 6` ở đầu file.
+Tất cả nằm trên `localStorage`, khóa tiền tố `ltmsav_*` (legacy `finflow_*` được tự migrate). Singleton `storage` trong `src/services/storage.ts`, `SCHEMA_VERSION = 7` ở đầu file.
 
 | Khóa localStorage | Type (`src/types.ts`) | Ghi chú |
 |---|---|---|

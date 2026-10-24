@@ -2,7 +2,7 @@
 
 ## Current implementation
 - Baseline inspected: `0493c02` / previous CI version 1.5.11; APK 1.8.2 mentioned in prior work is NOT proven to be present in this repository.
-- Source dev version: 1.9.0-dev; schema 6 (non-destructive replacement for legacy demo-ID cleanup).
+- Source dev version: 1.9.0-dev; schema 7 (non-destructive replacement for legacy demo-ID cleanup).
 - Canonical architecture: React 19 / localStorage / Vite PWA / Capacitor 7; Express provides optional Gemini endpoint.
 - `npm run check`: TypeScript + regression tests + production web build. Capacitor sync and version generation were also checked locally; Gradle APK signing has not been run.
 - No production credentials, signing key, installed APK certificate or real-user backup was available in this checkout.
@@ -62,3 +62,12 @@ User explicitly requested a new permanent private signing key and will handle th
 - APK versionName 1.9.1501, versionCode 11501, package com.ltmsav.app. New bundled logo matches generated SVG assets; bundled UI version matches manifest. Signed with the existing 2026-10-24 key (same as 1.9.1301); apksigner v1/v2/v3 verification passed.
 - SHA-256 d6488730b41f62bcf518cd321a8e288e83de935258573f6ee7b2ce14679cf170. APK delivered privately as LTMsav_1.9.1501.apk. No physical-phone installation test was performed.
 - UI only: storage.ts, schema and data contracts were not changed. For next UI edits start with ios-* tokens in index.css and run visual-qa.mjs in CI; do not regenerate the signing key.
+
+## Monthly recurring transactions
+- Entry: Transactions → Recurring, managed by RecurringTransactionsTab.tsx (lazy), with App.tsx state/handlers.
+- Schema 7 only adds `ltmsav_recurring_v1` after a required snapshot. Existing ledger/settings/PIN keys remain byte-identical in migration. New backup/snapshots include `recurringTransactions`. Legacy backup import preserves local definitions but pauses them.
+- `recurrence.ts` handles calendar-month arithmetic and last-day clamping while retaining desired day 1–31.
+- Each rule stores nextDueDate + lastProcessedMonth. Generated transactions use deterministic rule/month IDs and recurringRuleId/recurringMonth metadata. Balances, history, cursor and audit commit in one rollback journal transaction. Deleting a generated transaction does not recreate that occurrence; deleting a rule preserves history.
+- Scheduler runs on app open/unlock, foreground return and every 60 seconds while visible. It catches up due months; no background service, OS notifications or bank integration. Expenses with insufficient funds remain due. Resuming a paused schedule skips paused months. Web Locks serialize scheduler runs where available.
+- Tests: recurring.test.ts covers clamping/leap/year boundaries, catch-up/idempotency, insufficiency/retry, pause/resume, deletion/edit behavior, journal failure, backup and schema 6 migration. Browser QA creates a due rule, verifies one debit and pauses it in both themes at 320px.
+- Future change scope: types.ts, recurrence.ts, storage.ts, RecurringTransactionsTab.tsx, App.tsx and corresponding translations/tests. Reuse existing signing key.

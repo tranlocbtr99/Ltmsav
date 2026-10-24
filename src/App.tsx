@@ -2,7 +2,7 @@ import { downloadText } from './services/csv';
 import { localDate } from './services/date';
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { storage } from './services/storage';
-import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from './types';
+import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings, RecurringTransaction, RecurringInput } from './types';
 import { TopHeader, BottomNavBar } from './components/Navigation';
 import { useLanguage } from './contexts/LanguageContext';
 import { OverviewTab } from './components/OverviewTab';
@@ -11,6 +11,7 @@ const AiChatTab = lazy(() => import('./components/AiChatTab').then(module => ({ 
 import { BudgetsTab } from './components/BudgetsTab';
 import { AssetsTab } from './components/AssetsTab';
 const ReportsTab = lazy(() => import('./components/ReportsTab').then(module => ({ default: module.ReportsTab })));
+const RecurringTransactionsTab = lazy(() => import('./components/RecurringTransactionsTab').then(module => ({ default: module.RecurringTransactionsTab })));
 const SettingsTab = lazy(() => import('./components/SettingsTab').then(module => ({ default: module.SettingsTab })));
 import { EditTransactionModal } from './components/EditTransactionModal';
 import { AddTransactionModal } from './components/AddTransactionModal';
@@ -27,6 +28,8 @@ export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('overview');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [transactionView, setTransactionView] = useState<'history' | 'recurring'>('history');
+  const [recurring, setRecurring] = useState<RecurringTransaction[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [debts, setDebts] = useState<DebtOrLoan[]>([]);
@@ -84,6 +87,7 @@ export const App: React.FC = () => {
     setAccounts(storage.getAccounts());
     setCategories(storage.getCategories());
     setTransactions(storage.getTransactions());
+    setRecurring(storage.getRecurringTransactions());
     setBudgets(storage.getBudgets());
     setDebts(storage.getDebtsAndLoans());
     setAuditLogs(storage.getAuditLogs());
@@ -94,6 +98,34 @@ export const App: React.FC = () => {
   useEffect(() => {
     reloadData();
   }, []);
+
+  useEffect(() => {
+    if (isLocked || showSplash) return;
+    let cancelled = false;
+    const run = async () => {
+      if (cancelled || document.hidden) return;
+      try {
+        const result = await storage.processRecurringWithLock();
+        if (!cancelled) { reloadData(); if (result.created) showToast(t('recurringProcessed', { count: result.created })); }
+      } catch (error) { if (!cancelled) showToast((error as Error).message); }
+    };
+    void run();
+    const interval = window.setInterval(() => void run(), 60000);
+    const onVisibility = () => { if (!document.hidden) void run(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { cancelled = true; window.clearInterval(interval); document.removeEventListener('visibilitychange', onVisibility); };
+  }, [isLocked, showSplash]);
+
+  const handleSaveRecurring = async (input: RecurringInput, id?: string) => {
+    storage.upsertRecurringTransaction(input, id);
+    // The definition is already saved: a posting failure must not leave the create
+    // form open and accidentally create a second rule when the user retries.
+    try {
+      const result = await storage.processRecurringWithLock();
+      showToast(result.created ? t('recurringProcessed', {count:result.created}) : t('recurringSaved'));
+    } catch (error) { showToast((error as Error).message); }
+    reloadData();
+  };
 
   // Handlers
   const handleToggleTheme = () => {
@@ -242,14 +274,19 @@ export const App: React.FC = () => {
           )}
 
           {currentTab === 'transactions' && (
-            <TransactionsTab
+            <div className="space-y-4">
+              <div className="glass-panel !rounded-full p-1 flex gap-1 text-sm font-semibold">
+                {(['history', 'recurring'] as const).map(view => <button key={view} type="button" aria-pressed={transactionView===view} onClick={()=>setTransactionView(view)} className={`flex-1 rounded-full px-3 py-2.5 ${transactionView===view?'bg-blue-600 text-white':'text-slate-500 dark:text-slate-300'}`}>{t(view==='history'?'transactions':'recurringTitle')}</button>)}
+              </div>
+              {transactionView==='recurring' ? <RecurringTransactionsTab rules={recurring} accounts={accounts} categories={categories} onSave={handleSaveRecurring} onToggle={id=>{storage.toggleRecurringTransaction(id);reloadData();}} onDelete={id=>{storage.deleteRecurringTransaction(id);reloadData();}} /> : <TransactionsTab
               transactions={transactions}
               accounts={accounts}
               categories={categories}
               onSelectTransaction={(tx) => setSelectedTxForEdit(tx)}
               onOpenAdd={() => setIsAddModalOpen(true)}
               onDeleteTransaction={handleDeleteTransaction}
-            />
+            />}
+            </div>
           )}
 
           {currentTab === 'ai' && (
