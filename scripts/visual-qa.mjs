@@ -27,20 +27,24 @@ for(const theme of ['light','dark']) {
   localStorage.setItem('ltmsav_settings_v1',JSON.stringify({theme,securityEnabled:false,pinCode:'',biometricEnabled:false,allowNegativeBalance:false}));
  },{theme});
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('http://ltmsav.test/');await page.locator('.ios-dock').waitFor();await page.waitForTimeout(200);
+ await page.goto('http://ltmsav.test/');await page.locator('.ios-dock').waitFor();await page.waitForTimeout(1200);
+ assert.ok(await page.locator('.ios-balance-card').evaluate(element=>element.getBoundingClientRect().height < 290),'Balance hero is too tall');
  const before=await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]);
  for(const [index,name] of ['overview','transactions','ai','budgets','assets'].entries()) {
-  await page.locator('.ios-tab').nth(index).click();await page.waitForTimeout(350);
+  await page.locator('.ios-tab').nth(index).click();await page.waitForTimeout(1200);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${theme}/${name}: horizontal overflow`);
   await page.screenshot({path:`ui-preview/${theme}-${name}.png`});
  }
- await page.getByRole('button',{name:'Cài đặt',exact:true}).click();await page.waitForTimeout(350);await page.screenshot({path:`ui-preview/${theme}-settings.png`});
+ await page.getByRole('button',{name:'Cài đặt',exact:true}).click();await page.waitForTimeout(1200);await page.screenshot({path:`ui-preview/${theme}-settings.png`});
  await page.locator('.ios-tab').first().click();
- await page.getByRole('button',{name:'Thêm giao dịch',exact:true}).click();await page.waitForTimeout(200);await page.screenshot({path:`ui-preview/${theme}-add-dialog.png`});
+ await page.getByRole('button',{name:'Thêm giao dịch',exact:true}).click();await page.waitForTimeout(1200);await page.screenshot({path:`ui-preview/${theme}-add-dialog.png`});
  await page.keyboard.press('Escape');
  assert.deepEqual(await page.evaluate(()=>[localStorage.getItem('ltmsav_accounts_v1'),localStorage.getItem('ltmsav_transactions_v1')]),before,'UI navigation modified ledger');
  assert.deepEqual(errors,[],`${theme}: browser errors`);
- results.push({theme,viewport:'390x844',views:7,ledgerPreserved:true,errors});await context.close();
+ await page.setViewportSize({width:320,height:740});await page.reload();await page.locator('.ios-dock').waitFor();await page.waitForTimeout(1200);
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${theme}: 320px overflow`);
+ await page.screenshot({path:`ui-preview/${theme}-320-overview.png`});
+ results.push({theme,viewport:'390x844 + 320x740',views:7,ledgerPreserved:true,errors});await context.close();
 }
 }finally{await browser.close();}
 await fs.writeFile('ui-preview/results.json',JSON.stringify(results,null,2));console.log(JSON.stringify(results));

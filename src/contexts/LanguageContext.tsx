@@ -9,6 +9,11 @@ interface LanguageContextType {
 }
 
 const vi: Record<string, string> = {
+  aiModeGemini: 'Gemini',
+  aiModeLabel: 'Chế độ AI',
+  aiModeLocal: 'AI cục bộ (offline)',
+  disableGemini: 'Tắt Gemini',
+  geminiKeyApplied: 'Đã lưu cấu hình Gemini',
   mainNavigation: 'Điều hướng chính',
   newTransaction: 'Thêm giao dịch',
   exportCsv: 'Xuất giao dịch CSV (Excel)',
@@ -40,7 +45,7 @@ const vi: Record<string, string> = {
 
   // Overview
   categories: 'Danh mục',
-  netWorth: 'Tổng Tài Sản Ròng (Net Worth)',
+  netWorth: 'Tài sản ròng',
   moneySources: 'nguồn tiền',
   totalAssets: 'Tổng tài sản',
   totalDebtToPay: 'Nợ cần trả',
@@ -410,6 +415,11 @@ const vi: Record<string, string> = {
 };
 
 const en: Record<string, string> = {
+  aiModeGemini: 'Gemini',
+  aiModeLabel: 'AI mode',
+  aiModeLocal: 'Local AI (offline)',
+  disableGemini: 'Disable Gemini',
+  geminiKeyApplied: 'Gemini configuration saved',
   mainNavigation: 'Main navigation',
   newTransaction: 'Add transaction',
   exportCsv: 'Export transactions as CSV (Excel)',

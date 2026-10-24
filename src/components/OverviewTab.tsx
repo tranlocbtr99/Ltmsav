@@ -220,7 +220,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       
       {/* Net Worth Hero Card */}
       <div className="ios-balance-card relative overflow-hidden p-6 sm:p-7 text-white">
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/5 blur-2xl pointer-events-none" />
         
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-blue-100">
