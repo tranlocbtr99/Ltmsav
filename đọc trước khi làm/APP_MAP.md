@@ -1,5 +1,5 @@
 # APP_MAP — LTMsav
-> Liquid Glass: `src/index.css` ios-* tokens; Navigation.tsx, OverviewTab.tsx, SplashScreen.tsx. Logo master `assets/logo-source.svg`; run `npm run logo -- assets/logo-source.svg` (Pillow + CairoSVG). UI QA: `scripts/visual-qa.mjs`. New VI/EN keys: mainNavigation, newTransaction.
+> Liquid Glass: `src/index.css` ios-* tokens; Navigation.tsx, OverviewTab.tsx, SplashScreen.tsx. Logo master `assets/logo-source.svg`; run `npm run logo -- assets/logo-source.svg` (Pillow + CairoSVG). UI QA: `scripts/visual-qa.mjs`. New VI/EN keys: mainNavigation, newTransaction, aiModeLabel, aiModeLocal, aiModeGemini, disableGemini, geminiKeyApplied.
 > Current status and limitations: root `MAINTENANCE.md`; release: `RELEASE.md`; rules: root `AGENTS.md`. These take precedence over historical notes below.
 > New files: `src/services/date.ts` (local day), `csv.ts` (CSV + download), `src/release.json` (generated version), `scripts/release-version.mjs`, `tests/*.test.ts`.
 > New i18n key: `exportCsv` (VI/EN). Settings now exports CSV.

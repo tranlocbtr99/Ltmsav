@@ -55,3 +55,10 @@ User explicitly requested a new permanent private signing key and will handle th
 - Added VI/EN keys: mainNavigation, newTransaction.
 - UI-only changes: schema 6 and all storage keys/contracts are unchanged; reuse SIGNING_IDENTITY.json key. No reset/migration added.
 - Browser QA: scripts/visual-qa.mjs uses synthetic data, light/dark screenshots, tab navigation, runtime-error checks and ledger preservation. CI downloads browser; local browser download was unavailable.
+
+## Verified Liquid Glass release 1.9.1501
+- Built from 8362f7476757714a05e962054fe06692f106d986; GitHub Actions 40073254236 passed 18 tests, web build, Chromium UI QA and Android APK/AAB build.
+- Browser QA passed all five tabs, settings and add dialog in light/dark at 390x844; also checked 320x740 with no horizontal overflow. Synthetic account/transaction storage remained byte-identical during navigation. Screenshots inspected; compact balance hero and readable dark settings verified.
+- APK versionName 1.9.1501, versionCode 11501, package com.ltmsav.app. New bundled logo matches generated SVG assets; bundled UI version matches manifest. Signed with the existing 2026-10-24 key (same as 1.9.1301); apksigner v1/v2/v3 verification passed.
+- SHA-256 d6488730b41f62bcf518cd321a8e288e83de935258573f6ee7b2ce14679cf170. APK delivered privately as LTMsav_1.9.1501.apk. No physical-phone installation test was performed.
+- UI only: storage.ts, schema and data contracts were not changed. For next UI edits start with ios-* tokens in index.css and run visual-qa.mjs in CI; do not regenerate the signing key.
