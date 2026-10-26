@@ -6,8 +6,8 @@ type Rule = { id: string; title: string; amount: number; type: 'expense'|'income
 const KEY = 'ltmsav_recurring_rules_v1';
 const monthKey = (d: Date) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
 const read = (): Rule[] => { try { const v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
-interface Props { accounts: Account[]; categories: Category[]; onAdd: (tx: Omit<Transaction,'id'|'createdAt'>) => void; }
-export const RecurringTab: React.FC<Props> = ({accounts,categories,onAdd}) => {
+interface Props { accounts: Account[]; categories: Category[]; transactions: Transaction[]; onAdd: (tx: Omit<Transaction,'id'|'createdAt'>) => void; }
+export const RecurringTab: React.FC<Props> = ({accounts,categories,transactions,onAdd}) => {
   const [rules,setRules] = useState<Rule[]>(read);
   const [title,setTitle] = useState('');
   const [amount,setAmount] = useState('');
@@ -28,7 +28,7 @@ export const RecurringTab: React.FC<Props> = ({accounts,categories,onAdd}) => {
     try {save([...rules,rule]);setTitle('');setAmount('');setError('');} catch {setError('Không thể lưu lịch định kỳ.');}
   };
   const apply=(rule:Rule)=>{
-    if(rule.lastApplied===currentMonth)return;
+    if(rule.lastApplied===currentMonth || transactions.some(tx=>tx.note?.includes('Giao dịch định kỳ: '+rule.id+' / '+currentMonth))){setError('Giao dịch đã được ghi nhận trong tháng này.');return;}
     const today=new Date(); const maxDay=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
     if(today.getDate()<Math.min(rule.day,maxDay)){setError('Giao dịch này chưa đến hạn trong tháng.');return;}
     if(!accounts.some(a=>a.id===rule.accountId)||!categories.some(c=>c.id===rule.categoryId)){setError('Tài khoản hoặc danh mục đã bị xóa.');return;}
@@ -52,6 +52,6 @@ export const RecurringTab: React.FC<Props> = ({accounts,categories,onAdd}) => {
       </form>
     </div>
     {error&&<p role="alert" className="text-sm text-rose-600">{error}</p>}
-    <div className="space-y-2">{rules.length===0?<p className="text-center text-slate-500 text-sm p-6">Chưa có lịch định kỳ.</p>:rules.map(rule=><div key={rule.id} className="glass-card p-4 rounded-2xl flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold text-sm truncate">{rule.title}</p><p className="text-xs text-slate-500">Ngày {rule.day} hằng tháng · {rule.amount.toLocaleString('vi-VN')} ₫</p><p className="text-[11px] text-slate-500">{rule.lastApplied===currentMonth?'Đã ghi nhận tháng này':'Chưa ghi nhận tháng này'}</p></div><button onClick={()=>apply(rule)} disabled={rule.lastApplied===currentMonth} className="text-xs rounded-xl bg-blue-600 text-white p-2 disabled:opacity-40">Ghi nhận</button><button aria-label="Xóa lịch" onClick={()=>{if(confirm('Xóa lịch định kỳ này?'))save(rules.filter(r=>r.id!==rule.id));}} className="text-rose-500 p-2"><Trash2 size={17}/></button></div>)}</div>
+    <div className="space-y-2">{rules.length===0?<p className="text-center text-slate-500 text-sm p-6">Chưa có lịch định kỳ.</p>:rules.map(rule=><div key={rule.id} className="glass-card p-4 rounded-2xl flex items-center gap-3"><div className="flex-1 min-w-0"><p className="font-semibold text-sm truncate">{rule.title}</p><p className="text-xs text-slate-500">Ngày {rule.day} hằng tháng · {rule.amount.toLocaleString('vi-VN')} ₫</p><p className="text-[11px] text-slate-500">{rule.lastApplied===currentMonth?'Đã ghi nhận tháng này':'Chưa ghi nhận tháng này'}</p></div><button onClick={()=>apply(rule)} disabled={rule.lastApplied===currentMonth || transactions.some(tx=>tx.note?.includes('Giao dịch định kỳ: '+rule.id+' / '+currentMonth))} className="text-xs rounded-xl bg-blue-600 text-white p-2 disabled:opacity-40">Ghi nhận</button><button aria-label="Xóa lịch" onClick={()=>{if(confirm('Xóa lịch định kỳ này?'))save(rules.filter(r=>r.id!==rule.id));}} className="text-rose-500 p-2"><Trash2 size={17}/></button></div>)}</div>
   </div>;
 };
