@@ -50,6 +50,30 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
 
   const netSavings = totalIncome - totalExpense;
 
+  // Transparent local forecast, calculated from the last three completed months.
+  const forecast = useMemo(() => {
+    const now = new Date();
+    const samples = [3, 2, 1].map(monthsAgo => {
+      const d = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const relevant = transactions.filter(tx => tx.date.slice(0, 7) === key);
+      return {
+        income: relevant.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0),
+        expense: relevant.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0),
+        count: relevant.filter(tx => tx.type === 'expense' || tx.type === 'income').length,
+      };
+    });
+    const observed = samples.filter(s => s.count > 0);
+    if (observed.length < 2) return null;
+    const weighted = (field: 'income' | 'expense') => {
+      let sum = 0, weightSum = 0;
+      samples.forEach((sample, i) => { if (sample.count > 0) { const w = i + 1; sum += sample[field] * w; weightSum += w; } });
+      return Math.round(sum / weightSum);
+    };
+    const income = weighted('income'), expense = weighted('expense');
+    return { income, expense, savings: income - expense, sampleMonths: observed.length };
+  }, [transactions]);
+
   // Breakdown by expense category
   const categoryBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
@@ -107,6 +131,20 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
 
   return (
     <div className="space-y-4 pb-12 stagger">
+      <section className="glass-card rounded-3xl p-5 space-y-3 border border-blue-100 dark:border-blue-900/40">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Dự báo tháng tới</h2>
+          <span className="text-[10px] rounded-full px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">Ước tính từ lịch sử</span>
+        </div>
+        {forecast ? <>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-sky-50 dark:bg-slate-800 p-3"><p className="text-xs text-slate-500 dark:text-slate-400">Thu nhập dự kiến</p><strong className="text-sm text-blue-700 dark:text-blue-300">{forecast.income.toLocaleString('vi-VN')} ₫</strong></div>
+            <div className="rounded-2xl bg-sky-50 dark:bg-slate-800 p-3"><p className="text-xs text-slate-500 dark:text-slate-400">Chi tiêu dự kiến</p><strong className="text-sm text-blue-700 dark:text-blue-300">{forecast.expense.toLocaleString('vi-VN')} ₫</strong></div>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-300">Chênh lệch dự kiến: <strong>{forecast.savings.toLocaleString('vi-VN')} ₫</strong></p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Trung bình có trọng số của {forecast.sampleMonths} tháng đã kết thúc, ưu tiên tháng gần nhất. Đây là ước tính thống kê, không phải cam kết hay dự đoán bằng mô hình AI.</p>
+        </> : <p className="text-xs text-slate-500 dark:text-slate-400">Cần giao dịch trong ít nhất hai tháng đã kết thúc để lập dự báo đáng tin cậy hơn.</p>}
+      </section>
       
       {/* Month, quarter and year filters operate on persisted transactions. */}
       <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl bg-white/65 dark:bg-slate-900 border border-white/80 dark:border-slate-800 text-[10px] sm:text-xs font-semibold">
