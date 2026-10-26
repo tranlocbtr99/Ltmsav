@@ -92,20 +92,16 @@ jobs:
 
           echo "=== gradle.properties ===" && cat gradle.properties
 
-      - name: Generate Release Signing Key
+      # Signing material must be persistent and stored in GitHub Actions Secrets.
+      # Never generate a new release key on every build.
+      - name: Restore release keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
         working-directory: mobile/android
         run: |
           mkdir -p keystore
-          keytool -genkeypair -v \
-            -keystore keystore/release.jks \
-            -alias ltmsav \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass ltmsav2026 \
-            -keypass ltmsav2026 \
-            -dname "CN=LTMsav App, OU=LTMsav, O=LTMsav, L=HoChiMinh, ST=HoChiMinh, C=VN" \
-            -noprompt
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > keystore/release.jks
 
       - name: Build Debug APK
         working-directory: mobile/android
@@ -114,16 +110,24 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       - name: Build Release APK and AAB
-        working-directory: mobile/android
+        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
         env:
-          KEYSTORE_PATH: keystore/release.jks
-          KEYSTORE_PASSWORD: ltmsav2026
-          KEY_ALIAS: ltmsav
-          KEY_PASSWORD: ltmsav2026
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        working-directory: mobile/android
+
         run: |
-          ./gradlew assembleRelease bundleRelease --no-daemon || true
+          ./gradlew assembleRelease bundleRelease --no-daemon
 
       - name: Sign Release Artifacts
+        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         working-directory: mobile/android
         run: |
           mkdir -p final_artifacts
@@ -133,9 +137,9 @@ jobs:
           if [ -f "$AAB_FILE" ]; then
             jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
               -keystore keystore/release.jks \
-              -storepass ltmsav2026 \
-              -keypass ltmsav2026 \
-              "$AAB_FILE" ltmsav
+              -storepass "$KEYSTORE_PASSWORD" \
+              -keypass "$KEY_PASSWORD" \
+              "$AAB_FILE" "$KEY_ALIAS"
             cp "$AAB_FILE" final_artifacts/FinFlow-GooglePlay-Signed.aab
             echo "AAB signed: final_artifacts/FinFlow-GooglePlay-Signed.aab"
           else
@@ -152,15 +156,15 @@ jobs:
               "$ZIPALIGN" -v -p 4 "$APK_RAW" final_artifacts/aligned.apk
               "$APKSIGNER" sign \
                 --ks keystore/release.jks \
-                --ks-pass pass:ltmsav2026 \
-                --key-pass pass:ltmsav2026 \
+                --ks-pass env:KEYSTORE_PASSWORD \
+                --key-pass env:KEY_PASSWORD \
                 --out final_artifacts/FinFlow-Release-Signed.apk \
                 final_artifacts/aligned.apk
               rm -f final_artifacts/aligned.apk
               echo "APK signed: final_artifacts/FinFlow-Release-Signed.apk"
             else
-              cp "$APK_RAW" final_artifacts/FinFlow-Release-Signed.apk
-              echo "APK copied (no zipalign/apksigner found)"
+              echo 'Signing tools unavailable' >&2
+              exit 1
             fi
           else
             echo "No release APK found, skipping APK signing"
@@ -174,6 +178,9 @@ jobs:
           retention-days: 30
 
       - name: Upload Signed Release APK
+        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
           name: FinFlow-Signed-Release-APK
@@ -183,6 +190,9 @@ jobs:
           retention-days: 30
 
       - name: Upload Google Play AAB
+        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
           name: FinFlow-GooglePlay-AAB
