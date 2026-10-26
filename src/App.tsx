@@ -276,7 +276,7 @@ export const App: React.FC = () => {
           )}
 
           {currentTab === 'recurring' && (
-            <RecurringTab accounts={accounts} categories={categories} onAdd={handleAddTransaction} />
+            <RecurringTab accounts={accounts} categories={categories} transactions={transactions} onAdd={handleAddTransaction} />
           )}
 
           {currentTab === 'reports' && (
