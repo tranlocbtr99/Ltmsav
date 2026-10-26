@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  LayoutDashboard, ReceiptText, Sparkles, Target, Wallet, Settings, WifiOff, Lock, Sun, Moon, Globe 
+  LayoutDashboard, ReceiptText, BarChart3, Target, Settings, WifiOff, Lock, Sun, Moon 
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
