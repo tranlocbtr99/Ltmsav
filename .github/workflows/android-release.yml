@@ -96,20 +96,32 @@ jobs:
       # Never generate a new release key on every build.
       - name: Restore release keystore
         env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         working-directory: mobile/android
         run: |
           mkdir -p keystore
-          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > keystore/release.jks
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > keystore/release.jks
           chmod 600 keystore/release.jks
           test -n "$KEYSTORE_PASSWORD" && test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD"
           keytool -list -keystore keystore/release.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
           ACTUAL_FINGERPRINT=$(keytool -exportcert -keystore keystore/release.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | sha256sum | cut -d ' ' -f 1)
           test "$ACTUAL_FINGERPRINT" = "fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7" || { echo 'Unexpected signing certificate. Release blocked.' >&2; exit 1; }
+
+      - name: Require signing configuration
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" && test -n "$KEYSTORE_PASSWORD" && test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD" || {
+            echo "Release signing secrets are missing. No release will be published." >&2
+            exit 1
+          }
 
       - name: Build Debug APK
         working-directory: mobile/android
@@ -118,24 +130,24 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       - name: Build Release APK and AAB
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: mobile/android
 
         run: |
           ./gradlew assembleRelease bundleRelease --no-daemon
 
       - name: Sign Release Artifacts
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: mobile/android
         run: |
           mkdir -p final_artifacts
@@ -188,25 +200,23 @@ jobs:
           retention-days: 30
 
       - name: Upload Signed Release APK
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
           name: FinFlow-Signed-Release-APK
-          path: |
-            mobile/android/final_artifacts/FinFlow-Release-Signed.apk
-            mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          path: mobile/android/final_artifacts/FinFlow-Release-Signed.apk
           retention-days: 30
 
       - name: Upload Google Play AAB
-        if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
           name: FinFlow-GooglePlay-AAB
-          path: |
-            mobile/android/final_artifacts/FinFlow-GooglePlay-Signed.aab
-            mobile/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          path: mobile/android/final_artifacts/FinFlow-GooglePlay-Signed.aab
           retention-days: 30
