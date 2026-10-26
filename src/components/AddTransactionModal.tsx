@@ -58,7 +58,23 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (numAmount <= 0) return;
+    if (numAmount <= 0 || !Number.isSafeInteger(numAmount)) {
+      setSubmitError('Số tiền phải là số nguyên dương hợp lệ.');
+      return;
+    }
+    if (!accounts.some(a => a.id === accountId)) {
+      setSubmitError('Vui lòng chọn tài khoản nguồn hợp lệ.');
+      return;
+    }
+    if (type === 'transfer' && (!targetAccountId || targetAccountId === accountId || !accounts.some(a => a.id === targetAccountId))) {
+      setSubmitError('Tài khoản nhận phải khác tài khoản nguồn.');
+      return;
+    }
+    if (type !== 'transfer' && !categories.some(c => c.id === categoryId && c.type === (type === 'income' ? 'income' : 'expense'))) {
+      setSubmitError('Vui lòng chọn danh mục hợp lệ.');
+      return;
+    }
+    setSubmitError('');
 
     try {
     onAdd({
