@@ -69,8 +69,11 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   }, [filteredTransactions]);
 
   const formatDateLabel = (dateStr: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const localDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const today = localDate(new Date());
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = localDate(yesterdayDate);
 
     if (dateStr === today) return t('today');
     if (dateStr === yesterday) return t('yesterday');
@@ -101,7 +104,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder={t('searchPlaceholder')}
-              className="w-full pl-9 pr-9 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-sm"
+              className="w-full pl-9 pr-9 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 shadow-sm"
             />
             {searchTerm && (
               <button
@@ -117,7 +120,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2.5 rounded-xl border transition ${
               hasActiveFilters || showFilters
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/40'
                 : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white shadow-sm'
             }`}
             title={t('advancedFilter')}
@@ -176,7 +179,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                 <select
                   value={selectedAccount}
                   onChange={e => setSelectedAccount(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                 >
                   <option value="all">{t('allAccounts')}</option>
                   {accounts.map(acc => (
@@ -190,7 +193,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                 <select
                   value={selectedCategory}
                   onChange={e => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                 >
                   <option value="all">{t('allCategories')}</option>
                   {categories.map(cat => (
