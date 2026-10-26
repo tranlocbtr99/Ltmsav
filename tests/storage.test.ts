@@ -94,3 +94,26 @@ test('current and future schema data remains byte-identical on startup',async()=
     assert.deepEqual(Object.fromEntries(memory.data),seed);
   }
 });
+test('malformed nested backups and future schemas preserve all current bytes',async()=>{
+  const {storage,memory}=await load({ltmsav_schema_version:'6',ltmsav_accounts_v1:'[{"id":"a","name":"Cash","balance":42}]'});
+  const before=Object.fromEntries(memory.data);
+  const valid={accounts:[{id:'a',name:'Cash',balance:42}],transactions:[]};
+  for(const payload of [
+    {schemaVersion:7,data:valid},
+    {data:{...valid,accounts:[{id:'a',name:'Cash',balance:'bad'}]}},
+    {data:{...valid,accounts:[...valid.accounts,...valid.accounts]}},
+    {data:{...valid,settings:{securityEnabled:true,pinCode:''}}},
+    {data:{...valid,transactions:[{id:'bad',type:'expense',amount:-1,accountId:'a',date:'2026-10-26'}]}},
+  ]) {
+    assert.equal(storage.importBackup(JSON.stringify(payload)).success,false);
+    assert.deepEqual(Object.fromEntries(memory.data),before);
+  }
+});
+test('backup round trip retains records, unknown fields and security settings',async()=>{
+  const {storage}=await load({ltmsav_schema_version:'6',ltmsav_accounts_v1:'[{"id":"a","name":"Cash","balance":42,"custom":"keep"}]',ltmsav_settings_v1:'{"pinCode":"9521","securityEnabled":true,"custom":"keep"}'});
+  const backup=storage.exportBackup();
+  assert.equal(storage.importBackup(backup).success,true);
+  assert.equal(storage.exportBackup().includes('"custom": "keep"'),true);
+  assert.equal(storage.getAccounts()[0].balance,42);
+  assert.equal(storage.getSettings().pinCode,'9521');
+});

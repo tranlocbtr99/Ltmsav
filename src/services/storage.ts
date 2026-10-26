@@ -444,6 +444,7 @@ class StorageManager {
   }
 
   setBudget(categoryId: string, monthlyLimit: number): Budget {
+    if (!Number.isSafeInteger(monthlyLimit) || monthlyLimit <= 0) throw new Error('Hạn mức ngân sách không hợp lệ.');
     const budgets = this.getBudgets();
     const existing = budgets.find(b => b.categoryId === categoryId);
     if (existing) {
@@ -477,6 +478,9 @@ class StorageManager {
   }
 
   addDebtOrLoan(item: Omit<DebtOrLoan, 'id' | 'createdAt' | 'status' | 'remainingAmount'>): DebtOrLoan {
+    if (!Number.isSafeInteger(item.amount) || item.amount <= 0 || !this.getAccounts().some(account => account.id === item.accountId)) {
+      throw new Error('Số tiền hoặc tài khoản công nợ không hợp lệ.');
+    }
     const items = this.getDebtsAndLoans();
     const newItem: DebtOrLoan = {
       ...item,
@@ -495,7 +499,10 @@ class StorageManager {
     const item = items.find(i => i.id === id);
     if (!item) return false;
 
-    item.remainingAmount = Math.max(0, item.remainingAmount - paymentAmount);
+    if (!Number.isSafeInteger(paymentAmount) || paymentAmount <= 0 || paymentAmount > item.remainingAmount) {
+      throw new Error('Số tiền thanh toán không hợp lệ hoặc vượt quá dư nợ.');
+    }
+    item.remainingAmount -= paymentAmount;
     if (item.remainingAmount === 0) {
       item.status = 'settled';
     }
@@ -539,6 +546,7 @@ class StorageManager {
   exportBackup(): string {
     const payload = {
       version: release.versionName,
+      schemaVersion: SCHEMA_VERSION,
       app: 'LTMsav',
       exportedAt: new Date().toISOString(),
       data: {
@@ -560,8 +568,41 @@ class StorageManager {
       if (!parsed.data || !parsed.data.accounts || !parsed.data.transactions) {
         return { success: false, message: 'Tệp sao lưu không đúng định dạng LTMsav.' };
       }
+      if (parsed.schemaVersion !== undefined && (!Number.isInteger(parsed.schemaVersion) || parsed.schemaVersion > SCHEMA_VERSION)) {
+        throw new Error('Bản sao lưu thuộc phiên bản mới hơn. Hãy cập nhật ứng dụng trước.');
+      }
+      const data = parsed.data;
       for (const key of ['accounts', 'transactions', 'categories', 'budgets', 'debts', 'auditLogs']) {
-        if (key in parsed.data && !Array.isArray(parsed.data[key])) throw new Error('Dữ liệu phải là danh sách: ' + key);
+        if (data[key] !== undefined && (!Array.isArray(data[key])
+          || data[key].some((item: any) => !item || typeof item.id !== 'string' || !item.id)
+          || new Set(data[key].map((item: any) => item.id)).size !== data[key].length)) {
+          throw new Error('Dữ liệu không hợp lệ hoặc trùng ID: ' + key);
+        }
+      }
+      if (data.accounts.some((account: any) => typeof account.name !== 'string' || !Number.isFinite(account.balance))) {
+        throw new Error('Số dư tài khoản không hợp lệ.');
+      }
+      for (const tx of data.transactions) this.validateTransaction(tx, data.accounts);
+      if (data.budgets?.some((budget: any) => !Number.isFinite(budget.monthlyLimit) || budget.monthlyLimit <= 0 || typeof budget.categoryId !== 'string')) {
+        throw new Error('Ngân sách không hợp lệ.');
+      }
+      if (data.debts?.some((debt: any) => !Number.isFinite(debt.amount) || debt.amount <= 0
+        || !Number.isFinite(debt.remainingAmount) || debt.remainingAmount < 0 || debt.remainingAmount > debt.amount
+        || !['loan', 'debt'].includes(debt.type) || !['active', 'settled'].includes(debt.status) || typeof debt.person !== 'string')) {
+        throw new Error('Công nợ không hợp lệ.');
+      }
+      if (data.categories?.some((category: any) => typeof category.name !== 'string' || !['income', 'expense'].includes(category.type))) {
+        throw new Error('Danh mục không hợp lệ.');
+      }
+      if (data.settings !== undefined && (!data.settings || typeof data.settings !== 'object' || Array.isArray(data.settings))) {
+        throw new Error('Cài đặt không hợp lệ.');
+      }
+      const settings = data.settings;
+      if (settings && (['securityEnabled', 'biometricEnabled', 'allowNegativeBalance', 'autoConfirmAi']
+        .some(key => settings[key] !== undefined && typeof settings[key] !== 'boolean')
+        || (settings.pinCode !== undefined && (typeof settings.pinCode !== 'string' || !/^(|\d{4,6})$/.test(settings.pinCode)))
+        || (settings.securityEnabled && !/^\d{4,6}$/.test(settings.pinCode)))) {
+        throw new Error('Thiết lập PIN hoặc bảo mật không hợp lệ.');
       }
       if (!this.createAutomaticSnapshot('Sao lưu tự động trước khi khôi phục tệp JSON')) {
         throw new Error('Không thể tạo bản sao an toàn.');
