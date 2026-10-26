@@ -9,6 +9,7 @@ import { AiChatTab } from './components/AiChatTab';
 import { BudgetsTab } from './components/BudgetsTab';
 import { AssetsTab } from './components/AssetsTab';
 import { ReportsTab } from './components/ReportsTab';
+import { RecurringTab } from './components/RecurringTab';
 import { SettingsTab } from './components/SettingsTab';
 import { EditTransactionModal } from './components/EditTransactionModal';
 import { AddTransactionModal } from './components/AddTransactionModal';
@@ -272,6 +273,10 @@ export const App: React.FC = () => {
               onRecordPayment={handleRecordPayment}
               onDeleteAccount={handleDeleteAccountSource}
             />
+          )}
+
+          {currentTab === 'recurring' && (
+            <RecurringTab accounts={accounts} categories={categories} transactions={transactions} onAdd={handleAddTransaction} />
           )}
 
           {currentTab === 'reports' && (
