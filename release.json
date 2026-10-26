@@ -1,11 +1,11 @@
 {
   "applicationId": "com.ltmsav.app",
-  "versionCode": 12411,
-  "versionName": "1.9.2411",
-  "previousVersionCode": 11502,
+  "versionCode": 12412,
+  "versionName": "1.9.2412",
+  "previousVersionCode": 12411,
   "certificateSha256": "fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7",
   "baselineVerified": false,
-  "reportedInstalledVersion": "1.9.2410",
+  "reportedInstalledVersion": "1.9.2411",
   "releaseStatus": "ready",
   "userApprovedRepackage": true
 }
