@@ -94,6 +94,20 @@ jobs:
 
       # Signing material must be persistent and stored in GitHub Actions Secrets.
       # Never generate a new release key on every build.
+      - name: Apply Android release version
+        working-directory: mobile
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const {versionCode, versionName} = JSON.parse(fs.readFileSync('android-version.json','utf8'));
+          if (!Number.isSafeInteger(versionCode) || versionCode < 1 || !/^\\d+\\.\\d+\\.\\d+$/.test(versionName)) throw new Error('Invalid Android version');
+          const file = 'android/app/build.gradle';
+          let source = fs.readFileSync(file,'utf8');
+          if (!/versionCode\\s+\\d+/.test(source) || !/versionName\\s+"[^"]+"/.test(source)) throw new Error('Cannot update Android version');
+          source = source.replace(/versionCode\\s+\\d+/, 'versionCode '+versionCode).replace(/versionName\\s+"[^"]+"/, 'versionName "'+versionName+'"');
+          fs.writeFileSync(file,source);
+          JS
+
       - name: Restore release keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
