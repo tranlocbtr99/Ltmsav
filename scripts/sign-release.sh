@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+node -e 'const r=JSON.parse(require("fs").readFileSync("release.json")); if(r.baselineVerified !== true || r.releaseStatus !== "ready") { console.error("Release blocked: verify the installed 1.9.2410 APK, its source, versionCode and signing certificate first."); process.exit(1); }'
+
 : "${ANDROID_HOME:?}" "${KEYSTORE_PATH:?}" "${KEYSTORE_PASSWORD:?}" "${KEY_ALIAS:?}" "${KEY_PASSWORD:?}"
 BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
 OUT="build-output"

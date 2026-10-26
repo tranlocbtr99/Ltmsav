@@ -1,3 +1,12 @@
+> WITHDRAWN: APK/AAB 1.9.1502 must not be installed or distributed as an update.
+> The user reports installed version 1.9.2410. The previous verification used
+> 1.9.1501 and is insufficient. Signing is blocked until the actual installed APK,
+> versionCode, certificate, data schema and corresponding source are verified.
+> Other repository branches exist, including release/1.9 (recurring transactions,
+> reminders, forecasting and schema 8). Do not release the older main application
+> by merely increasing its displayed version. Reconcile the correct source first.
+> The Library search found 1.9.2401, not the exact reported 1.9.2410 APK.
+
 # LTMsav release procedure
 
 The supported Android application is the Capacitor project generated under
