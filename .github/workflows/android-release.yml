@@ -9,7 +9,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-android:
@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          # No cache — package-lock.json is not committed
+          cache: npm
 
       - name: Setup Java 21 (Required by Capacitor 7 / capacitor-android)
         id: setup-java
@@ -39,11 +39,10 @@ jobs:
             SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           fi
           yes | "$SDKMANAGER" --licenses 2>/dev/null || true
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" || \
-          "$SDKMANAGER" "platforms;android-35" "build-tools;34.0.0" || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install Web Dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Build Web Application
         run: npm run build
@@ -51,7 +50,7 @@ jobs:
       - name: Prepare Mobile Packaging (Capacitor)
         working-directory: mobile
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           rm -rf dist
           cp -r ../dist ./dist
           if [ ! -d "android" ]; then
@@ -90,7 +89,7 @@ jobs:
           echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> gradle.properties
           echo "org.gradle.daemon=false" >> gradle.properties
 
-          echo "=== gradle.properties ===" && cat gradle.properties
+          echo 'Gradle Java and memory settings configured'
 
       # Signing material must be persistent and stored in GitHub Actions Secrets.
       # Never generate a new release key on every build.
