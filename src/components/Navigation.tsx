@@ -38,11 +38,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           onClick={() => onNavigateTab('overview')}
           className="flex items-center gap-2.5 cursor-pointer min-w-0"
         >
-          <img src="/logo.png" alt="LTMsav Logo" className="w-8 h-8 rounded-xl object-contain shadow-md shadow-emerald-950/20 shrink-0" />
+          <img src="/logo.png" alt="LTMsav Logo" className="w-8 h-8 rounded-xl object-contain shadow-md shadow-blue-950/20 shrink-0" />
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base font-extrabold tracking-tight flex items-center gap-1.5 text-slate-900 dark:text-white">
               <span>LTM</span>
-              <span className="text-emerald-500 font-black">sav</span>
+              <span className="text-sky-500 font-black">sav</span>
             </h1>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">{t('appSubtitle')}</p>
           </div>
@@ -128,16 +128,16 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
         key={tab.id}
         onClick={() => onTabChange(tab.id)}
         className={`flex-1 flex flex-col items-center gap-0.5 py-1 px-1 rounded-full transition duration-150 focus:outline-none ${
-          isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+          isActive ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
         }`}
       >
         <div className={`p-2 rounded-full transition ${
-          isActive ? 'bg-emerald-500/15' : ''
+          isActive ? 'bg-sky-500/15' : ''
         }`}>
           <Icon className="w-5 h-5" />
         </div>
         <span className={`text-[10px] font-medium tracking-tight w-full text-center truncate ${
-          isActive ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
+          isActive ? 'font-bold text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400'
         }`}>
           {tab.label}
         </span>
@@ -146,7 +146,7 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-200 dark:border-slate-800/90 pb-safe transition-colors duration-200">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-white/80 dark:border-slate-800/90 pb-safe transition-colors duration-200">
       <div className="max-w-3xl mx-auto px-2 py-1.5 flex items-stretch justify-between relative">
 
         {/* Left group */}
@@ -158,7 +158,7 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
         <div className="flex-1 flex items-center justify-center">
           <button
             onClick={onOpenAdd}
-            className="flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-purple-600 to-indigo-500 hover:brightness-110 text-white rounded-full shadow-lg shadow-purple-900/25 transition active:scale-95"
+            className="flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-blue-600 to-cyan-400 hover:brightness-110 text-white rounded-full shadow-lg shadow-blue-900/25 transition active:scale-95"
             title="LTMsav AI"
             aria-label="LTMsav AI"
           >
