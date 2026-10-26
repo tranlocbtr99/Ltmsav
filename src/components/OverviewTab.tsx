@@ -286,7 +286,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       <div className="grid grid-cols-4 gap-2">
         {[
           {label:'Thêm giao dịch', icon:Plus, action:onOpenAdd},
-          {label:'Giao dịch định kỳ', icon:CalendarDays, action:()=>onNavigateTab('transactions')},
+          {label:'Giao dịch định kỳ', icon:CalendarDays, action:()=>onNavigateTab('recurring')},
           {label:'Phân tích AI', icon:Sparkles, action:onOpenAi},
           {label:'Dự báo tài chính', icon:BarChart3, action:()=>onNavigateTab('reports')},
         ].map(({label,icon:Icon,action})=><button key={label} onClick={action} className="glass-card flex min-w-0 flex-col items-center gap-2 rounded-[20px] px-1 py-4 active:scale-95 transition-transform">
