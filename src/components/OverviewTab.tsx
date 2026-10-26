@@ -395,47 +395,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         )}
       </div>
 
-      {/* Quick Action Shortcuts */}
+      {/* Four reference shortcuts; all use existing app routes and actions. */}
       <div className="grid grid-cols-4 gap-2">
-        <button
-          onClick={onOpenAdd}
-          className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl glass-card hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 group"
-        >
-          <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
-            <Plus className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('addIncomeExpense')}</span>
-        </button>
-
-        <button
-          onClick={onOpenAi}
-          className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl glass-card hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 group"
-        >
-          <div className="p-2.5 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 group-hover:bg-purple-600 group-hover:text-white transition">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('aiAssistant')}</span>
-        </button>
-
-        <button
-          onClick={() => onNavigateTab('assets')}
-          className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl glass-card hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 group"
-        >
-          <div className="p-2.5 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition">
-            <Wallet className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('moneySourcesCount')}</span>
-        </button>
-
-        <button
-          onClick={() => onNavigateTab('budgets')}
-          className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl glass-card hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 group"
-        >
-          <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white transition">
-            <TrendingDown className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('budget')}</span>
-        </button>
+        {[
+          {label:'Thêm giao dịch', icon:Plus, action:onOpenAdd},
+          {label:'Giao dịch định kỳ', icon:CalendarDays, action:()=>onNavigateTab('transactions')},
+          {label:'Phân tích AI', icon:Sparkles, action:onOpenAi},
+          {label:'Dự báo tài chính', icon:BarChart3, action:()=>onNavigateTab('reports')},
+        ].map(({label,icon:Icon,action})=><button key={label} onClick={action} className="glass-card flex min-w-0 flex-col items-center gap-2 rounded-[20px] px-1 py-4 active:scale-95 transition-transform">
+          <span className="rounded-2xl bg-gradient-to-b from-sky-50 to-blue-100 dark:from-slate-800 dark:to-slate-700 p-3 text-[#087cff]"><Icon size={21}/></span>
+          <span className="text-[10px] sm:text-xs leading-tight font-semibold text-center text-slate-700 dark:text-slate-200">{label}</span>
+        </button>)}
       </div>
 
       {/* Budget Alerts */}
