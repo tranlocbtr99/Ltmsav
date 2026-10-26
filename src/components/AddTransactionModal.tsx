@@ -92,7 +92,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
+      <div className="w-full max-w-lg bg-gradient-to-b from-[#f7fcff] to-[#eaf6ff] dark:bg-slate-900 border border-white/90 dark:border-slate-800 rounded-[28px] shadow-[0_25px_80px_rgba(24,112,209,.25)] overflow-hidden flex flex-col max-h-[92dvh] animate-pop-in">
         
         {submitError && <p role="alert" className="p-4 text-rose-700 dark:text-rose-300">{submitError}</p>}
         {/* Header */}
@@ -127,7 +127,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
               {t('transactionType')}
             </label>
-            <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#eaf3fb] dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => handleTypeChange('expense')}
@@ -186,7 +186,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 value={numAmount ? numAmount.toLocaleString('vi-VN') : ''}
                 onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xl font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xl font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 required
                 autoFocus
               />
