@@ -1,4 +1,5 @@
 name: Verify and release LTMsav
+# Release verification is required before signing with the existing LTMsav certificate.
 on:
   pull_request:
   push:
