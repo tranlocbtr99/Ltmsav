@@ -3,7 +3,7 @@ import { Account, Transaction, Category, Budget, DebtOrLoan } from '../types';
 import { 
   TrendingUp, TrendingDown, Wallet, ArrowRightLeft, Sparkles, Plus, 
   ArrowUpRight, ArrowDownLeft, AlertTriangle, ShieldCheck, ChevronRight,
-  BarChart3, PieChart
+  BarChart3, PieChart, Eye, EyeOff
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -32,6 +32,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onNavigateTab,
 }) => {
   const { t } = useLanguage();
+  const [showBalance, setShowBalance] = useState(true);
   // Calculations
   const totalAssets = accounts.reduce((sum, a) => sum + Math.max(0, a.balance), 0);
   const totalDebts = debts
@@ -190,7 +191,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   };
 
   // Recent transactions (last 5)
-  const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
 
   // Budget warnings
   const budgetAlerts = budgets.map(b => {
@@ -213,36 +214,37 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     <div className="space-y-5 pb-6 stagger">
       
       {/* Net Worth Hero Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 p-5 sm:p-6 text-white shadow-xl shadow-emerald-950/20 border border-emerald-500/20">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-400 via-blue-500 to-blue-700 p-5 sm:p-6 text-white shadow-xl shadow-blue-900/20 border border-white/30">
         <div className="absolute -right-8 -bottom-8 w-44 h-44 rounded-full bg-white/5 blur-2xl pointer-events-none" />
         
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-200">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-50">
             <ShieldCheck className="w-4 h-4" />
             <span>{t('netWorth')}</span>
+            <button type="button" onClick={() => setShowBalance(v => !v)} aria-label={showBalance ? 'Ẩn số dư' : 'Hiện số dư'} className="p-1 rounded-lg hover:bg-white/20">{showBalance ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}</button>
           </div>
-          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-xs font-medium border border-emerald-400/30">
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-xs font-medium border border-white/25">
             {accounts.length} {t('moneySources')}
           </span>
         </div>
 
         <div className="mb-4">
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">
-            {netWorth.toLocaleString('vi-VN')} <span className="text-lg font-bold text-emerald-200">₫</span>
+            {showBalance ? netWorth.toLocaleString('vi-VN') : '••••••••'} <span className="text-lg font-bold text-emerald-200">₫</span>
           </h1>
         </div>
 
         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/10 text-xs">
           <div>
-            <span className="text-emerald-200/80 block">{t('totalAssets')}:</span>
+            <span className="text-blue-50/80 block">{t('totalAssets')}:</span>
             <span className="font-bold text-white text-sm tabular-nums break-all">
-              {totalAssets.toLocaleString('vi-VN')}₫
+              {showBalance ? totalAssets.toLocaleString('vi-VN') + '₫' : '••••'}
             </span>
           </div>
           <div>
             <span className="text-emerald-200/80 block">{t('totalDebtToPay')}:</span>
             <span className="font-bold text-rose-300 text-sm tabular-nums break-all">
-              {totalDebts > 0 ? `-${totalDebts.toLocaleString('vi-VN')}₫` : '0₫'}
+              {showBalance ? (totalDebts > 0 ? `-${totalDebts.toLocaleString('vi-VN')}₫` : '0₫') : '••••'}
             </span>
           </div>
         </div>
@@ -535,7 +537,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </h2>
           <button
             onClick={() => onNavigateTab('transactions')}
-            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-0.5"
+            className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-0.5"
           >
             <span>{t('all')}</span>
             <ChevronRight className="w-4 h-4" />
