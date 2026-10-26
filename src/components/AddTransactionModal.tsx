@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Account, Category, TransactionType, Transaction } from '../types';
 import { X, Check, ArrowRightLeft, ArrowUpRight, ArrowDownLeft, Plus } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -20,8 +20,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  if (!isOpen) return null;
-
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState<string>('');
   const [accountId, setAccountId] = useState<string>(accounts[0]?.id || '');
@@ -31,6 +29,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [description, setDescription] = useState<string>('');
   const [note, setNote] = useState<string>('');
   const [person, setPerson] = useState<string>('');
+  const [submitError, setSubmitError] = useState('');
+  useEffect(() => {
+    if (isOpen) {
+      setAccountId(accounts[0]?.id || '');
+      setTargetAccountId(accounts[1]?.id || '');
+      setSubmitError('');
+    }
+  }, [isOpen]);
+  if (!isOpen) return null;
 
   const numAmount = Math.max(0, parseInt(amount.replace(/\D/g, ''), 10) || 0);
 
@@ -53,6 +60,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     e.preventDefault();
     if (numAmount <= 0) return;
 
+    try {
     onAdd({
       type,
       amount: numAmount,
@@ -65,6 +73,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       person: person.trim() || undefined,
     });
 
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : String(error));
+      return;
+    }
     onClose();
     // reset form
     setAmount('');
@@ -82,6 +94,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
       <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
         
+        {submitError && <p role="alert" className="p-4 text-rose-700 dark:text-rose-300">{submitError}</p>}
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/80">
           <div className="flex items-center gap-2.5 min-w-0">

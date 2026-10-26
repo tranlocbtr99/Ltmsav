@@ -25,18 +25,17 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  if (!isOpen || !transaction) return null;
-
-  const [type, setType] = useState<TransactionType>(transaction.type);
-  const [amount, setAmount] = useState<string>(transaction.amount.toString());
-  const [accountId, setAccountId] = useState<string>(transaction.accountId);
-  const [targetAccountId, setTargetAccountId] = useState<string>(transaction.targetAccountId || accounts.find(a => a.id !== transaction.accountId)?.id || '');
-  const [categoryId, setCategoryId] = useState<string>(transaction.categoryId);
-  const [date, setDate] = useState<string>(transaction.date);
-  const [description, setDescription] = useState<string>(transaction.description);
-  const [note, setNote] = useState<string>(transaction.note || '');
-  const [person, setPerson] = useState<string>(transaction.person || '');
+  const [type, setType] = useState<TransactionType>(transaction?.type || 'expense');
+  const [amount, setAmount] = useState<string>(transaction?.amount.toString() || '');
+  const [accountId, setAccountId] = useState<string>(transaction?.accountId || '');
+  const [targetAccountId, setTargetAccountId] = useState<string>(transaction?.targetAccountId || accounts.find(a => a.id !== transaction?.accountId)?.id || '');
+  const [categoryId, setCategoryId] = useState<string>(transaction?.categoryId || '');
+  const [date, setDate] = useState<string>(transaction?.date || '');
+  const [description, setDescription] = useState<string>(transaction?.description || '');
+  const [note, setNote] = useState<string>(transaction?.note || '');
+  const [person, setPerson] = useState<string>(transaction?.person || '');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     if (transaction) {
@@ -50,8 +49,11 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       setNote(transaction.note || '');
       setPerson(transaction.person || '');
       setShowDeleteConfirm(false);
+      setSubmitError('');
     }
   }, [transaction]);
+
+  if (!isOpen || !transaction) return null;
 
   const numAmount = Math.max(0, parseInt(amount.replace(/\D/g, ''), 10) || 0);
 
@@ -63,6 +65,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
     e.preventDefault();
     if (numAmount <= 0) return;
 
+    try {
     onSave(transaction.id, {
       type,
       amount: numAmount,
@@ -75,6 +78,9 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       person: person.trim() || undefined,
     });
     onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const currentAccount = accounts.find(a => a.id === accountId);
@@ -91,6 +97,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
       <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
         
+        {submitError && <p role="alert" className="p-4 text-rose-700 dark:text-rose-300">{submitError}</p>}
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/80">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -358,8 +365,12 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    onDelete(transaction.id);
-                    onClose();
+                    try {
+                      onDelete(transaction.id);
+                      onClose();
+                    } catch (error) {
+                      setSubmitError(error instanceof Error ? error.message : String(error));
+                    }
                   }}
                   className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg transition"
                 >

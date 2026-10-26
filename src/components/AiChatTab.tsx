@@ -117,7 +117,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
   const handleExecuteCommand = (messageId: string, cmd: AiParsedCommand) => {
     const matchedAccount = accounts.find(
       a => a.name.toLowerCase() === cmd.account.toLowerCase()
-    ) || accounts[0];
+    );
 
     let matchedTargetAccount = undefined;
     if (cmd.account_to) {
@@ -130,18 +130,24 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
       c => c.name.toLowerCase() === cmd.category.toLowerCase()
     ) || categories[0];
 
+    try {
+    if (!matchedAccount) throw new Error('Hãy chọn tài khoản nguồn hợp lệ trước khi xác nhận.');
     onAddTransaction({
       type: cmd.kind,
       amount: cmd.amount,
-      accountId: matchedAccount?.id || accounts[0].id,
+      accountId: matchedAccount.id,
       targetAccountId: matchedTargetAccount,
-      categoryId: matchedCategory?.id || categories[0].id,
+      categoryId: matchedCategory?.id || '',
       date: cmd.date || new Date().toISOString().split('T')[0],
       description: cmd.description || t('aiTransaction'),
       note: cmd.note || undefined,
       person: cmd.person || undefined,
     });
 
+    } catch (error) {
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), sender: 'bot', text: error instanceof Error ? error.message : String(error), timestamp: new Date().toISOString() }]);
+      return;
+    }
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, executed: true } : m));
 
     try {

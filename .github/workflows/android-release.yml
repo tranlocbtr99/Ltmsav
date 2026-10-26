@@ -33,7 +33,8 @@ jobs:
         working-directory: mobile
       - run: python3 -m pip install Pillow==11.3.0
       - run: node scripts/prepare-mobile.mjs
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 
       - run: chmod +x gradlew && ./gradlew lintRelease testReleaseUnitTest assembleRelease bundleRelease --no-daemon
         working-directory: mobile/android
       - uses: actions/upload-artifact@v4
@@ -63,7 +64,8 @@ jobs:
         with:
           name: verified-unsigned-${{ github.sha }}
           path: mobile/android/app/build/outputs
-      - run: sdkmanager 'build-tools;35.0.0'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'build-tools;35.0.0' 
       - name: Sign with existing LTMsav key only
         env:
           KEYSTORE_BASE64: ${{ secrets.LTMSAV_KEYSTORE_BASE64 }}
