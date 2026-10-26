@@ -198,3 +198,52 @@
   .card-interactive { transition: none !important; }
 }
 
+
+/* LTMsav 2026 — translucent blue Liquid Glass visual foundation.
+   Presentation-only: no changes to financial state or persistence. */
+:root {
+  --bg-main: #edf7ff;
+  --bg-card: rgba(255,255,255,.76);
+  --border-card: rgba(169,211,255,.54);
+  --text-main: #102a52;
+  --text-muted: #607b9e;
+  color-scheme: light;
+}
+html:not(.dark), html:not(.dark) body, html:not(.dark) #root {
+  background: radial-gradient(ellipse at 10% 0%, #d6eeff 0%, transparent 45%),
+              radial-gradient(ellipse at 100% 25%, #e2f7ff 0%, transparent 45%),
+              #f4f9ff !important;
+  color: var(--text-main) !important;
+}
+@layer components {
+  .glass-panel {
+    background: rgba(255,255,255,.68);
+    border: 1px solid rgba(255,255,255,.82);
+    box-shadow: 0 10px 35px rgba(33,119,211,.10), inset 0 1px rgba(255,255,255,.95);
+    backdrop-filter: blur(28px) saturate(1.6);
+    -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  }
+  .glass-card {
+    background: linear-gradient(145deg,rgba(255,255,255,.92),rgba(229,244,255,.74));
+    border: 1px solid rgba(255,255,255,.94);
+    box-shadow: 0 16px 40px rgba(37,119,205,.10), inset 0 1px rgba(255,255,255,.95);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  html.dark .glass-panel, html.dark .glass-card {
+    border-color: rgba(123,189,255,.20);
+    box-shadow: 0 16px 44px rgba(0,15,40,.30);
+  }
+}
+html:not(.dark) .text-emerald-500,
+html:not(.dark) .text-emerald-600 { color: #087ef0; }
+html:not(.dark) .bg-emerald-500\/15 { background-color: rgba(21,142,255,.14); }
+html:not(.dark) .shadow-emerald-950\/20 { --tw-shadow-color: rgba(17,117,215,.2); }
+button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #159bff;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel, .glass-card { backdrop-filter: none; -webkit-backdrop-filter: none; background: #fff; }
+}
