@@ -61,12 +61,18 @@ jobs:
 
           # Integrate Native Android Biometric (Fingerprint & Face Unlock)
           mkdir -p android/app/src/main/java/com/ltmsav/app
+          test -f custom_android/MainActivity.java
+          test -f custom_android/NativeBiometricPlugin.java
           cp custom_android/*.java android/app/src/main/java/com/ltmsav/app/
 
+          # Use the stable AndroidX biometric library rather than an alpha release.
           # Add androidx.biometric dependency to app/build.gradle
           if ! grep -q "androidx.biometric:biometric" android/app/build.gradle; then
-            sed -i '/dependencies {/a \    implementation "androidx.biometric:biometric:1.2.0-alpha05"' android/app/build.gradle
+            sed -i '/dependencies {/a \    implementation "androidx.biometric:biometric:1.1.0"' android/app/build.gradle
           fi
+
+          # Verify application ID to avoid creating an incompatible replacement package.
+          grep -q 'applicationId "com.ltmsav.app"' android/app/build.gradle || { echo "Unexpected Android application ID" >&2; exit 1; }
 
           # Add USE_BIOMETRIC permission to AndroidManifest.xml
           if ! grep -q "android.permission.USE_BIOMETRIC" android/app/src/main/AndroidManifest.xml; then
