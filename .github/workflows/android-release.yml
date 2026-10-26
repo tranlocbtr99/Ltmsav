@@ -203,6 +203,21 @@ jobs:
             exit 1
           fi
 
+      - name: Verify signed Android artifacts
+        working-directory: mobile/android
+        run: |
+          set -euo pipefail
+          APK="final_artifacts/LTMsav-Release-Signed.apk"
+          AAB="final_artifacts/LTMsav-GooglePlay-Signed.aab"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          test -s "$APK" && test -s "$AAB" && test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          EXPECTED="fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7"
+          test "$ACTUAL" = "$EXPECTED" || { echo "Signed APK certificate mismatch" >&2; exit 1; }
+          jarsigner -verify -strict "$AAB" >/dev/null
+          echo "APK and AAB signature verification passed"
+
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
