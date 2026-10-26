@@ -1,192 +1,91 @@
-name: Build Android APK and Google Play AAB
-
+name: Verify and release LTMsav
 on:
-  workflow_dispatch:
+  pull_request:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*'
-
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
 permissions:
-  contents: write
-
+  contents: read
+concurrency:
+  group: ltmsav-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  build-android:
+  verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          # No cache — package-lock.json is not committed
-
-      - name: Setup Java 21 (Required by Capacitor 7 / capacitor-android)
-        id: setup-java
-        uses: actions/setup-java@v4
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
-
-      - name: Accept Android SDK Licenses & Install SDK 35
-        run: |
-          # Use the latest cmdline-tools already on the runner
-          SDKMANAGER=$(find $ANDROID_HOME/cmdline-tools -name "sdkmanager" | sort -V | tail -n 1)
-          if [ -z "$SDKMANAGER" ]; then
-            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          fi
-          yes | "$SDKMANAGER" --licenses 2>/dev/null || true
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" || \
-          "$SDKMANAGER" "platforms;android-35" "build-tools;34.0.0" || true
-
-      - name: Install Web Dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Build Web Application
-        run: npm run build
-
-      - name: Prepare Mobile Packaging (Capacitor)
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint && npm test && npm run build
+      - run: npm ci --no-audit --no-fund
         working-directory: mobile
-        run: |
-          npm install --no-audit --no-fund
-          rm -rf dist
-          cp -r ../dist ./dist
-          if [ ! -d "android" ]; then
-            npx cap add android
-          else
-            npx cap sync android
-          fi
-
-          # Integrate Native Android Biometric (Fingerprint & Face Unlock)
-          mkdir -p android/app/src/main/java/com/ltmsav/app
-          cp custom_android/*.java android/app/src/main/java/com/ltmsav/app/
-
-          # Add androidx.biometric dependency to app/build.gradle
-          if ! grep -q "androidx.biometric:biometric" android/app/build.gradle; then
-            sed -i '/dependencies {/a \    implementation "androidx.biometric:biometric:1.2.0-alpha05"' android/app/build.gradle
-          fi
-
-          # Add USE_BIOMETRIC permission to AndroidManifest.xml
-          if ! grep -q "android.permission.USE_BIOMETRIC" android/app/src/main/AndroidManifest.xml; then
-            sed -i '/<manifest/a \    <uses-permission android:name="android.permission.USE_BIOMETRIC" />' android/app/src/main/AndroidManifest.xml
-          fi
-
-      - name: Configure Android SDK Level (compileSdk & targetSdk = 35)
+      - run: python3 -m pip install Pillow==11.3.0
+      - run: node scripts/prepare-mobile.mjs
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - run: chmod +x gradlew && ./gradlew lintRelease testReleaseUnitTest assembleRelease bundleRelease --no-daemon
         working-directory: mobile/android
-        run: |
-          # Fix variables.gradle if Capacitor generated it
-          if [ -f "variables.gradle" ]; then
-            sed -i 's/compileSdkVersion = [0-9]*/compileSdkVersion = 35/' variables.gradle || true
-            sed -i 's/targetSdkVersion = [0-9]*/targetSdkVersion = 35/' variables.gradle || true
-          fi
-
-          # Ensure Gradle uses the Java 21 JDK set up by actions/setup-java
-          echo "" >> gradle.properties
-          echo "# Pin Gradle daemon to Java 21 installed by CI" >> gradle.properties
-          echo "org.gradle.java.home=${JAVA_HOME}" >> gradle.properties
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> gradle.properties
-          echo "org.gradle.daemon=false" >> gradle.properties
-
-          echo "=== gradle.properties ===" && cat gradle.properties
-
-      - name: Generate Release Signing Key
-        working-directory: mobile/android
-        run: |
-          mkdir -p keystore
-          keytool -genkeypair -v \
-            -keystore keystore/release.jks \
-            -alias ltmsav \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass ltmsav2026 \
-            -keypass ltmsav2026 \
-            -dname "CN=LTMsav App, OU=LTMsav, O=LTMsav, L=HoChiMinh, ST=HoChiMinh, C=VN" \
-            -noprompt
-
-      - name: Build Debug APK
-        working-directory: mobile/android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-
-      - name: Build Release APK and AAB
-        working-directory: mobile/android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-unsigned-${{ github.sha }}
+          path: |
+            mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+            mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
+  sign:
+    needs: verify
+    if: github.event_name != 'pull_request' && (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v'))
+    environment: android-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-unsigned-${{ github.sha }}
+          path: mobile/android/app/build/outputs
+      - run: sdkmanager 'build-tools;35.0.0'
+      - name: Sign with existing LTMsav key only
         env:
-          KEYSTORE_PATH: keystore/release.jks
-          KEYSTORE_PASSWORD: ltmsav2026
-          KEY_ALIAS: ltmsav
-          KEY_PASSWORD: ltmsav2026
+          KEYSTORE_BASE64: ${{ secrets.LTMSAV_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.LTMSAV_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.LTMSAV_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.LTMSAV_KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease bundleRelease --no-daemon || true
-
-      - name: Sign Release Artifacts
-        working-directory: mobile/android
-        run: |
-          mkdir -p final_artifacts
-
-          # 1. Sign AAB with jarsigner
-          AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" 2>/dev/null | head -n 1)
-          if [ -f "$AAB_FILE" ]; then
-            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-              -keystore keystore/release.jks \
-              -storepass ltmsav2026 \
-              -keypass ltmsav2026 \
-              "$AAB_FILE" ltmsav
-            cp "$AAB_FILE" final_artifacts/FinFlow-GooglePlay-Signed.aab
-            echo "AAB signed: final_artifacts/FinFlow-GooglePlay-Signed.aab"
-          else
-            echo "No AAB found, skipping AAB signing"
-          fi
-
-          # 2. Align and sign APK
-          APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" 2>/dev/null | head -n 1)
-          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" 2>/dev/null | sort -V | tail -n 1)
-          APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" 2>/dev/null | sort -V | tail -n 1)
-
-          if [ -f "$APK_RAW" ]; then
-            if [ -n "$ZIPALIGN" ] && [ -n "$APKSIGNER" ]; then
-              "$ZIPALIGN" -v -p 4 "$APK_RAW" final_artifacts/aligned.apk
-              "$APKSIGNER" sign \
-                --ks keystore/release.jks \
-                --ks-pass pass:ltmsav2026 \
-                --key-pass pass:ltmsav2026 \
-                --out final_artifacts/FinFlow-Release-Signed.apk \
-                final_artifacts/aligned.apk
-              rm -f final_artifacts/aligned.apk
-              echo "APK signed: final_artifacts/FinFlow-Release-Signed.apk"
-            else
-              cp "$APK_RAW" final_artifacts/FinFlow-Release-Signed.apk
-              echo "APK copied (no zipalign/apksigner found)"
-            fi
-          else
-            echo "No release APK found, skipping APK signing"
-          fi
-
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64"
+          umask 077
+          export KEYSTORE_PATH="$RUNNER_TEMP/ltmsav-release.jks"
+          trap 'rm -f "$KEYSTORE_PATH"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          bash scripts/sign-release.sh
+      - uses: actions/upload-artifact@v4
         with:
-          name: FinFlow-Debug-APK
-          path: mobile/android/app/build/outputs/apk/debug/*.apk
-          retention-days: 30
-
-      - name: Upload Signed Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: FinFlow-Signed-Release-APK
+          name: LTMsav-signed-${{ github.sha }}
           path: |
-            mobile/android/final_artifacts/FinFlow-Release-Signed.apk
-            mobile/android/app/build/outputs/apk/release/*.apk
-          retention-days: 30
-
-      - name: Upload Google Play AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: FinFlow-GooglePlay-AAB
-          path: |
-            mobile/android/final_artifacts/FinFlow-GooglePlay-Signed.aab
-            mobile/android/app/build/outputs/bundle/release/*.aab
+            build-output/LTMsav_*.apk
+            build-output/LTMsav_*.aab
+            build-output/SHA256SUMS
+            build-output/signature.txt
+            build-output/package.txt
+          if-no-files-found: error
           retention-days: 30

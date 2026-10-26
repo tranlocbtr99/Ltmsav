@@ -9,7 +9,8 @@ import {
 import { storage } from '../services/storage';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const APP_VERSION = '1.5.9';
+import release from '../../release.json';
+const APP_VERSION = release.versionName;
 
 interface SettingsTabProps {
   settings: AppSettings;

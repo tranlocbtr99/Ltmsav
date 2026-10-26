@@ -7,7 +7,8 @@
     "build": "vite build",
     "start": "node server.ts",
     "lint": "tsc --noEmit",
-    "logo": "python3 scripts/update_logo.py"
+    "logo": "python3 scripts/update_logo.py",
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@capacitor/core": "^7.0.0",

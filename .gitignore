@@ -9,3 +9,6 @@ dist
 *.apk
 *.aab
 LTMsav_Android_Source_Prepared.zip
+
+build-output/
+tools/

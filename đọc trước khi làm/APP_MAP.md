@@ -89,3 +89,12 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 ## 9. Build & release Android
 `npm run build` → copy `dist/` vào `mobile/dist` → `npx cap sync android` → Gradle `assembleRelease bundleRelease` (JDK 21, `ANDROID_HOME=~/android-sdk`, `JAVA_HOME=~/.local/jdk21`). Chi tiết lệnh đầy đủ trong `AGENTS.md`. **Mỗi release phải tăng** `versionCode`/`versionName` trong `mobile/android/app/build.gradle`. CI/CD Google Play: `.github/workflows/`.
 Đổi logo: `npm run logo -- /path/anh.png` (nguồn: `assets/logo-source.*`) rồi build lại.
+
+## Release maintenance (2026-10-26)
+- Authoritative version/certificate: `release.json`; Settings and exports use it.
+- Storage schema: 6. Startup preserves historical IDs and PINs, snapshots raw keys
+  before migrating, and recovers the prior release's pending-write journal.
+- Regression tests: `npm test` (`tests/storage.test.ts`).
+- Packaging: `node scripts/prepare-mobile.mjs`; signing: `bash scripts/sign-release.sh`.
+- Supported Android project: generated `mobile/android`; root `android` is a legacy
+  native prototype. Detailed commands and protected environment setup: `RELEASE.md`.

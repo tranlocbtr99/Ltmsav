@@ -1,6 +1,7 @@
+import release from '../../release.json';
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from '../types';
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 const STORAGE_KEYS = {
   SCHEMA_VERSION: 'ltmsav_schema_version',
@@ -55,6 +56,7 @@ function getInitialTransactions(): Transaction[] {
 
 class StorageManager {
   constructor() {
+    this.recoverPendingWrite();
     this.runDataMigration();
     this.requestPersistentStorage();
   }
@@ -75,6 +77,10 @@ class StorageManager {
         ['finflow_settings_v1', STORAGE_KEYS.SETTINGS],
       ];
 
+      if (storedVersion < SCHEMA_VERSION && !this.createAutomaticSnapshot('Trước khi cập nhật dữ liệu')) {
+        throw new Error('Không thể sao lưu dữ liệu trước khi cập nhật.');
+      }
+
       for (const [oldKey, newKey] of legacyKeys) {
         if (!localStorage.getItem(newKey) && localStorage.getItem(oldKey)) {
           const oldData = localStorage.getItem(oldKey);
@@ -86,7 +92,7 @@ class StorageManager {
 
       // If version is updated, take an automatic safety snapshot first
       if (storedVersion < SCHEMA_VERSION) {
-        this.createAutomaticSnapshot(`Cập nhật ứng dụng lên phiên bản v${SCHEMA_VERSION}`);
+
 
         // Ensure new settings fields don't get lost in migration
         if (storedVersion < 5) {
@@ -99,54 +105,11 @@ class StorageManager {
               localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(s));
             }
           } catch (e) {
-            console.warn('Failed to patch settings during migration:', e);
+            throw e;
           }
         }
 
-        // v3: Clear demo seed data — only remove keys that still hold demo values
-        if (storedVersion < 3) {
-          const demoAccountIds = ['acc_cash', 'acc_vcb', 'acc_momo', 'acc_tcb', 'acc_saving'];
-          const demoTxIds = ['tx_1','tx_2','tx_3','tx_4','tx_5','tx_6','tx_7','tx_8'];
-          const demoDebtIds = ['loan_1','debt_1'];
-          const demoBudgetIds = ['b_1','b_2','b_3','b_4'];
-
-          try {
-            const rawAccounts = localStorage.getItem(STORAGE_KEYS.ACCOUNTS);
-            if (rawAccounts) {
-              const accounts: any[] = JSON.parse(rawAccounts);
-              const userAccounts = accounts.filter((a: any) => !demoAccountIds.includes(a.id));
-              localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(userAccounts));
-            }
-            const rawTx = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
-            if (rawTx) {
-              const txs: any[] = JSON.parse(rawTx);
-              const userTxs = txs.filter((t: any) => !demoTxIds.includes(t.id));
-              localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(userTxs));
-            }
-            const rawDebts = localStorage.getItem(STORAGE_KEYS.DEBTS);
-            if (rawDebts) {
-              const debts: any[] = JSON.parse(rawDebts);
-              const userDebts = debts.filter((d: any) => !demoDebtIds.includes(d.id));
-              localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(userDebts));
-            }
-            const rawBudgets = localStorage.getItem(STORAGE_KEYS.BUDGETS);
-            if (rawBudgets) {
-              const budgets: any[] = JSON.parse(rawBudgets);
-              const userBudgets = budgets.filter((b: any) => !demoBudgetIds.includes(b.id));
-              localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(userBudgets));
-            }
-            // Clear demo PIN — reset to empty (user must set their own PIN)
-            const rawSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-            if (rawSettings) {
-              const s = JSON.parse(rawSettings);
-              if (s.pinCode === '1234') {
-                s.pinCode = '';
-                s.securityEnabled = false;
-                localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(s));
-              }
-            }
-          } catch (_) {}
-        }
+        // Historical IDs and PINs may belong to real users. Never remove them.
 
         localStorage.setItem(STORAGE_KEYS.SCHEMA_VERSION, SCHEMA_VERSION.toString());
       }
@@ -174,12 +137,16 @@ class StorageManager {
   }
 
   // Auto snapshot before any major operation or app upgrade
-  public createAutomaticSnapshot(reason: string): void {
+  public createAutomaticSnapshot(reason: string): boolean {
     try {
       const snapshots = this.getAutoSnapshots();
       const currentData = {
         timestamp: new Date().toISOString(),
         reason,
+        // Preserve exact bytes, unknown future fields, legacy keys and PINs.
+        raw: Object.fromEntries(Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)!)
+          .filter(key => key !== STORAGE_KEYS.SNAPSHOTS)
+          .map(key => [key, localStorage.getItem(key)])),
         data: {
           accounts: this.getAccounts(),
           transactions: this.getTransactions(),
@@ -193,8 +160,10 @@ class StorageManager {
       // Keep up to 5 automatic snapshots for safety
       if (snapshots.length > 5) snapshots.pop();
       localStorage.setItem(STORAGE_KEYS.SNAPSHOTS, JSON.stringify(snapshots));
+      return true;
     } catch (e) {
       console.warn('Auto snapshot failed:', e);
+      return false;
     }
   }
 
@@ -213,10 +182,10 @@ class StorageManager {
       if (data) return JSON.parse(data);
       const legacyKey = key.replace('ltmsav_', 'finflow_');
       const legacyData = localStorage.getItem(legacyKey);
-      return legacyData ? JSON.parse(legacyData) : defaultValue;
+      return legacyData ? JSON.parse(legacyData) : structuredClone(defaultValue);
     } catch (e) {
       console.warn(`Error reading ${key} from localStorage:`, e);
-      return defaultValue;
+      throw new Error(`Không thể đọc dữ liệu ${key}. Hãy khôi phục từ bản sao lưu.`, { cause: e });
     }
   }
 
@@ -224,8 +193,59 @@ class StorageManager {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
-      console.error(`Error saving ${key} to localStorage:`, e);
+      throw e;
     }
+  }
+
+  private recoverPendingWrite(): void {
+    const raw = localStorage.getItem('ltmsav_pending_write');
+    if (!raw) return;
+    const previous = JSON.parse(raw);
+    if (!previous || Array.isArray(previous) || typeof previous !== 'object') throw new Error('Nhật ký dữ liệu không hợp lệ.');
+    for (const [key, value] of Object.entries(previous)) {
+      if (!(Object.values(STORAGE_KEYS) as string[]).includes(key) || (value !== null && typeof value !== 'string')) {
+        throw new Error('Nhật ký dữ liệu không hợp lệ.');
+      }
+    }
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value as string);
+    }
+    localStorage.removeItem('ltmsav_pending_write');
+  }
+
+  private atomicWrite(write: () => void): void {
+    this.recoverPendingWrite();
+    const previous = Object.fromEntries(Object.values(STORAGE_KEYS)
+      .filter(key => key !== STORAGE_KEYS.SNAPSHOTS)
+      .map(key => [key, localStorage.getItem(key)]));
+    localStorage.setItem('ltmsav_pending_write', JSON.stringify(previous));
+    try {
+      write();
+      localStorage.removeItem('ltmsav_pending_write');
+    } catch (error) {
+      this.recoverPendingWrite();
+      throw error;
+    }
+  }
+
+  private validateBalances(accounts: Account[]): void {
+    const previous = this.getAccounts();
+    if (!this.getSettings().allowNegativeBalance && accounts.some(account =>
+      account.balance < 0 && account.balance < (previous.find(old => old.id === account.id)?.balance ?? 0))) {
+      throw new Error('Số dư không đủ để thực hiện giao dịch.');
+    }
+  }
+
+  private validateTransaction(tx: Omit<Transaction, 'id' | 'createdAt'>, accounts: Account[]): void {
+    if (!['income', 'expense', 'transfer', 'lend', 'debt_repay'].includes(tx.type)
+      || !Number.isSafeInteger(tx.amount) || tx.amount <= 0) throw new Error('Giao dịch không hợp lệ.');
+    if (!accounts.some(account => account.id === tx.accountId)) throw new Error('Tài khoản nguồn không hợp lệ.');
+    if (tx.type === 'transfer' && (tx.accountId === tx.targetAccountId || !accounts.some(account => account.id === tx.targetAccountId))) {
+      throw new Error('Tài khoản đích phải khác tài khoản nguồn.');
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(tx.date) || Number.isNaN(Date.parse(tx.date))
+      || new Date(tx.date).toISOString().slice(0, 10) !== tx.date) throw new Error('Ngày giao dịch không hợp lệ.');
   }
 
   // --- Accounts ---
@@ -241,7 +261,7 @@ class StorageManager {
     const accounts = this.getAccounts();
     const newAccount: Account = {
       ...account,
-      id: 'acc_' + Date.now(),
+      id: 'acc_' + crypto.randomUUID(),
     };
     accounts.push(newAccount);
     this.saveAccounts(accounts);
@@ -341,17 +361,20 @@ class StorageManager {
     const transactions = this.getTransactions();
     let accounts = this.getAccounts();
 
+    this.validateTransaction(txData, accounts);
     const newTx: Transaction = {
       ...txData,
-      id: 'tx_' + Date.now(),
+      id: 'tx_' + crypto.randomUUID(),
       createdAt: new Date().toISOString(),
     };
 
     accounts = this.applyBalanceChange(accounts, newTx, 1);
-    this.saveAccounts(accounts);
-
+    this.validateBalances(accounts);
     transactions.unshift(newTx);
-    this.saveTransactions(transactions);
+    this.atomicWrite(() => {
+      this.saveAccounts(accounts);
+      this.saveTransactions(transactions);
+    });
 
     this.addAuditLog('CREATE', 'TRANSACTION', newTx.id, `Ghi giao dịch [${newTx.type}]: ${newTx.description} (${newTx.amount.toLocaleString('vi-VN')}₫)`);
     return newTx;
@@ -375,11 +398,14 @@ class StorageManager {
       updatedAt: new Date().toISOString(),
     };
 
+    this.validateTransaction(newTx, accounts);
     accounts = this.applyBalanceChange(accounts, newTx, 1);
-    this.saveAccounts(accounts);
-
+    this.validateBalances(accounts);
     transactions[index] = newTx;
-    this.saveTransactions(transactions);
+    this.atomicWrite(() => {
+      this.saveAccounts(accounts);
+      this.saveTransactions(transactions);
+    });
 
     this.addAuditLog(
       'UPDATE',
@@ -398,10 +424,11 @@ class StorageManager {
 
     let accounts = this.getAccounts();
     accounts = this.applyBalanceChange(accounts, tx, -1);
-    this.saveAccounts(accounts);
-
     const filtered = transactions.filter(t => t.id !== id);
-    this.saveTransactions(filtered);
+    this.atomicWrite(() => {
+      this.saveAccounts(accounts);
+      this.saveTransactions(filtered);
+    });
 
     this.addAuditLog('DELETE', 'TRANSACTION', id, `Xóa giao dịch và đảo số dư: ${tx.description} (${tx.amount.toLocaleString('vi-VN')}₫)`);
     return true;
@@ -511,7 +538,7 @@ class StorageManager {
   // --- Backup & Restore ---
   exportBackup(): string {
     const payload = {
-      version: '1.2.1',
+      version: release.versionName,
       app: 'LTMsav',
       exportedAt: new Date().toISOString(),
       data: {
@@ -533,7 +560,13 @@ class StorageManager {
       if (!parsed.data || !parsed.data.accounts || !parsed.data.transactions) {
         return { success: false, message: 'Tệp sao lưu không đúng định dạng LTMsav.' };
       }
-      this.createAutomaticSnapshot('Sao lưu tự động trước khi khôi phục tệp JSON');
+      for (const key of ['accounts', 'transactions', 'categories', 'budgets', 'debts', 'auditLogs']) {
+        if (key in parsed.data && !Array.isArray(parsed.data[key])) throw new Error('Dữ liệu phải là danh sách: ' + key);
+      }
+      if (!this.createAutomaticSnapshot('Sao lưu tự động trước khi khôi phục tệp JSON')) {
+        throw new Error('Không thể tạo bản sao an toàn.');
+      }
+      this.atomicWrite(() => {
       this.saveAccounts(parsed.data.accounts);
       if (parsed.data.categories) this.saveCategories(parsed.data.categories);
       this.saveTransactions(parsed.data.transactions);
@@ -541,6 +574,7 @@ class StorageManager {
       if (parsed.data.debts) this.saveDebtsAndLoans(parsed.data.debts);
       if (parsed.data.settings) this.saveSettings({ ...DEFAULT_SETTINGS, ...parsed.data.settings });
       if (parsed.data.auditLogs) this.set(STORAGE_KEYS.AUDIT_LOGS, parsed.data.auditLogs);
+      });
       return { success: true, message: 'Khôi phục toàn bộ dữ liệu thành công!' };
     } catch (e: any) {
       return { success: false, message: 'Lỗi đọc tệp JSON: ' + (e?.message || 'Tệp không hợp lệ') };

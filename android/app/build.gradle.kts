@@ -24,9 +24,9 @@ android {
     signingConfigs {
         create("release") {
             val storeFile = file(System.getenv("KEYSTORE_PATH") ?: "keystore/ltmsav-release.jks")
-            val storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "ltmsav2026"
-            val keyAlias = System.getenv("KEY_ALIAS") ?: "ltmsav"
-            val keyPassword = System.getenv("KEY_PASSWORD") ?: "ltmsav2026"
+            val storePassword = System.getenv("KEYSTORE_PASSWORD") ?: error("Existing release signing credentials are required")
+            val keyAlias = System.getenv("KEY_ALIAS") ?: error("Existing release key alias is required")
+            val keyPassword = System.getenv("KEY_PASSWORD") ?: error("Existing release signing credentials are required")
             this.storeFile = storeFile
             this.storePassword = storePassword
             this.keyAlias = keyAlias
