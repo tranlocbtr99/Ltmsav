@@ -227,6 +227,105 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         <button onClick={()=>onNavigateTab('reports')} aria-label="Xem báo cáo" className="rounded-xl flex justify-center items-center bg-white/75 dark:bg-slate-800 text-blue-600"><CalendarDays size={18}/></button>
       </div>
       {/* Expense breakdown appears before shortcuts, matching the reference hierarchy. */}
+      {/* Category share — pie/donut chart (selected period) */}
+      <div className="glass-card rounded-3xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+        <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
+          <PieChart className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <span>{t('expenseByCategory')}</span>
+        </h2>
+
+        {chartData.slices.length === 0 ? (
+          <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">
+            {t('noExpenseData')}
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-5">
+            <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
+              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                {chartData.slices.map((s, i) => (
+                  <path
+                    key={i}
+                    d={describeArc(50, 50, 38, s.startAngle, s.endAngle)}
+                    fill="none"
+                    stroke={s.color}
+                    strokeWidth="14"
+                    className="transition-all duration-300 hover:opacity-80"
+                  />
+                ))}
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                <span className="text-[9px] text-slate-500 dark:text-slate-400 uppercase font-semibold">{t('totalExpense')}</span>
+                <span className="text-[11px] font-extrabold text-slate-900 dark:text-white tabular-nums">
+                  {chartData.totalExpense.toLocaleString('vi-VN')}₫
+                </span>
+              </div>
+            </div>
+
+            <div className="w-full space-y-1.5 flex-1 max-h-44 overflow-y-auto no-scrollbar">
+              {chartData.slices.map((item, i) => (
+                <div key={i} className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                    <DynamicIcon name={item.iconName} className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{item.name}</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="font-bold text-slate-900 dark:text-white block tabular-nums">
+                      {item.amount.toLocaleString('vi-VN')}₫
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{Math.round(item.pct)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Four reference shortcuts; all use existing app routes and actions. */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          {label:'Thêm giao dịch', icon:Plus, action:onOpenAdd},
+          {label:'Giao dịch định kỳ', icon:CalendarDays, action:()=>onNavigateTab('transactions')},
+          {label:'Phân tích AI', icon:Sparkles, action:onOpenAi},
+          {label:'Dự báo tài chính', icon:BarChart3, action:()=>onNavigateTab('reports')},
+        ].map(({label,icon:Icon,action})=><button key={label} onClick={action} className="glass-card flex min-w-0 flex-col items-center gap-2 rounded-[20px] px-1 py-4 active:scale-95 transition-transform">
+          <span className="rounded-2xl bg-gradient-to-b from-sky-50 to-blue-100 dark:from-slate-800 dark:to-slate-700 p-3 text-[#087cff]"><Icon size={21}/></span>
+          <span className="text-[10px] sm:text-xs leading-tight font-semibold text-center text-slate-700 dark:text-slate-200">{label}</span>
+        </button>)}
+      </div>
+
+      {/* Next-month expense forecast */}
+      {forecast.hasData && (
+        <div className="rounded-3xl p-5 border border-indigo-200 dark:border-indigo-500/30 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span>{t('forecastTitle')}</span>
+            </h2>
+            <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
+              {t('forecastBadge')}
+            </span>
+          </div>
+          <div>
+            <span className="text-2xl sm:text-3xl font-extrabold text-indigo-700 dark:text-indigo-300 tabular-nums break-all">
+              ~{forecast.predicted.toLocaleString('vi-VN')}₫
+            </span>
+            <span className="text-xs text-slate-600 dark:text-slate-400 block mt-1">{t('forecastNextMonth')}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-600 dark:text-slate-400">
+            <span>
+              {t('forecastLastMonth')}: <strong className="text-slate-900 dark:text-white tabular-nums">{forecast.lastMonth.toLocaleString('vi-VN')}₫</strong>
+            </span>
+            <span className={forecast.delta > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}>
+              {forecast.delta > 0 ? '▲' : '▼'} {Math.abs(forecast.delta).toLocaleString('vi-VN')}₫
+              {forecast.trendPct !== 0 && ` (${forecast.trendPct > 0 ? '+' : ''}${Math.round(forecast.trendPct)}%)`}
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{t('forecastNote')}</p>
+        </div>
+      )}
+
       {/* Income vs Expense — paired bar chart with period selector */}
       <div className="glass-card rounded-3xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
         <div className="flex items-center justify-between gap-2">
@@ -307,105 +406,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Next-month expense forecast */}
-      {forecast.hasData && (
-        <div className="rounded-3xl p-5 border border-indigo-200 dark:border-indigo-500/30 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/20 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              <span>{t('forecastTitle')}</span>
-            </h2>
-            <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
-              {t('forecastBadge')}
-            </span>
-          </div>
-          <div>
-            <span className="text-2xl sm:text-3xl font-extrabold text-indigo-700 dark:text-indigo-300 tabular-nums break-all">
-              ~{forecast.predicted.toLocaleString('vi-VN')}₫
-            </span>
-            <span className="text-xs text-slate-600 dark:text-slate-400 block mt-1">{t('forecastNextMonth')}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-600 dark:text-slate-400">
-            <span>
-              {t('forecastLastMonth')}: <strong className="text-slate-900 dark:text-white tabular-nums">{forecast.lastMonth.toLocaleString('vi-VN')}₫</strong>
-            </span>
-            <span className={forecast.delta > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}>
-              {forecast.delta > 0 ? '▲' : '▼'} {Math.abs(forecast.delta).toLocaleString('vi-VN')}₫
-              {forecast.trendPct !== 0 && ` (${forecast.trendPct > 0 ? '+' : ''}${Math.round(forecast.trendPct)}%)`}
-            </span>
-          </div>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{t('forecastNote')}</p>
-        </div>
-      )}
-
-      {/* Category share — pie/donut chart (selected period) */}
-      <div className="glass-card rounded-3xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
-          <PieChart className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <span>{t('expenseByCategory')}</span>
-        </h2>
-
-        {chartData.slices.length === 0 ? (
-          <div className="text-center py-6 text-xs text-slate-500 dark:text-slate-400">
-            {t('noExpenseData')}
-          </div>
-        ) : (
-          <div className="flex flex-col sm:flex-row items-center gap-5">
-            <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                {chartData.slices.map((s, i) => (
-                  <path
-                    key={i}
-                    d={describeArc(50, 50, 38, s.startAngle, s.endAngle)}
-                    fill="none"
-                    stroke={s.color}
-                    strokeWidth="14"
-                    className="transition-all duration-300 hover:opacity-80"
-                  />
-                ))}
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                <span className="text-[9px] text-slate-500 dark:text-slate-400 uppercase font-semibold">{t('totalExpense')}</span>
-                <span className="text-[11px] font-extrabold text-slate-900 dark:text-white tabular-nums">
-                  {chartData.totalExpense.toLocaleString('vi-VN')}₫
-                </span>
-              </div>
-            </div>
-
-            <div className="w-full space-y-1.5 flex-1 max-h-44 overflow-y-auto no-scrollbar">
-              {chartData.slices.map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                    <DynamicIcon name={item.iconName} className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{item.name}</span>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="font-bold text-slate-900 dark:text-white block tabular-nums">
-                      {item.amount.toLocaleString('vi-VN')}₫
-                    </span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{Math.round(item.pct)}%</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Four reference shortcuts; all use existing app routes and actions. */}
-      <div className="grid grid-cols-4 gap-2">
-        {[
-          {label:'Thêm giao dịch', icon:Plus, action:onOpenAdd},
-          {label:'Giao dịch định kỳ', icon:CalendarDays, action:()=>onNavigateTab('transactions')},
-          {label:'Phân tích AI', icon:Sparkles, action:onOpenAi},
-          {label:'Dự báo tài chính', icon:BarChart3, action:()=>onNavigateTab('reports')},
-        ].map(({label,icon:Icon,action})=><button key={label} onClick={action} className="glass-card flex min-w-0 flex-col items-center gap-2 rounded-[20px] px-1 py-4 active:scale-95 transition-transform">
-          <span className="rounded-2xl bg-gradient-to-b from-sky-50 to-blue-100 dark:from-slate-800 dark:to-slate-700 p-3 text-[#087cff]"><Icon size={21}/></span>
-          <span className="text-[10px] sm:text-xs leading-tight font-semibold text-center text-slate-700 dark:text-slate-200">{label}</span>
-        </button>)}
       </div>
 
       {/* Budget Alerts */}
