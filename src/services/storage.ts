@@ -13,6 +13,7 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: 'ltmsav_audit_logs_v1',
   SETTINGS: 'ltmsav_settings_v1',
   SNAPSHOTS: 'ltmsav_auto_snapshots_v1',
+  RECURRING: 'ltmsav_recurring_rules_v1',
 };
 
 // Initial default data seed — empty for new users
@@ -557,6 +558,7 @@ class StorageManager {
         debts: this.getDebtsAndLoans(),
         settings: this.getSettings(),
         auditLogs: this.getAuditLogs(),
+        recurringRules: JSON.parse(localStorage.getItem(STORAGE_KEYS.RECURRING) || '[]'),
       }
     };
     return JSON.stringify(payload, null, 2);
@@ -579,6 +581,7 @@ class StorageManager {
           throw new Error('Dữ liệu không hợp lệ hoặc trùng ID: ' + key);
         }
       }
+      if (data.recurringRules !== undefined && (!Array.isArray(data.recurringRules) || data.recurringRules.some((rule: any) => !rule || typeof rule.id !== 'string' || typeof rule.title !== 'string' || !['income','expense'].includes(rule.type) || !Number.isSafeInteger(rule.amount) || rule.amount <= 0 || !Number.isInteger(rule.day) || rule.day < 1 || rule.day > 31 || typeof rule.accountId !== 'string' || typeof rule.categoryId !== 'string') || new Set(data.recurringRules.map((rule: any) => rule.id)).size !== data.recurringRules.length)) throw new Error('Lịch định kỳ không hợp lệ.');
       if (data.accounts.some((account: any) => typeof account.name !== 'string' || !Number.isFinite(account.balance))) {
         throw new Error('Số dư tài khoản không hợp lệ.');
       }
@@ -615,6 +618,7 @@ class StorageManager {
       if (parsed.data.debts) this.saveDebtsAndLoans(parsed.data.debts);
       if (parsed.data.settings) this.saveSettings({ ...DEFAULT_SETTINGS, ...parsed.data.settings });
       if (parsed.data.auditLogs) this.set(STORAGE_KEYS.AUDIT_LOGS, parsed.data.auditLogs);
+      if (parsed.data.recurringRules !== undefined) localStorage.setItem(STORAGE_KEYS.RECURRING, JSON.stringify(parsed.data.recurringRules));
       });
       return { success: true, message: 'Khôi phục toàn bộ dữ liệu thành công!' };
     } catch (e: any) {
@@ -631,6 +635,7 @@ class StorageManager {
     localStorage.removeItem(STORAGE_KEYS.DEBTS);
     localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+    localStorage.removeItem(STORAGE_KEYS.RECURRING);
   }
 
   // Permanently delete every trace of local data (account erasure, GDPR-style)
@@ -651,6 +656,7 @@ class StorageManager {
       localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
       localStorage.removeItem(STORAGE_KEYS.SETTINGS);
       localStorage.removeItem(STORAGE_KEYS.SNAPSHOTS);
+      localStorage.removeItem(STORAGE_KEYS.RECURRING);
 
       const legacyKeys = [
         'finflow_accounts_v1', 'finflow_categories_v1', 'finflow_transactions_v1',
