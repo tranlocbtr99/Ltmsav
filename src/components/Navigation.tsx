@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  LayoutDashboard, ReceiptText, Sparkles, Target, Wallet, Settings, WifiOff, Lock, Sun, Moon, Globe 
+  House, ReceiptText, Sparkles, CalendarDays, ChartNoAxesCombined, UserRound, Settings, WifiOff, Lock, Sun, Moon 
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -112,15 +112,16 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
 }) => {
   const { t } = useLanguage();
   const leftTabs = [
-    { id: 'overview', label: t('overview'), icon: LayoutDashboard },
-    { id: 'transactions', label: t('transactions'), icon: ReceiptText },
+    { id: 'overview', label: 'Trang chủ', icon: House },
+    { id: 'transactions', label: 'Giao dịch', icon: ReceiptText },
   ];
+  const middleTabs = [{ id: 'reports', label: 'Báo cáo', icon: ChartNoAxesCombined }];
   const rightTabs = [
-    { id: 'budgets', label: t('budget'), icon: Target },
-    { id: 'assets', label: t('assetsNav'), icon: Wallet },
+    { id: 'budgets', label: 'Kế hoạch', icon: CalendarDays },
+    { id: 'settings', label: 'Cá nhân', icon: UserRound },
   ];
 
-  const renderTab = (tab: { id: string; label: string; icon: typeof LayoutDashboard }) => {
+  const renderTab = (tab: { id: string; label: string; icon: typeof House }) => {
     const Icon = tab.icon;
     const isActive = currentTab === tab.id;
     return (
@@ -154,16 +155,9 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
           {leftTabs.map(renderTab)}
         </div>
 
-        {/* Center: AI assistant (thumb-friendly) */}
+        {/* Center: reports from the reference design */}
         <div className="flex-1 flex items-center justify-center">
-          <button
-            onClick={onOpenAdd}
-            className="flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-purple-600 to-indigo-500 hover:brightness-110 text-white rounded-full shadow-lg shadow-purple-900/25 transition active:scale-95"
-            title="LTMsav AI"
-            aria-label="LTMsav AI"
-          >
-            <Sparkles className="w-6 h-6" />
-          </button>
+          {middleTabs.map(renderTab)}
         </div>
 
         {/* Right group */}
