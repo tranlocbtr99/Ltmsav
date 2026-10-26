@@ -3,7 +3,7 @@ import { Account, Transaction, Category, Budget, DebtOrLoan } from '../types';
 import { 
   TrendingUp, TrendingDown, Wallet, ArrowRightLeft, Sparkles, Plus, 
   ArrowUpRight, ArrowDownLeft, AlertTriangle, ShieldCheck, ChevronRight,
-  BarChart3, PieChart, Eye, EyeOff
+  BarChart3, PieChart, Eye, EyeOff, CalendarClock, BrainCircuit
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -494,6 +494,24 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
           <span className="text-[10px] leading-tight text-center line-clamp-2 text-slate-700 dark:text-slate-300">{t('budget')}</span>
         </button>
+      </div>
+
+      {/* Reference-inspired quick actions: real navigation, no mock values */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { label: 'Thêm giao dịch', icon: Plus, action: onOpenAdd },
+          { label: 'Giao dịch định kỳ', icon: CalendarClock, action: () => onNavigateTab('transactions') },
+          { label: 'Phân tích AI', icon: BrainCircuit, action: onOpenAi },
+          { label: 'Dự báo tài chính', icon: TrendingUp, action: () => onNavigateTab('reports') },
+        ].map(item => {
+          const Icon = item.icon;
+          return <button key={item.label} type="button" onClick={item.action}
+            className="glass-card rounded-2xl px-1.5 py-3 flex flex-col items-center gap-2 hover:border-sky-300 active:scale-95 transition"
+            aria-label={item.label}>
+            <span className="w-10 h-10 rounded-2xl bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 flex items-center justify-center"><Icon className="w-5 h-5" /></span>
+            <span className="text-[10px] text-center leading-tight font-medium text-slate-700 dark:text-slate-200">{item.label}</span>
+          </button>;
+        })}
       </div>
 
       {/* Budget Alerts */}
