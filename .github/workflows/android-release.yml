@@ -1,4 +1,4 @@
-name: Build Android APK and Google Play AAB
+name: Build LTMsav Android APK
 
 on:
   workflow_dispatch:
@@ -175,7 +175,7 @@ jobs:
         working-directory: mobile/android
 
         run: |
-          ./gradlew assembleRelease bundleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Sign Release Artifacts
         env:
@@ -187,22 +187,7 @@ jobs:
         run: |
           mkdir -p final_artifacts
 
-          # 1. Sign AAB with jarsigner
-          AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" 2>/dev/null | head -n 1)
-          if [ -f "$AAB_FILE" ]; then
-            jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-              -keystore keystore/release.jks \
-              -storepass "$KEYSTORE_PASSWORD" \
-              -keypass "$KEY_PASSWORD" \
-              "$AAB_FILE" "$KEY_ALIAS"
-            cp "$AAB_FILE" final_artifacts/LTMsav-GooglePlay-Signed.aab
-            echo "AAB signed: final_artifacts/LTMsav-GooglePlay-Signed.aab"
-          else
-            echo "No AAB found" >&2
-            exit 1
-          fi
-
-          # 2. Align and sign APK
+          # Align and sign APK
           APK_RAW=$(find app/build/outputs/apk/release -name "*.apk" 2>/dev/null | head -n 1)
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" 2>/dev/null | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" 2>/dev/null | sort -V | tail -n 1)
@@ -232,15 +217,13 @@ jobs:
         run: |
           set -euo pipefail
           APK="final_artifacts/LTMsav-Release-Signed.apk"
-          AAB="final_artifacts/LTMsav-GooglePlay-Signed.aab"
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
-          test -s "$APK" && test -s "$AAB" && test -n "$APKSIGNER"
+          test -s "$APK" && test -n "$APKSIGNER"
           "$APKSIGNER" verify --verbose "$APK"
           ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
           EXPECTED="fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7"
           test "$ACTUAL" = "$EXPECTED" || { echo "Signed APK certificate mismatch" >&2; exit 1; }
-          jarsigner -verify -strict "$AAB" >/dev/null
-          echo "APK and AAB signature verification passed"
+          echo "APK signature verification passed"
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
@@ -259,12 +242,3 @@ jobs:
           path: mobile/android/final_artifacts/LTMsav-Release-Signed.apk
           retention-days: 30
 
-      - name: Upload Google Play AAB
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: LTMsav-GooglePlay-AAB
-          if-no-files-found: error
-          path: mobile/android/final_artifacts/LTMsav-GooglePlay-Signed.aab
-          retention-days: 30
