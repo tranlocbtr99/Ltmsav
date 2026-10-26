@@ -178,7 +178,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       lastMonth: last,
       delta,
       trendPct,
-      hasData: nonZero.length >= 1,
+      hasData: nonZero.length >= 2,
     };
   }, [transactions]);
 
@@ -242,7 +242,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </span>
           </div>
           <div>
-            <span className="text-emerald-200/80 block">{t('totalDebtToPay')}:</span>
+            <span className="text-blue-50/80 block">{t('totalDebtToPay')}:</span>
             <span className="font-bold text-rose-300 text-sm tabular-nums break-all">
               {showBalance ? (totalDebts > 0 ? `-${totalDebts.toLocaleString('vi-VN')}₫` : '0₫') : '••••'}
             </span>
@@ -261,7 +261,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
           <div>
             <span className="text-sm sm:text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums break-all">
-              +{monthIncome.toLocaleString('vi-VN')}₫
+              {showBalance ? `+${monthIncome.toLocaleString('vi-VN')}₫` : '••••'}
             </span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">{t('thisMonth')}</span>
           </div>
@@ -276,10 +276,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
           <div>
             <span className="text-sm sm:text-xl font-bold text-rose-600 dark:text-rose-400 tabular-nums break-all">
-              -{monthExpense.toLocaleString('vi-VN')}₫
+              {showBalance ? `-${monthExpense.toLocaleString('vi-VN')}₫` : '••••'}
             </span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
-              {t('surplus')}: {netSavings >= 0 ? '+' : ''}{netSavings.toLocaleString('vi-VN')}₫
+              {t('surplus')}: {showBalance ? `${netSavings >= 0 ? '+' : ''}${netSavings.toLocaleString('vi-VN')}₫` : '••••'}
             </span>
           </div>
         </div>
@@ -316,7 +316,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               onClick={() => setChartPeriod(key)}
               className={`py-1.5 rounded-xl transition truncate ${
                 chartPeriod === key
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-sky-600 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
@@ -355,13 +355,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className="flex items-center justify-between px-1">
             <span className="text-slate-500 dark:text-slate-400">{t('cashIn')}</span>
             <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              +{chartData.totalIncome.toLocaleString('vi-VN')}₫
+              {showBalance ? `+${chartData.totalIncome.toLocaleString('vi-VN')}₫` : '••••'}
             </span>
           </div>
           <div className="flex items-center justify-between px-1">
             <span className="text-slate-500 dark:text-slate-400">{t('cashOut')}</span>
             <span className="font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-              -{chartData.totalExpense.toLocaleString('vi-VN')}₫
+              {showBalance ? `-${chartData.totalExpense.toLocaleString('vi-VN')}₫` : '••••'}
             </span>
           </div>
         </div>
@@ -381,13 +381,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
           <div>
             <span className="text-2xl sm:text-3xl font-extrabold text-indigo-700 dark:text-indigo-300 tabular-nums break-all">
-              ~{forecast.predicted.toLocaleString('vi-VN')}₫
+              {showBalance ? `~${forecast.predicted.toLocaleString('vi-VN')}₫` : '••••'}
             </span>
             <span className="text-xs text-slate-600 dark:text-slate-400 block mt-1">{t('forecastNextMonth')}</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-600 dark:text-slate-400">
             <span>
-              {t('forecastLastMonth')}: <strong className="text-slate-900 dark:text-white tabular-nums">{forecast.lastMonth.toLocaleString('vi-VN')}₫</strong>
+              {t('forecastLastMonth')}: <strong className="text-slate-900 dark:text-white tabular-nums">{showBalance ? `${forecast.lastMonth.toLocaleString('vi-VN')}₫` : '••••'}</strong>
             </span>
             <span className={forecast.delta > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}>
               {forecast.delta > 0 ? '▲' : '▼'} {Math.abs(forecast.delta).toLocaleString('vi-VN')}₫
