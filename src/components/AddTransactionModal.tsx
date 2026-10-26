@@ -341,7 +341,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={numAmount <= 0}
-            className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:pointer-events-none text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-emerald-900/30 transition shrink-0"
+            className="flex items-center justify-center gap-1.5 px-5 py-3 bg-gradient-to-r from-sky-400 to-blue-600 hover:brightness-105 disabled:opacity-50 disabled:pointer-events-none text-white text-xs sm:text-sm font-semibold rounded-2xl shadow-lg shadow-blue-500/20 transition flex-1"
           >
             <Plus className="w-4 h-4" />
             <span>{t('addTransactionBtn')}</span>
