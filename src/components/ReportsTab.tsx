@@ -26,7 +26,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     if (period === 'quarter') {
       const start = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
       const key = [start.getFullYear(), String(start.getMonth()+1).padStart(2,'0'), '01'].join('-');
-      return transactions.filter(t => t.date >= key && t.date.slice(0,10) <= now.toLocaleDateString('en-CA'));
+      return transactions.filter(t => t.date >= key && t.date.slice(0,10) <= [now.getFullYear(), String(now.getMonth()+1).padStart(2,'0'), String(now.getDate()).padStart(2,'0')].join('-'));
     }
     if (period === 'year') {
       return transactions.filter(t => t.date.startsWith(String(now.getFullYear())));
