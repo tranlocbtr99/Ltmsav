@@ -100,11 +100,11 @@ jobs:
           node --input-type=module <<'JS'
           import fs from 'node:fs';
           const {versionCode, versionName} = JSON.parse(fs.readFileSync('android-version.json','utf8'));
-          if (!Number.isSafeInteger(versionCode) || versionCode < 1 || !/^\\d+\\.\\d+\\.\\d+$/.test(versionName)) throw new Error('Invalid Android version');
+          if (!Number.isSafeInteger(versionCode) || versionCode < 1 || !/^\d+\.\d+\.\d+$/.test(versionName)) throw new Error('Invalid Android version');
           const file = 'android/app/build.gradle';
           let source = fs.readFileSync(file,'utf8');
-          if (!/versionCode\\s+\\d+/.test(source) || !/versionName\\s+"[^"]+"/.test(source)) throw new Error('Cannot update Android version');
-          source = source.replace(/versionCode\\s+\\d+/, 'versionCode '+versionCode).replace(/versionName\\s+"[^"]+"/, 'versionName "'+versionName+'"');
+          if (!/versionCode\s+\d+/.test(source) || !/versionName\s+"[^"]+"/.test(source)) throw new Error('Cannot update Android version');
+          source = source.replace(/versionCode\s+\d+/, 'versionCode '+versionCode).replace(/versionName\s+"[^"]+"/, 'versionName "'+versionName+'"');
           fs.writeFileSync(file,source);
           JS
 
@@ -174,8 +174,8 @@ jobs:
               -storepass "$KEYSTORE_PASSWORD" \
               -keypass "$KEY_PASSWORD" \
               "$AAB_FILE" "$KEY_ALIAS"
-            cp "$AAB_FILE" final_artifacts/FinFlow-GooglePlay-Signed.aab
-            echo "AAB signed: final_artifacts/FinFlow-GooglePlay-Signed.aab"
+            cp "$AAB_FILE" final_artifacts/LTMsav-GooglePlay-Signed.aab
+            echo "AAB signed: final_artifacts/LTMsav-GooglePlay-Signed.aab"
           else
             echo "No AAB found" >&2
             exit 1
@@ -193,10 +193,10 @@ jobs:
                 --ks keystore/release.jks \
                 --ks-pass env:KEYSTORE_PASSWORD \
                 --key-pass env:KEY_PASSWORD \
-                --out final_artifacts/FinFlow-Release-Signed.apk \
+                --out final_artifacts/LTMsav-Release-Signed.apk \
                 final_artifacts/aligned.apk
               rm -f final_artifacts/aligned.apk
-              echo "APK signed: final_artifacts/FinFlow-Release-Signed.apk"
+              echo "APK signed: final_artifacts/LTMsav-Release-Signed.apk"
             else
               echo 'Signing tools unavailable' >&2
               exit 1
@@ -209,7 +209,7 @@ jobs:
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: FinFlow-Debug-APK
+          name: LTMsav-Debug-APK
           path: mobile/android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
@@ -219,9 +219,9 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
-          name: FinFlow-Signed-Release-APK
+          name: LTMsav-Signed-Release-APK
           if-no-files-found: error
-          path: mobile/android/final_artifacts/FinFlow-Release-Signed.apk
+          path: mobile/android/final_artifacts/LTMsav-Release-Signed.apk
           retention-days: 30
 
       - name: Upload Google Play AAB
@@ -230,7 +230,7 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
-          name: FinFlow-GooglePlay-AAB
+          name: LTMsav-GooglePlay-AAB
           if-no-files-found: error
-          path: mobile/android/final_artifacts/FinFlow-GooglePlay-Signed.aab
+          path: mobile/android/final_artifacts/LTMsav-GooglePlay-Signed.aab
           retention-days: 30
