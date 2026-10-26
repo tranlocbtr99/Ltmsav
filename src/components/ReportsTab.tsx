@@ -16,13 +16,21 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   accounts,
 }) => {
   const { t } = useLanguage();
-  const [period, setPeriod] = useState<'thisMonth' | 'last30Days' | 'all'>('thisMonth');
+  const [period, setPeriod] = useState<'thisMonth' | 'last30Days' | 'quarter' | 'year' | 'all'>('thisMonth');
 
   // Filter transactions by period
   const filteredTxs = useMemo(() => {
     const now = new Date();
     const currentMonth = now.toISOString().slice(0, 7);
 
+    if (period === 'quarter') {
+      const start = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+      const key = [start.getFullYear(), String(start.getMonth()+1).padStart(2,'0'), '01'].join('-');
+      return transactions.filter(t => t.date >= key && t.date.slice(0,10) <= now.toLocaleDateString('en-CA'));
+    }
+    if (period === 'year') {
+      return transactions.filter(t => t.date.startsWith(String(now.getFullYear())));
+    }
     if (period === 'thisMonth') {
       return transactions.filter(t => t.date.startsWith(currentMonth));
     } else if (period === 'last30Days') {
@@ -100,32 +108,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   return (
     <div className="space-y-4 pb-12 stagger">
       
-      {/* Period Filter Buttons */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-semibold">
-        <button
-          onClick={() => setPeriod('thisMonth')}
-          className={`py-2 rounded-xl transition ${
-            period === 'thisMonth' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-          }`}
-        >
-          {t('periodThisMonth')}
-        </button>
-        <button
-          onClick={() => setPeriod('last30Days')}
-          className={`py-2 rounded-xl transition ${
-            period === 'last30Days' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-          }`}
-        >
-          {t('period30Days')}
-        </button>
-        <button
-          onClick={() => setPeriod('all')}
-          className={`py-2 rounded-xl transition ${
-            period === 'all' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-          }`}
-        >
-          {t('periodAll')}
-        </button>
+      {/* Month, quarter and year filters operate on persisted transactions. */}
+      <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl bg-white/65 dark:bg-slate-900 border border-white/80 dark:border-slate-800 text-[10px] sm:text-xs font-semibold">
+        {([['thisMonth','Tháng'],['last30Days','30 ngày'],['quarter','Quý'],['year','Năm'],['all','Tất cả']] as const).map(([key,label])=><button key={key} onClick={()=>setPeriod(key)} className={`py-2 rounded-xl transition ${period===key?'bg-gradient-to-r from-sky-400 to-blue-600 text-white shadow-sm':'text-slate-600 dark:text-slate-300'}`}>{label}</button>)}
       </div>
 
       {/* Cash Flow Summary Card */}
