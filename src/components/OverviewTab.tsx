@@ -43,7 +43,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   const netWorth = totalAssets + totalLoans - totalDebts;
 
   // Monthly statistics
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
   const monthTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
   
   const monthIncome = monthTransactions

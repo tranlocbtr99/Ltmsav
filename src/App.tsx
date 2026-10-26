@@ -59,7 +59,7 @@ export const App: React.FC = () => {
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#090d16');
     } else {
       document.documentElement.classList.remove('dark');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f8fafc');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#eaf6ff');
     }
   }, [settings.theme]);
 

@@ -2,6 +2,9 @@ name: Build Android APK and Google Play AAB
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
@@ -9,10 +12,26 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
+  validate-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check TypeScript
+        run: npm run lint
+      - name: Build web assets
+        run: npm run build
+
   build-android:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
@@ -22,7 +41,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          # No cache — package-lock.json is not committed
+          cache: npm
 
       - name: Setup Java 21 (Required by Capacitor 7 / capacitor-android)
         id: setup-java
@@ -39,11 +58,10 @@ jobs:
             SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           fi
           yes | "$SDKMANAGER" --licenses 2>/dev/null || true
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" || \
-          "$SDKMANAGER" "platforms;android-35" "build-tools;34.0.0" || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install Web Dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Build Web Application
         run: npm run build
@@ -51,7 +69,7 @@ jobs:
       - name: Prepare Mobile Packaging (Capacitor)
         working-directory: mobile
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           rm -rf dist
           cp -r ../dist ./dist
           if [ ! -d "android" ]; then
@@ -62,12 +80,18 @@ jobs:
 
           # Integrate Native Android Biometric (Fingerprint & Face Unlock)
           mkdir -p android/app/src/main/java/com/ltmsav/app
+          test -f custom_android/MainActivity.java
+          test -f custom_android/NativeBiometricPlugin.java
           cp custom_android/*.java android/app/src/main/java/com/ltmsav/app/
 
+          # Use the stable AndroidX biometric library rather than an alpha release.
           # Add androidx.biometric dependency to app/build.gradle
           if ! grep -q "androidx.biometric:biometric" android/app/build.gradle; then
-            sed -i '/dependencies {/a \    implementation "androidx.biometric:biometric:1.2.0-alpha05"' android/app/build.gradle
+            sed -i '/dependencies {/a \    implementation "androidx.biometric:biometric:1.1.0"' android/app/build.gradle
           fi
+
+          # Verify application ID to avoid creating an incompatible replacement package.
+          grep -q 'applicationId "com.ltmsav.app"' android/app/build.gradle || { echo "Unexpected Android application ID" >&2; exit 1; }
 
           # Add USE_BIOMETRIC permission to AndroidManifest.xml
           if ! grep -q "android.permission.USE_BIOMETRIC" android/app/src/main/AndroidManifest.xml; then
@@ -90,22 +114,51 @@ jobs:
           echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g" >> gradle.properties
           echo "org.gradle.daemon=false" >> gradle.properties
 
-          echo "=== gradle.properties ===" && cat gradle.properties
+          echo 'Gradle Java and memory settings configured'
 
-      - name: Generate Release Signing Key
+      # Signing material must be persistent and stored in GitHub Actions Secrets.
+      # Never generate a new release key on every build.
+      - name: Apply Android release version
+        working-directory: mobile
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const {versionCode, versionName} = JSON.parse(fs.readFileSync('android-version.json','utf8'));
+          if (!Number.isSafeInteger(versionCode) || versionCode < 1 || !/^\d+\.\d+\.\d+$/.test(versionName)) throw new Error('Invalid Android version');
+          const file = 'android/app/build.gradle';
+          let source = fs.readFileSync(file,'utf8');
+          if (!/versionCode\s+\d+/.test(source) || !/versionName\s+"[^"]+"/.test(source)) throw new Error('Cannot update Android version');
+          source = source.replace(/versionCode\s+\d+/, 'versionCode '+versionCode).replace(/versionName\s+"[^"]+"/, 'versionName "'+versionName+'"');
+          fs.writeFileSync(file,source);
+          JS
+
+      - name: Require signing configuration
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64" && test -n "$KEYSTORE_PASSWORD" && test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD" || {
+            echo "Release signing secrets are missing. No release will be published." >&2
+            exit 1
+          }
+
+      - name: Restore release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: mobile/android
         run: |
           mkdir -p keystore
-          keytool -genkeypair -v \
-            -keystore keystore/release.jks \
-            -alias ltmsav \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass ltmsav2026 \
-            -keypass ltmsav2026 \
-            -dname "CN=LTMsav App, OU=LTMsav, O=LTMsav, L=HoChiMinh, ST=HoChiMinh, C=VN" \
-            -noprompt
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > keystore/release.jks
+          chmod 600 keystore/release.jks
+          test -n "$KEYSTORE_PASSWORD" && test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD"
+          keytool -list -keystore keystore/release.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
+          ACTUAL_FINGERPRINT=$(keytool -exportcert -keystore keystore/release.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | sha256sum | cut -d ' ' -f 1)
+          test "$ACTUAL_FINGERPRINT" = "fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7" || { echo 'Unexpected signing certificate. Release blocked.' >&2; exit 1; }
 
       - name: Build Debug APK
         working-directory: mobile/android
@@ -114,16 +167,22 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       - name: Build Release APK and AAB
-        working-directory: mobile/android
         env:
-          KEYSTORE_PATH: keystore/release.jks
-          KEYSTORE_PASSWORD: ltmsav2026
-          KEY_ALIAS: ltmsav
-          KEY_PASSWORD: ltmsav2026
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: mobile/android
+
         run: |
-          ./gradlew assembleRelease bundleRelease --no-daemon || true
+          ./gradlew assembleRelease bundleRelease --no-daemon
 
       - name: Sign Release Artifacts
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: mobile/android
         run: |
           mkdir -p final_artifacts
@@ -133,13 +192,14 @@ jobs:
           if [ -f "$AAB_FILE" ]; then
             jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
               -keystore keystore/release.jks \
-              -storepass ltmsav2026 \
-              -keypass ltmsav2026 \
-              "$AAB_FILE" ltmsav
-            cp "$AAB_FILE" final_artifacts/FinFlow-GooglePlay-Signed.aab
-            echo "AAB signed: final_artifacts/FinFlow-GooglePlay-Signed.aab"
+              -storepass "$KEYSTORE_PASSWORD" \
+              -keypass "$KEY_PASSWORD" \
+              "$AAB_FILE" "$KEY_ALIAS"
+            cp "$AAB_FILE" final_artifacts/LTMsav-GooglePlay-Signed.aab
+            echo "AAB signed: final_artifacts/LTMsav-GooglePlay-Signed.aab"
           else
-            echo "No AAB found, skipping AAB signing"
+            echo "No AAB found" >&2
+            exit 1
           fi
 
           # 2. Align and sign APK
@@ -152,41 +212,59 @@ jobs:
               "$ZIPALIGN" -v -p 4 "$APK_RAW" final_artifacts/aligned.apk
               "$APKSIGNER" sign \
                 --ks keystore/release.jks \
-                --ks-pass pass:ltmsav2026 \
-                --key-pass pass:ltmsav2026 \
-                --out final_artifacts/FinFlow-Release-Signed.apk \
+                --ks-pass env:KEYSTORE_PASSWORD \
+                --key-pass env:KEY_PASSWORD \
+                --out final_artifacts/LTMsav-Release-Signed.apk \
                 final_artifacts/aligned.apk
               rm -f final_artifacts/aligned.apk
-              echo "APK signed: final_artifacts/FinFlow-Release-Signed.apk"
+              echo "APK signed: final_artifacts/LTMsav-Release-Signed.apk"
             else
-              cp "$APK_RAW" final_artifacts/FinFlow-Release-Signed.apk
-              echo "APK copied (no zipalign/apksigner found)"
+              echo 'Signing tools unavailable' >&2
+              exit 1
             fi
           else
-            echo "No release APK found, skipping APK signing"
+            echo "No release APK found" >&2
+            exit 1
           fi
+
+      - name: Verify signed Android artifacts
+        working-directory: mobile/android
+        run: |
+          set -euo pipefail
+          APK="final_artifacts/LTMsav-Release-Signed.apk"
+          AAB="final_artifacts/LTMsav-GooglePlay-Signed.aab"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          test -s "$APK" && test -s "$AAB" && test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          EXPECTED="fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7"
+          test "$ACTUAL" = "$EXPECTED" || { echo "Signed APK certificate mismatch" >&2; exit 1; }
+          jarsigner -verify -strict "$AAB" >/dev/null
+          echo "APK and AAB signature verification passed"
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: FinFlow-Debug-APK
+          name: LTMsav-Debug-APK
           path: mobile/android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
       - name: Upload Signed Release APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
-          name: FinFlow-Signed-Release-APK
-          path: |
-            mobile/android/final_artifacts/FinFlow-Release-Signed.apk
-            mobile/android/app/build/outputs/apk/release/*.apk
+          name: LTMsav-Signed-Release-APK
+          if-no-files-found: error
+          path: mobile/android/final_artifacts/LTMsav-Release-Signed.apk
           retention-days: 30
 
       - name: Upload Google Play AAB
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         uses: actions/upload-artifact@v4
         with:
-          name: FinFlow-GooglePlay-AAB
-          path: |
-            mobile/android/final_artifacts/FinFlow-GooglePlay-Signed.aab
-            mobile/android/app/build/outputs/bundle/release/*.aab
+          name: LTMsav-GooglePlay-AAB
+          if-no-files-found: error
+          path: mobile/android/final_artifacts/LTMsav-GooglePlay-Signed.aab
           retention-days: 30
