@@ -114,10 +114,11 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
   const leftTabs = [
     { id: 'overview', label: t('overview'), icon: LayoutDashboard },
     { id: 'transactions', label: t('transactions'), icon: ReceiptText },
+    { id: 'reports', label: 'Báo cáo', icon: BarChart3 },
   ];
   const rightTabs = [
     { id: 'budgets', label: t('budget'), icon: Target },
-    { id: 'assets', label: t('assetsNav'), icon: Wallet },
+    { id: 'settings', label: 'Cá nhân', icon: Settings },
   ];
 
   const renderTab = (tab: { id: string; label: string; icon: typeof LayoutDashboard }) => {
@@ -150,24 +151,12 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
       <div className="max-w-3xl mx-auto px-2 py-1.5 flex items-stretch justify-between relative">
 
         {/* Left group */}
-        <div className="flex-1 flex items-center justify-around">
+        <div className="flex-[3] flex items-center justify-around">
           {leftTabs.map(renderTab)}
         </div>
 
-        {/* Center: AI assistant (thumb-friendly) */}
-        <div className="flex-1 flex items-center justify-center">
-          <button
-            onClick={onOpenAdd}
-            className="flex items-center justify-center w-12 h-12 bg-gradient-to-tr from-blue-600 to-cyan-400 hover:brightness-110 text-white rounded-full shadow-lg shadow-blue-900/25 transition active:scale-95"
-            title="LTMsav AI"
-            aria-label="LTMsav AI"
-          >
-            <Sparkles className="w-6 h-6" />
-          </button>
-        </div>
-
         {/* Right group */}
-        <div className="flex-1 flex items-center justify-around">
+        <div className="flex-[2] flex items-center justify-around">
           {rightTabs.map(renderTab)}
         </div>
 
