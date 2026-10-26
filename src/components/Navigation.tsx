@@ -115,7 +115,10 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
     { id: 'overview', label: 'Trang chủ', icon: House },
     { id: 'transactions', label: 'Giao dịch', icon: ReceiptText },
   ];
-  const middleTabs = [{ id: 'reports', label: 'Báo cáo', icon: ChartNoAxesCombined }];
+  const middleTabs = [
+    { id: 'ai', label: 'Nhập bằng AI', icon: Sparkles },
+    { id: 'reports', label: 'Báo cáo', icon: ChartNoAxesCombined },
+  ];
   const rightTabs = [
     { id: 'budgets', label: 'Kế hoạch', icon: CalendarDays },
     { id: 'settings', label: 'Cá nhân', icon: UserRound },
