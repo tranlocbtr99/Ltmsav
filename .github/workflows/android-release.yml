@@ -97,11 +97,19 @@ jobs:
       - name: Restore release keystore
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         if: ${{ env.RELEASE_KEYSTORE_BASE64 != '' }}
         working-directory: mobile/android
         run: |
           mkdir -p keystore
-          echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > keystore/release.jks
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > keystore/release.jks
+          chmod 600 keystore/release.jks
+          test -n "$KEYSTORE_PASSWORD" && test -n "$KEY_ALIAS" && test -n "$KEY_PASSWORD"
+          keytool -list -keystore keystore/release.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
+          ACTUAL_FINGERPRINT=$(keytool -exportcert -keystore keystore/release.jks -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" | sha256sum | cut -d ' ' -f 1)
+          test "$ACTUAL_FINGERPRINT" = "fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7" || { echo 'Unexpected signing certificate. Release blocked.' >&2; exit 1; }
 
       - name: Build Debug APK
         working-directory: mobile/android
@@ -143,7 +151,8 @@ jobs:
             cp "$AAB_FILE" final_artifacts/FinFlow-GooglePlay-Signed.aab
             echo "AAB signed: final_artifacts/FinFlow-GooglePlay-Signed.aab"
           else
-            echo "No AAB found, skipping AAB signing"
+            echo "No AAB found" >&2
+            exit 1
           fi
 
           # 2. Align and sign APK
@@ -167,7 +176,8 @@ jobs:
               exit 1
             fi
           else
-            echo "No release APK found, skipping APK signing"
+            echo "No release APK found" >&2
+            exit 1
           fi
 
       - name: Upload Debug APK
