@@ -1,11 +1,13 @@
-> WITHDRAWN: APK/AAB 1.9.1502 must not be installed or distributed as an update.
-> The user reports installed version 1.9.2410. The previous verification used
-> 1.9.1501 and is insufficient. Signing is blocked until the actual installed APK,
-> versionCode, certificate, data schema and corresponding source are verified.
-> Other repository branches exist, including release/1.9 (recurring transactions,
-> reminders, forecasting and schema 8). Do not release the older main application
-> by merely increasing its displayed version. Reconcile the correct source first.
-> The Library search found 1.9.2401, not the exact reported 1.9.2410 APK.
+# Repackage 1.9.2411
+
+The user explicitly requested repackaging the existing main source with a version
+higher than the reported installed 1.9.2410, without requiring that APK as baseline.
+Version name is 1.9.2411; versionCode is 12411. The installed APK's actual versionCode
+and schema have not been inspected. `baselineVerified` stays false and the explicit
+`userApprovedRepackage` flag permits this requested repackaging. Certificate checks
+remain mandatory. No storage implementation or private signing key was changed.
+APK/AAB 1.9.1502 remain withdrawn. This is a repackage of main, not a merge of
+release/1.9 or design/liquid-glass-2026.
 
 # LTMsav release procedure
 
@@ -19,7 +21,8 @@ application. `release.json` is the version and certificate source of truth.
 - Preserve Capacitor's `https://localhost` origin and the app's data directory.
 - Use the existing LTMsav release key. Certificate SHA-256:
   `fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7`.
-- Previous verified APK: 1.9.1501, versionCode 11501, same certificate.
+- Certificate reference APK: 1.9.1501, versionCode 11501, same certificate.
+  This is not asserted to be the currently installed version.
 - Never uninstall, clear app data, reset storage, generate a replacement key,
   or use a debug signature to distribute an update.
 - Schema 6 retains real records with historical demo IDs, all PINs and settings.
