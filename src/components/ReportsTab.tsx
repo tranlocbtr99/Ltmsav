@@ -21,12 +21,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   // Filter transactions by period
   const filteredTxs = useMemo(() => {
     const now = new Date();
-    const currentMonth = now.toISOString().slice(0, 7);
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     if (period === 'thisMonth') {
       return transactions.filter(t => t.date.startsWith(currentMonth));
     } else if (period === 'last30Days') {
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString().split('T')[0];
+      const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+      const thirtyDaysAgo = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`;
       return transactions.filter(t => t.date >= thirtyDaysAgo);
     }
     return transactions;
@@ -67,6 +68,30 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       .sort((a, b) => b.amount - a.amount);
   }, [filteredTxs, categories, totalExpense, t]);
 
+  // A transparent six-month projection using only recorded expenses.
+  // No artificial AI confidence claims; exclude the incomplete current month.
+  const expenseProjection = useMemo(() => {
+    const now = new Date();
+    const history = Array.from({ length: 6 }, (_, index) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (6 - index), 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return transactions.filter(tx => tx.type === 'expense' && tx.date.startsWith(key))
+        .reduce((sum, tx) => sum + tx.amount, 0);
+    });
+    const active = history.filter(value => value > 0);
+    if (active.length < 2) return null;
+    const recent = history.slice(-3);
+    const weighted = recent.reduce((sum, value, index) => sum + value * (index + 1), 0) / 6;
+    const baseline = weighted > 0 ? weighted : active.reduce((a, b) => a + b, 0) / active.length;
+    const first = active[0];
+    const last = active[active.length - 1];
+    const monthlyTrend = Math.max(-0.1, Math.min(0.1, first > 0 ? Math.pow(last / first, 1 / Math.max(1, active.length - 1)) - 1 : 0));
+    return Array.from({ length: 6 }, (_, index) => {
+      const d = new Date(now.getFullYear(), now.getMonth() + index + 1, 1);
+      return { label: `T${d.getMonth() + 1}/${d.getFullYear()}`, value: Math.max(0, Math.round(baseline * Math.pow(1 + monthlyTrend, index + 1))) };
+    });
+  }, [transactions]);
+
   // Compute SVG Donut Chart Paths
   const donutSlices = useMemo(() => {
     let cumulative = 0;
@@ -105,7 +130,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
         <button
           onClick={() => setPeriod('thisMonth')}
           className={`py-2 rounded-xl transition ${
-            period === 'thisMonth' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            period === 'thisMonth' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
           {t('periodThisMonth')}
@@ -113,7 +138,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
         <button
           onClick={() => setPeriod('last30Days')}
           className={`py-2 rounded-xl transition ${
-            period === 'last30Days' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            period === 'last30Days' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
           {t('period30Days')}
@@ -121,12 +146,33 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
         <button
           onClick={() => setPeriod('all')}
           className={`py-2 rounded-xl transition ${
-            period === 'all' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            period === 'all' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
           {t('periodAll')}
         </button>
       </div>
+
+      {/* Six-month expense outlook from historical data */}
+      <section className="glass-card rounded-3xl p-4 space-y-3" aria-label="Dự báo chi tiêu sáu tháng">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Dự báo chi tiêu 6 tháng</h2>
+          <span className="text-[10px] text-sky-600 dark:text-sky-300">Ước tính theo lịch sử</span>
+        </div>
+        {expenseProjection ? (
+          <>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {expenseProjection.map(item => (
+                <div key={item.label} className="rounded-xl bg-sky-50 dark:bg-sky-950/30 p-2 text-center">
+                  <span className="block text-[10px] text-slate-500 dark:text-slate-400">{item.label}</span>
+                  <span className="block text-xs font-bold text-sky-700 dark:text-sky-300 tabular-nums">{Math.round(item.value / 1000).toLocaleString('vi-VN')}k</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Dự báo tham khảo dựa trên chi tiêu đã ghi nhận; không phải cam kết hay tư vấn tài chính.</p>
+          </>
+        ) : <p className="text-xs text-slate-500 dark:text-slate-400">Cần dữ liệu chi tiêu của ít nhất 2 tháng trước để lập dự báo.</p>}
+      </section>
 
       {/* Cash Flow Summary Card */}
       <div className="glass-panel p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
