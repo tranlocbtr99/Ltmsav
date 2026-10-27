@@ -3,12 +3,14 @@ import { Account, Transaction, Category, Budget, DebtOrLoan } from '../types';
 import { 
   TrendingUp, TrendingDown, Wallet, ArrowRightLeft, Sparkles, Plus, 
   ArrowUpRight, ArrowDownLeft, AlertTriangle, ShieldCheck, ChevronRight,
-  BarChart3, PieChart, CalendarDays
+  BarChart3, PieChart, CalendarDays, Eye, EyeOff
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface OverviewTabProps {
+  assetsHidden: boolean;
+  onToggleAssetsVisibility: () => void;
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];
@@ -21,6 +23,8 @@ interface OverviewTabProps {
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
+  assetsHidden,
+  onToggleAssetsVisibility,
   accounts,
   transactions,
   categories,
@@ -215,8 +219,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Reference-style blue total balance and monthly cashflow hero */}
       <section className="relative overflow-hidden rounded-[25px] border border-cyan-300/70 bg-gradient-to-br from-[#53d8f5] via-[#168bfa] to-[#0864e9] p-5 text-white shadow-[0_12px_28px_rgba(18,126,237,.27)]">
         <div className="absolute -top-20 -right-10 h-48 w-48 rounded-full bg-white/20 blur-3xl pointer-events-none" />
-        <div className="relative flex items-center justify-between"><span className="text-sm font-medium text-white/90">Tổng số dư</span><Wallet className="w-5 h-5 text-white/90" /></div>
-        <div className="relative mt-1 mb-4 text-[30px] sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">{accounts.reduce((s,a)=>s+a.balance,0).toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
+        <div className="relative flex items-center justify-between"><span className="text-sm font-medium text-white/90">Tổng số dư</span><button
+          type="button"
+          onClick={onToggleAssetsVisibility}
+          aria-label={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
+          title={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
+          aria-pressed={assetsHidden}
+          className="flex h-11 w-11 items-center justify-center rounded-full text-white hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        >
+          {assetsHidden ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+        </button></div>
+        <div className="relative mt-1 mb-4 text-[30px] sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">{assetsHidden ? '••••••' : accounts.reduce((s,a)=>s+a.balance,0).toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
         <div className="relative grid grid-cols-2 gap-2">
           <div className="rounded-2xl bg-white/15 border border-white/20 p-3 backdrop-blur-lg"><div className="flex items-center gap-1 text-xs text-white/90"><TrendingUp size={14}/> Thu nhập</div><div className="mt-1 font-bold text-sm sm:text-base tabular-nums">↑ {monthIncome.toLocaleString('vi-VN')} ₫</div></div>
           <div className="rounded-2xl bg-white/15 border border-white/20 p-3 backdrop-blur-lg"><div className="flex items-center gap-1 text-xs text-white/90"><TrendingDown size={14}/> Chi tiêu</div><div className="mt-1 font-bold text-sm sm:text-base tabular-nums">↓ {monthExpense.toLocaleString('vi-VN')} ₫</div></div>

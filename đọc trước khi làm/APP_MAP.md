@@ -98,3 +98,8 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - Packaging: `node scripts/prepare-mobile.mjs`; signing: `bash scripts/sign-release.sh`.
 - Supported Android project: generated `mobile/android`; root `android` is a legacy
   native prototype. Detailed commands and protected environment setup: `RELEASE.md`.
+
+## Asset visibility (2026-10-27)
+- Overview hero has an accessible eye button to mask/unmask the total balance.
+- App owns `assetsHidden` and persists the UI-only preference in `ltmsav_assets_hidden`; no financial schema migration.
+- Translation keys: `hideTotalAssets`, `showTotalAssets` (VI/EN).

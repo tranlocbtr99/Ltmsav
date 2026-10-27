@@ -33,6 +33,18 @@ export const App: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>(storage.getSettings());
   const [showSplash, setShowSplash] = useState(true);
 
+  // Presentation preference only; financial records and settings are untouched.
+  const [assetsHidden, setAssetsHidden] = useState(() => {
+    try { return localStorage.getItem('ltmsav_assets_hidden') === 'true'; }
+    catch { return true; }
+  });
+  const toggleAssetsVisibility = () => {
+    const next = !assetsHidden;
+    setAssetsHidden(next);
+    try { localStorage.setItem('ltmsav_assets_hidden', String(next)); }
+    catch { /* Keep the toggle usable when device storage is unavailable. */ }
+  };
+
   // Security Lock Screen State
   const [isLocked, setIsLocked] = useState<boolean>(() => {
     const s = storage.getSettings();
@@ -220,6 +232,8 @@ export const App: React.FC = () => {
         <div key={currentTab} className="animate-fade-in">
           {currentTab === 'overview' && (
             <OverviewTab
+              assetsHidden={assetsHidden}
+              onToggleAssetsVisibility={toggleAssetsVisibility}
               accounts={accounts}
               transactions={transactions}
               categories={categories}
