@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Account, DebtOrLoan } from '../types';
 import { 
   Wallet, Plus, Edit2, ArrowDownLeft, ArrowUpRight, CheckCircle2, 
-  Clock, User, Landmark, ShieldCheck, X, Check, Trash2
+  Clock, User, Landmark, SlidersHorizontal, ShieldCheck, X, Check, Trash2
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 
@@ -212,31 +212,6 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    aria-label={`${t('editAccount')}: ${acc.name}`}
-                    title={t('editAccount')}
-                    className="p-2 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                    onClick={() => {
-                      setEditingAccountId(acc.id); setAccName(acc.name); setAccType(acc.type);
-                      setAccIcon(acc.iconName); setAccColor(acc.color); setIsAccountModalOpen(true);
-                    }}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    aria-label={`${t('adjustBalance')}: ${acc.name}`}
-                    onClick={() => {
-                      setSelectedAccount(acc);
-                      setNewBalanceStr(acc.balance.toString());
-                      setAdjustReason('');
-                      setIsAdjustModalOpen(true);
-                    }}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                    title={t('adjustBalance')}
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
                 </div>
 
                 <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
@@ -252,11 +227,39 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                         }
                       }}
                       className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                      aria-label={`${t('deleteAccount')}: ${acc.name}`}
                       title={t('deleteAccount')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+                </div>
+                <div className="flex items-stretch gap-2 border-t border-slate-200 dark:border-slate-800 pt-3">
+                  <button
+                    type="button"
+                    aria-label={`${t('editAccount')}: ${acc.name}`}
+                    title={t('editAccount')}
+                    className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 px-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+                    onClick={() => {
+                      setEditingAccountId(acc.id); setAccName(acc.name); setAccType(acc.type);
+                      setAccIcon(acc.iconName); setAccColor(acc.color); setIsAccountModalOpen(true);
+                    }}
+                  >
+                    <Edit2 className="w-4 h-4 shrink-0" /><span>{t('editDetails')}</span>
+                  </button>
+                  <button
+                    aria-label={`${t('adjustBalance')}: ${acc.name}`}
+                    onClick={() => {
+                      setSelectedAccount(acc);
+                      setNewBalanceStr(acc.balance.toString());
+                      setAdjustReason('');
+                      setIsAdjustModalOpen(true);
+                    }}
+                      className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-sky-500/10 px-2 text-xs font-semibold text-sky-700 dark:text-sky-300 hover:bg-sky-500/20"
+                    title={t('adjustBalance')}
+                  >
+                    <SlidersHorizontal className="w-4 h-4 shrink-0" /><span>{t('adjustBalance')}</span>
+                  </button>
                 </div>
               </div>
             ))}

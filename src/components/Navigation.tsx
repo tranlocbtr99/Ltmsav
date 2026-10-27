@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  House, ReceiptText, Sparkles, CalendarDays, ChartNoAxesCombined, UserRound, Settings, WifiOff, Lock, Sun, Moon 
+  House, ReceiptText, Sparkles, CalendarDays, Wallet, UserRound, Settings, WifiOff, Lock, Sun, Moon 
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -112,16 +112,16 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
 }) => {
   const { t } = useLanguage();
   const leftTabs = [
-    { id: 'overview', label: 'Trang chủ', icon: House },
-    { id: 'transactions', label: 'Giao dịch', icon: ReceiptText },
+    { id: 'overview', label: t('homeNav'), icon: House },
+    { id: 'transactions', label: t('transactions'), icon: ReceiptText },
   ];
   const middleTabs = [
     { id: 'ai', label: 'Nhập bằng AI', icon: Sparkles },
-    { id: 'reports', label: 'Báo cáo', icon: ChartNoAxesCombined },
+    { id: 'assets', label: t('assetsNav'), icon: Wallet },
   ];
   const rightTabs = [
-    { id: 'budgets', label: 'Kế hoạch', icon: CalendarDays },
-    { id: 'settings', label: 'Cá nhân', icon: UserRound },
+    { id: 'budgets', label: t('planNav'), icon: CalendarDays },
+    { id: 'settings', label: t('profileNav'), icon: UserRound },
   ];
 
   const renderTab = (tab: { id: string; label: string; icon: typeof House }) => {
@@ -130,8 +130,11 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
     return (
       <button
         key={tab.id}
+        type="button"
+        aria-current={isActive ? 'page' : undefined}
+        aria-label={tab.label}
         onClick={() => onTabChange(tab.id)}
-        className={`flex-1 flex flex-col items-center gap-0.5 py-1 px-1 rounded-full transition duration-150 focus:outline-none ${
+        className={`min-w-0 min-h-14 flex-1 flex flex-col items-center gap-0.5 py-1 px-1 rounded-full transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 ${
           isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
         }`}
       >
@@ -158,7 +161,7 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
           {leftTabs.map(renderTab)}
         </div>
 
-        {/* Center: reports from the reference design */}
+        {/* Center: AI entry and asset management */}
         <div className="flex-1 flex items-center justify-center">
           {middleTabs.map(renderTab)}
         </div>

@@ -230,6 +230,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           {assetsHidden ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
         </button></div>
         <div className="relative mt-1 mb-4 text-[30px] sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">{assetsHidden ? '••••••' : accounts.reduce((s,a)=>s+a.balance,0).toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
+        <button type="button" onClick={() => onNavigateTab('assets')}
+          className="relative mb-4 flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl border border-white/25 bg-white/15 px-3 text-sm font-semibold text-white hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+          <span className="flex items-center gap-2"><Wallet size={18} aria-hidden="true" />{t('manageAssets')}</span>
+          <ChevronRight size={18} aria-hidden="true" />
+        </button>
         <div className="relative grid grid-cols-2 gap-2">
           <div className="rounded-2xl bg-white/15 border border-white/20 p-3 backdrop-blur-lg"><div className="flex items-center gap-1 text-xs text-white/90"><TrendingUp size={14}/> Thu nhập</div><div className="mt-1 font-bold text-sm sm:text-base tabular-nums">↑ {monthIncome.toLocaleString('vi-VN')} ₫</div></div>
           <div className="rounded-2xl bg-white/15 border border-white/20 p-3 backdrop-blur-lg"><div className="flex items-center gap-1 text-xs text-white/90"><TrendingDown size={14}/> Chi tiêu</div><div className="mt-1 font-bold text-sm sm:text-base tabular-nums">↓ {monthExpense.toLocaleString('vi-VN')} ₫</div></div>

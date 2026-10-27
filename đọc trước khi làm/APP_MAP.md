@@ -107,3 +107,8 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 ## Asset editing
 - AssetsTab edit button reuses account form for name/type/icon/color. App handler calls existing storage.updateAccount, preserving ID, balance, currency and transaction links.
 - Balance adjustments remain separate. New keys: editAccount, toastAccountEdited.
+
+## Reachable asset management (1.9.2416)
+- Bottom navigation: home, transactions, AI, assets, plans, profile. Reports stay accessible from Overview.
+- Overview balance card has a dedicated Manage assets button. Assets cards have distinct labeled edit-details and adjust-balance actions (44px targets).
+- UI keys: homeNav, planNav, profileNav, manageAssets, editDetails (VI/EN).
