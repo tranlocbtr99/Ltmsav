@@ -23,6 +23,7 @@ const ACCOUNT_COLORS = [
 interface AssetsTabProps {
   accounts: Account[];
   debts: DebtOrLoan[];
+  onEditAccount: (id: string, updates: Pick<Account, 'name' | 'type' | 'iconName' | 'color'>) => void;
   onAddAccount: (acc: Omit<Account, 'id'>) => void;
   onAdjustBalance: (id: string, newBalance: number, reason: string) => void;
   onAddDebtOrLoan: (item: Omit<DebtOrLoan, 'id' | 'createdAt' | 'status' | 'remainingAmount'>) => void;
@@ -34,6 +35,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
   accounts,
   debts,
   onAddAccount,
+  onEditAccount,
   onAdjustBalance,
   onAddDebtOrLoan,
   onRecordPayment,
@@ -52,6 +54,8 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [newBalanceStr, setNewBalanceStr] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
+
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
   // Add Account state
   const [accName, setAccName] = useState('');
@@ -89,7 +93,9 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
     const balance = parseInt(accBalanceStr.replace(/\D/g, ''), 10) || 0;
     if (!accName.trim()) return;
 
-    onAddAccount({
+    if (editingAccountId) {
+      onEditAccount(editingAccountId, { name: accName.trim(), type: accType, iconName: accIcon, color: accColor });
+    } else onAddAccount({
       name: accName.trim(),
       type: accType,
       balance,
@@ -173,7 +179,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               {t('totalAccountMoney')}: <strong className="text-slate-900 dark:text-white font-extrabold">{totalAssets.toLocaleString('vi-VN')}₫</strong>
             </span>
             <button
-              onClick={() => setIsAccountModalOpen(true)}
+              onClick={() => { setEditingAccountId(null); setAccName(''); setAccType('bank'); setAccIcon('Landmark'); setAccColor('#10B981'); setAccBalanceStr(''); setIsAccountModalOpen(true); }}
               className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300"
             >
               <Plus className="w-4 h-4" />
@@ -207,6 +213,19 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   </div>
 
                   <button
+                    type="button"
+                    aria-label={`${t('editAccount')}: ${acc.name}`}
+                    title={t('editAccount')}
+                    className="p-2 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                    onClick={() => {
+                      setEditingAccountId(acc.id); setAccName(acc.name); setAccType(acc.type);
+                      setAccIcon(acc.iconName); setAccColor(acc.color); setIsAccountModalOpen(true);
+                    }}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    aria-label={`${t('adjustBalance')}: ${acc.name}`}
                     onClick={() => {
                       setSelectedAccount(acc);
                       setNewBalanceStr(acc.balance.toString());
@@ -457,7 +476,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('addMoneySource')}</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t(editingAccountId ? 'editAccount' : 'addMoneySource')}</h3>
               <button onClick={() => setIsAccountModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
@@ -554,7 +573,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 </div>
               </div>
 
-              <div>
+              {!editingAccountId && <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('initialBalance')}</label>
                 <input
                   type="text"
@@ -563,7 +582,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   placeholder="0"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs font-bold tabular-nums"
                 />
-              </div>
+              </div>}
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
@@ -577,7 +596,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   type="submit"
                   className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
                 >
-                  {t('createAccount')}
+                  {t(editingAccountId ? 'saveChanges' : 'createAccount')}
                 </button>
               </div>
             </form>

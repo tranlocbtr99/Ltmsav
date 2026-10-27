@@ -141,6 +141,13 @@ export const App: React.FC = () => {
     showToast(`${t('toastAccountAdded')}: ${acc.name}`);
   };
 
+  const handleEditAccount = (id: string, updates: Pick<Account, 'name' | 'type' | 'iconName' | 'color'>) => {
+    const account = storage.updateAccount(id, updates);
+    if (!account) return;
+    reloadData();
+    showToast(t('toastAccountEdited'));
+  };
+
   const handleAdjustBalance = (id: string, newBalance: number, reason: string) => {
     storage.adjustAccountBalance(id, newBalance, reason);
     reloadData();
@@ -281,6 +288,7 @@ export const App: React.FC = () => {
             <AssetsTab
               accounts={accounts}
               debts={debts}
+              onEditAccount={handleEditAccount}
               onAddAccount={handleAddAccount}
               onAdjustBalance={handleAdjustBalance}
               onAddDebtOrLoan={handleAddDebtOrLoan}

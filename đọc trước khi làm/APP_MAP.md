@@ -103,3 +103,7 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - Overview hero has an accessible eye button to mask/unmask the total balance.
 - App owns `assetsHidden` and persists the UI-only preference in `ltmsav_assets_hidden`; no financial schema migration.
 - Translation keys: `hideTotalAssets`, `showTotalAssets` (VI/EN).
+
+## Asset editing
+- AssetsTab edit button reuses account form for name/type/icon/color. App handler calls existing storage.updateAccount, preserving ID, balance, currency and transaction links.
+- Balance adjustments remain separate. New keys: editAccount, toastAccountEdited.

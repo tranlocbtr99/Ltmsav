@@ -117,3 +117,14 @@ test('backup round trip retains records, unknown fields and security settings',a
   assert.equal(storage.getAccounts()[0].balance,42);
   assert.equal(storage.getSettings().pinCode,'9521');
 });
+
+test('editing asset appearance preserves balance, ID, currency and linked transactions', async () => {
+  const original = {id:'acc_existing', name:'Old bank', type:'bank', balance:-125000, currency:'VND', iconName:'Landmark', color:'#10B981', custom:'keep'};
+  const transactions = JSON.stringify([{id:'tx_existing', accountId:original.id, amount:5000}]);
+  const {storage,memory} = await load({ltmsav_schema_version:'6', ltmsav_accounts_v1:JSON.stringify([original]), ltmsav_transactions_v1:transactions});
+  const updates = {name:'New wallet',type:'wallet' as const,iconName:'Wallet',color:'#6366F1'};
+  assert.deepEqual(storage.updateAccount(original.id,updates), {...original,...updates});
+  assert.equal(memory.getItem('ltmsav_transactions_v1'),transactions);
+  assert.equal(storage.updateAccount('missing',updates),null);
+  assert.equal(storage.getAccounts().length,1);
+});
