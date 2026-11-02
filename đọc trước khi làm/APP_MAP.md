@@ -112,3 +112,8 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - Bottom navigation: home, transactions, AI, assets, plans, profile. Reports stay accessible from Overview.
 - Overview balance card has a dedicated Manage assets button. Assets cards have distinct labeled edit-details and adjust-balance actions (44px targets).
 - UI keys: homeNav, planNav, profileNav, manageAssets, editDetails (VI/EN).
+
+## Available balance (1.9.2417)
+- Overview hero: totalBalance sums all account balances, savingsBalance sums accounts with type savings, availableBalance = totalBalance - savingsBalance. Negative values are preserved.
+- Available balance and savings are masked by the existing assetsHidden toggle and recomputed from accounts on each render; no stored financial data or schema changes.
+- New VI/EN keys: totalBalance, availableBalance, savingsBalance, availableBalanceFormula.

@@ -41,6 +41,10 @@ const vi: Record<string, string> = {
   switchToVietnamese: 'Chuyển sang Tiếng Việt',
 
   // Overview
+  totalBalance: 'Tổng số dư',
+  availableBalance: 'Số dư khả dụng',
+  savingsBalance: 'Tiền tiết kiệm',
+  availableBalanceFormula: 'Số dư khả dụng = Tổng số dư − Tiền tiết kiệm',
   categories: 'Danh mục',
   netWorth: 'Tổng Tài Sản Ròng (Net Worth)',
   moneySources: 'nguồn tiền',
@@ -448,6 +452,10 @@ const en: Record<string, string> = {
   switchToVietnamese: 'Chuyển sang Tiếng Việt',
 
   // Overview
+  totalBalance: 'Total balance',
+  availableBalance: 'Available balance',
+  savingsBalance: 'Savings balance',
+  availableBalanceFormula: 'Available balance = Total balance − Savings balance',
   categories: 'Categories',
   netWorth: 'Net Worth',
   moneySources: 'money sources',
