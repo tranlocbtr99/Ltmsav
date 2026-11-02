@@ -11,7 +11,7 @@
 - Chi tiết đầy đủ: xem `DATA_SAFETY_RULES.md`.
 
 ## VERSIONING (mỗi lần release PHẢI tăng)
-- `mobile/android/app/build.gradle`: tăng `versionCode` (+1) và `versionName` (semver).
+- `mobile/android/app/build.gradle`: tăng `versionCode` (cao hơn bản trước, không bắt buộc +1) và `versionName` (semver).
 - Xác nhận sau build: `aapt dump badging app-release.apk | grep version`.
 
 ## Build & release (JDK 21 bắt buộc)

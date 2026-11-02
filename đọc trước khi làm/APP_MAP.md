@@ -117,3 +117,7 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - Overview hero: totalBalance sums all account balances, savingsBalance sums accounts with type savings, availableBalance = totalBalance - savingsBalance. Negative values are preserved.
 - Available balance and savings are masked by the existing assetsHidden toggle and recomputed from accounts on each render; no stored financial data or schema changes.
 - New VI/EN keys: totalBalance, availableBalance, savingsBalance, availableBalanceFormula.
+
+## Home balance hierarchy (1.9.2420)
+- Available balance is the primary hero amount. Total balance and savings appear as smaller supporting rows below; no formula text is displayed.
+- Version numbers may jump, provided versionCode and versionName increase.

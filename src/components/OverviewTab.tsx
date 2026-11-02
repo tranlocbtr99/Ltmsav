@@ -225,7 +225,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Reference-style blue total balance and monthly cashflow hero */}
       <section className="relative overflow-hidden rounded-[25px] border border-cyan-300/70 bg-gradient-to-br from-[#53d8f5] via-[#168bfa] to-[#0864e9] p-5 text-white shadow-[0_12px_28px_rgba(18,126,237,.27)]">
         <div className="absolute -top-20 -right-10 h-48 w-48 rounded-full bg-white/20 blur-3xl pointer-events-none" />
-        <div className="relative flex items-center justify-between"><span className="text-sm font-medium text-white/90">{t('totalBalance')}</span><button
+        <div className="relative flex items-center justify-between"><span className="text-sm font-medium text-white/90">{t('availableBalance')}</span><button
           type="button"
           onClick={onToggleAssetsVisibility}
           aria-label={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
@@ -235,17 +235,16 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         >
           {assetsHidden ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
         </button></div>
-        <div className="relative mt-1 mb-4 text-[30px] sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
-        <div className="relative mb-4 rounded-2xl border border-white/30 bg-slate-950/20 p-4 backdrop-blur-lg">
-          <div className="text-sm font-semibold text-white">{t('availableBalance')}</div>
-          <div className="mt-1 text-[26px] sm:text-3xl font-extrabold tracking-tight tabular-nums break-all">
-            {assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-lg">₫</span>
+        <div className="relative mt-1 mb-4 text-[30px] sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
+        <div className="relative mb-4 space-y-2 border-t border-white/25 pt-3 text-sm">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <span className="text-white/90">{t('totalBalance')}</span>
+            <span className="min-w-0 font-semibold tabular-nums break-all">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</span>
           </div>
-          <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-white/25 pt-3 text-sm">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <span className="text-white/90">{t('savingsBalance')}</span>
             <span className="min-w-0 font-semibold tabular-nums break-all">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</span>
           </div>
-          <p className="mt-2 text-xs leading-relaxed text-white/90">{t('availableBalanceFormula')}</p>
         </div>
         <button type="button" onClick={() => onNavigateTab('assets')}
           className="relative mb-4 flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl border border-white/25 bg-white/15 px-3 text-sm font-semibold text-white hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
