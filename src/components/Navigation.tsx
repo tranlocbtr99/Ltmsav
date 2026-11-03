@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  House, ReceiptText, Sparkles, CalendarDays, Wallet, UserRound, Settings, WifiOff, Lock, Sun, Moon 
+  House, ReceiptText, Sparkles, CalendarDays, Wallet, UserRound, WifiOff, Lock, Sun, Moon
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -12,6 +12,7 @@ interface NavigationProps {
 }
 
 interface TopHeaderProps {
+  currentTab?: string;
   isOnline: boolean;
   onNavigateTab: (tab: string) => void;
   securityEnabled: boolean;
@@ -21,6 +22,7 @@ interface TopHeaderProps {
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
+  currentTab,
   isOnline,
   onNavigateTab,
   securityEnabled,
@@ -28,10 +30,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   theme,
   onToggleTheme,
 }) => {
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   return (
     <header className="finance-header sticky top-0 z-40 w-full glass-panel pt-safe transition-colors duration-200">
-      <div className="max-w-3xl mx-auto px-4 py-1 flex items-center justify-between">
+      <div className="finance-header-inner max-w-3xl mx-auto px-4 py-2 flex items-center justify-between gap-2">
         
         {/* Brand */}
         <button type="button" aria-label={t('homeNav')}
@@ -40,36 +42,27 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         >
           <img src="/logo.png" alt="LTMsav Logo" className="w-8 h-8 rounded-xl object-contain shadow-md shadow-emerald-950/20 shrink-0" />
           <div className="min-w-0">
-            <h1 className="text-sm sm:text-base font-extrabold tracking-tight flex items-center gap-1.5 text-slate-900 dark:text-white">
+            <h1 className="text-base sm:text-lg font-bold tracking-tight flex items-center gap-1.5 text-slate-900 dark:text-white">
               <span>LTM</span>
               <span className="text-blue-600 dark:text-blue-300 font-black">sav</span>
             </h1>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">{t('appSubtitle')}</p>
+            <p className="finance-brand-subtitle text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">{t('appSubtitle')}</p>
           </div>
         </button>
 
         {/* Right tools */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="finance-header-tools flex items-center gap-1.5 shrink-0">
           {!isOnline && (
-            <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold border border-amber-500/30">
+            <div className="flex items-center gap-1 p-2 bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold border border-amber-500/30">
               <WifiOff className="w-3 h-3" />
-              <span>Offline</span>
+              <span className="sr-only">Offline</span>
             </div>
           )}
-
-          {/* Language Toggle Button */}
-          <button
-            onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition active:scale-95 text-[10px] font-black"
-            title={t(language === 'vi' ? 'switchToEnglish' : 'switchToVietnamese')}
-          >
-            {language === 'vi' ? 'VI' : 'EN'}
-          </button>
 
           {/* Theme Toggle Button */}
           <button
             onClick={onToggleTheme}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition active:scale-95"
+            className="header-tool"
             title={t(theme === 'dark' ? 'switchToLight' : 'switchToDark')}
           >
             {theme === 'dark' ? (
@@ -83,13 +76,19 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           {securityEnabled && onLockApp && (
             <button
               onClick={onLockApp}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60 transition active:scale-95"
+              className="header-tool"
               title={t('lockNow')}
             >
               <Lock className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             </button>
           )}
 
+          <button type="button" onClick={() => onNavigateTab('settings')}
+            aria-label={t('profileNav')} title={t('profileNav')}
+            aria-current={currentTab === 'settings' ? 'page' : undefined}
+            className="header-profile">
+            <UserRound size={21} strokeWidth={1.8} aria-hidden="true" />
+          </button>
         </div>
 
       </div>
@@ -113,7 +112,6 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
   ];
   const rightTabs = [
     { id: 'budgets', label: t('planNav'), icon: CalendarDays },
-    { id: 'settings', label: t('profileNav'), icon: UserRound },
   ];
 
   const renderTab = (tab: { id: string; label: string; icon: typeof House }) => {
@@ -126,6 +124,7 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
         type="button"
         aria-current={isActive ? 'page' : undefined}
         aria-label={label}
+        data-ai={tab.id === 'ai' || undefined}
         onClick={() => onTabChange(tab.id)}
         className="finance-nav-tab transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
       >
@@ -133,14 +132,14 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
           <Icon className="w-5 h-5" />
         </div>
         <span>
-          {label}
+          {tab.id === 'ai' ? 'AI' : label}
         </span>
       </button>
     );
   };
 
   return (
-    <nav className="finance-nav fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-200 dark:border-slate-800/90 pb-safe transition-colors duration-200">
+    <nav className="finance-nav fixed z-40 glass-panel transition-colors duration-200">
       <div className="finance-nav-inner max-w-3xl mx-auto">
 
         {/* Left group */}

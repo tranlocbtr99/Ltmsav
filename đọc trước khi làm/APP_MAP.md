@@ -141,3 +141,9 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - Budgets show category spending-pace forecasts with an explicit estimate label. Settings use grouped sections; system theme updates react to device changes while the app is open.
 - All new labels have VI/EN entries in LanguageContext.tsx. New UI verification: scripts/verify-liquid-finance-ui.mjs; existing customization/recurrence verification retained.
 - release.json: versionName 2.0.0 / versionCode 20000, previousVersionCode 12500. Application ID, WebView origin, schema 7 and release certificate remain unchanged.
+
+## Header profile and floating navigation (2.1.0)
+- Personal/Settings moves from bottom navigation to the top-right UserRound button in TopHeader. Active profile state uses currentTab; language stays available in Settings. Theme and lock shortcuts remain in the header.
+- Bottom navigation has five evenly spaced destinations: Home, Transactions, AI, Assets, Plans. Floating rounded glass capsule with safe-area offsets; stays one row at 320px. Main and toast padding reserve its floating footprint.
+- release.json: 2.1.0 / 20100, previousVersionCode 20000; no financial storage, schema, signing key or app ID changes.
+- UI verification covers header profile reachability, five bottom touch targets >=48px and one-row layout across tested widths, with both themes and large text.

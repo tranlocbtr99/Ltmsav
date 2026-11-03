@@ -233,6 +233,7 @@ export const App: React.FC = () => {
       
       {/* Top App Bar with theme toggle */}
       <TopHeader
+        currentTab={currentTab}
         isOnline={isOnline}
         onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
         securityEnabled={settings.securityEnabled}
@@ -373,7 +374,7 @@ export const App: React.FC = () => {
 
       {/* Notification Toast — appears in the current view, just above the bottom nav */}
       {toastMessage && (
-        <div className="fixed bottom-0 left-0 right-0 z-[60] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] pointer-events-none flex justify-center animate-fade-in-up">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] px-3 sm:px-4 pb-[var(--finance-nav-space)] pointer-events-none flex justify-center animate-fade-in-up">
           <div className="w-full max-w-3xl flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 border border-emerald-500/40 text-xs sm:text-sm font-semibold text-white shadow-2xl backdrop-blur-md">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="flex-1 min-w-0">{toastMessage}</span>

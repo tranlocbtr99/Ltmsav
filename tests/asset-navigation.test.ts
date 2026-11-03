@@ -17,7 +17,7 @@ test('rendered navigation exposes assets and AI with a selected asset state', ()
   const html = render(React.createElement(BottomNavBar, {currentTab:'assets', onTabChange:noop, onOpenAdd:noop, isOnline:true}));
   assert.match(html, /aria-current="page" aria-label="Tài sản"/);
   assert.match(html, /aria-label="Nhập bằng AI"/);
-  assert.equal((html.match(/<button/g)||[]).length,6);
+  assert.equal((html.match(/<button/g)||[]).length,5);
 });
 test('home provides a visible manage assets entry even with the total hidden', () => {
   const html = render(React.createElement(OverviewTab, {accounts:[], transactions:[], categories:[], budgets:[], debts:[], assetsHidden:true, onToggleAssetsVisibility:noop, onOpenAdd:noop, onOpenAi:noop, onSelectTransaction:noop, onNavigateTab:noop}));
