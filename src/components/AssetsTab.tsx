@@ -21,6 +21,7 @@ const ACCOUNT_COLORS = [
 
 
 interface AssetsTabProps {
+  onViewAccount?: (id: string) => void;
   accounts: Account[];
   debts: DebtOrLoan[];
   onEditAccount: (id: string, updates: Pick<Account, 'name' | 'type' | 'iconName' | 'color'>) => void;
@@ -33,6 +34,7 @@ interface AssetsTabProps {
 
 export const AssetsTab: React.FC<AssetsTabProps> = ({
   accounts,
+  onViewAccount,
   debts,
   onAddAccount,
   onEditAccount,
@@ -141,14 +143,14 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-12 stagger">
+    <div className="finance-screen space-y-4 pb-6">
       
       {/* Sub tabs */}
         <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-[10px] sm:text-xs font-semibold">
           <button
             onClick={() => setSubTab('accounts')}
             className={`py-2 rounded-xl transition ${
-              subTab === 'accounts' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              subTab === 'accounts' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
           {t('moneySourcesCount')} ({accounts.length})
@@ -180,66 +182,33 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
             </span>
             <button
               onClick={() => { setEditingAccountId(null); setAccName(''); setAccType('bank'); setAccIcon('Landmark'); setAccColor('#10B981'); setAccBalanceStr(''); setIsAccountModalOpen(true); }}
-              className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300"
+              className="flex items-center gap-1 text-xs font-bold text-blue-700 dark:text-blue-300 hover:text-blue-600 dark:hover:text-blue-200"
             >
               <Plus className="w-4 h-4" />
               <span>{t('addAccount')}</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {accounts.map(acc => (
-              <div
-                key={acc.id}
-                className="glass-card card-interactive p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 flex flex-col justify-between"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className="p-2.5 rounded-xl text-white shrink-0"
-                      style={{ backgroundColor: `${acc.color}20`, color: acc.color }}
-                    >
-                      <DynamicIcon name={acc.iconName} className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{acc.name}</h4>
-                      <span className="text-[11px] text-slate-600 dark:text-slate-400 capitalize">
-                        {acc.type === 'cash' ? t('cash') :
-                         acc.type === 'bank' ? t('bank') :
-                         acc.type === 'wallet' ? t('eWallet') :
-                         acc.type === 'savings' ? t('savings') : t('credit')}
-                      </span>
-                    </div>
-                  </div>
-
-                </div>
-
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
-                  <span className="text-xs text-slate-600 dark:text-slate-400">{t('currentBalance')}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-extrabold text-slate-900 dark:text-white tabular-nums break-all">
-                      {acc.balance.toLocaleString('vi-VN')}₫
-                    </span>
-                    <button
-                      onClick={() => {
-                        if (confirm(t('deleteAccountConfirm', { name: acc.name }))) {
-                          onDeleteAccount(acc.id);
-                        }
-                      }}
-                      className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
-                      aria-label={`${t('deleteAccount')}: ${acc.name}`}
-                      title={t('deleteAccount')}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-stretch gap-2 border-t border-slate-200 dark:border-slate-800 pt-3">
+          {accounts.some(a => a.balance > 0) && <div className="glass-card p-4 space-y-3">
+            <h3 className="text-sm font-semibold">{t('assetAllocation')}</h3>
+            <div className="flex h-2 rounded-full overflow-hidden" aria-hidden="true">{accounts.filter(a => a.balance > 0).map(acc => <div key={acc.id} style={{width: `${acc.balance / accounts.reduce((sum,a) => sum + Math.max(0,a.balance),0) * 100}%`, backgroundColor: acc.color}}/>)}</div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-300">{accounts.filter(a => a.balance > 0).map(acc => <span key={acc.id} className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{backgroundColor:acc.color}}/>{acc.name} {Math.round(acc.balance / accounts.reduce((sum,a) => sum + Math.max(0,a.balance),0) * 100)}%</span>)}</div>
+          </div>}
+          <div className="finance-list">
+            {accounts.map(acc => <details key={acc.id} className="account-details">
+              <summary className="asset-row cursor-pointer list-none" aria-label={`${t('openAccountActions')}: ${acc.name}`}>
+                <span className="flex items-center gap-3 min-w-0">
+                  <span className="p-2.5 rounded-xl shrink-0" style={{backgroundColor:`${acc.color}20`,color:acc.color}}><DynamicIcon name={acc.iconName} className="w-5 h-5"/></span>
+                  <span className="min-w-0"><strong className="block text-sm break-words">{acc.name}</strong><span className="text-xs text-slate-500 dark:text-slate-400">{t(acc.type === 'wallet' ? 'eWallet' : acc.type)}</span></span>
+                </span>
+                <strong className="text-sm tabular-nums text-right break-all max-w-[150px]">{acc.balance.toLocaleString('vi-VN')} ₫</strong>
+              </summary>
+              <div className="asset-actions p-3">
                   <button
                     type="button"
                     aria-label={`${t('editAccount')}: ${acc.name}`}
                     title={t('editAccount')}
-                    className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 px-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
+                    className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 px-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-blue-700/20"
                     onClick={() => {
                       setEditingAccountId(acc.id); setAccName(acc.name); setAccType(acc.type);
                       setAccIcon(acc.iconName); setAccColor(acc.color); setIsAccountModalOpen(true);
@@ -260,9 +229,11 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   >
                     <SlidersHorizontal className="w-4 h-4 shrink-0" /><span>{t('adjustBalance')}</span>
                   </button>
-                </div>
+
+                {onViewAccount && <button type="button" onClick={() => onViewAccount(acc.id)} className="text-blue-700 dark:text-blue-300">{t('seeHistory')}</button>}
+                <button type="button" className="text-rose-700 dark:text-rose-300" aria-label={`${t('deleteAccount')}: ${acc.name}`} onClick={() => { if (confirm(t('deleteAccountConfirm', {name:acc.name}))) onDeleteAccount(acc.id); }}><Trash2 className="inline w-4 h-4 mr-1"/>{t('delete')}</button>
               </div>
-            ))}
+            </details>)}
           </div>
         </div>
       )}
@@ -464,7 +435,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
+                  className="px-4 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700 shadow-md"
                 >
                   {t('updateBalance')}
                 </button>
@@ -597,7 +568,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
+                  className="px-4 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700 shadow-md"
                 >
                   {t(editingAccountId ? 'saveChanges' : 'createAccount')}
                 </button>
@@ -726,7 +697,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
+                  className="px-4 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700 shadow-md"
                 >
                   {t('confirmPayment')}
                 </button>

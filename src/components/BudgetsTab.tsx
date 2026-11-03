@@ -24,7 +24,8 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
   const [selectedCatId, setSelectedCatId] = useState<string>(categories.find(c => c.type === 'expense')?.id || '');
   const [limitStr, setLimitStr] = useState<string>('');
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const expenseCategories = categories.filter(c => c.type === 'expense');
 
   // Calculate spending per budget
@@ -70,11 +71,11 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-12 stagger">
+    <div className="finance-screen budget-screen space-y-4 pb-6">
       
       {/* Overview Banner */}
-      <div className="glass-panel p-5 rounded-3xl border border-slate-800 space-y-3">
-        <div className="flex items-center justify-between">
+      <div className="glass-card p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
               <Target className="w-5 h-5" />
@@ -91,7 +92,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
               setLimitStr('');
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md transition"
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md transition"
           >
             <Plus className="w-4 h-4" />
             <span>{t('addLimit')}</span>
@@ -99,11 +100,11 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
         </div>
 
         <div>
-          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400 mb-1.5">
             <span>{t('spentLabel')}: <strong className="text-slate-900 dark:text-white">{totalSpentInBudgets.toLocaleString('vi-VN')}₫</strong></span>
             <span>{t('limitLabel')}: <strong className="text-slate-900 dark:text-white">{totalBudgeted.toLocaleString('vi-VN')}₫</strong></span>
           </div>
-          <div className="h-3 w-full bg-slate-200 dark:bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
+          <div className="h-3 w-full bg-slate-200 dark:bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-slate-800">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 overallPct >= 100 ? 'bg-rose-500' :
@@ -112,7 +113,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
               style={{ width: `${Math.min(overallPct, 100)}%` }}
             />
           </div>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 mt-1">
             <span>{Math.round(overallPct)} {t('percentUsed')}</span>
             <span>{t('remainingLabel')}: {(totalBudgeted - totalSpentInBudgets).toLocaleString('vi-VN')}₫</span>
           </div>
@@ -128,7 +129,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
         {budgetStats.length === 0 ? (
           <div className="glass-card p-8 rounded-2xl text-center space-y-2">
             <Target className="w-8 h-8 text-slate-500 mx-auto" />
-            <p className="text-xs text-slate-600 dark:text-slate-400">{t('noBudgets')}</p>
+            <h3 className="text-base font-bold">{t('noBudgets')}</h3><p className="text-sm text-slate-600 dark:text-slate-300">{t('budgetEmptyHint')}</p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
@@ -143,7 +144,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
                 key={b.id}
                 className="glass-card card-interactive p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 relative group"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
                       className="p-2 rounded-xl text-white shrink-0"
@@ -183,14 +184,14 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         b.pct >= 100 ? 'bg-rose-500' :
-                        b.pct >= 75 ? 'bg-amber-500' : 'bg-emerald-500'
+                        b.pct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'
                       }`}
                       style={{ width: `${Math.min(b.pct, 100)}%` }}
                     />
                   </div>
-                  <div className="flex items-center justify-between text-[11px] mt-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] mt-1.5">
                     <span className={`font-semibold ${
-                      b.pct >= 100 ? 'text-rose-600 dark:text-rose-400' : b.pct >= 75 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
+                      b.pct >= 100 ? 'text-rose-600 dark:text-rose-400' : b.pct >= 80 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                     }`}>
                       {Math.round(b.pct)}%
                     </span>
@@ -198,6 +199,10 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
                       {b.remaining >= 0 ? `${t('leftOver')} ${b.remaining.toLocaleString('vi-VN')}₫` : `${t('over')} ${Math.abs(b.remaining).toLocaleString('vi-VN')}₫`}
                     </span>
                   </div>
+                </div>
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-2 text-xs text-slate-600 dark:text-slate-300">
+                  <span>{t('budgetForecast')}: </span><strong className="tabular-nums">{b.spent > 0 ? `${Math.round(b.spent / now.getDate() * new Date(now.getFullYear(),now.getMonth()+1,0).getDate()).toLocaleString('vi-VN')} ₫` : t('noExpenseData')}</strong>
+                  <p className="mt-1">{t('budgetForecastHint')}</p>
                 </div>
               </div>
             ))}
@@ -209,7 +214,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('setupBudget')}</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -259,7 +264,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
+                  className="px-4 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700 shadow-md"
                 >
                   {t('saveLimit')}
                 </button>

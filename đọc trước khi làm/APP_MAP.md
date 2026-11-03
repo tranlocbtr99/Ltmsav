@@ -129,3 +129,15 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - RecurringRule is in types.ts. recurrence.ts handles local dates/times, weekly/monthly multi-select dates, end-of-month clamping/deduplication, legacy monthly receipts and occurrence receipts. App owns persisted rules via storage.getRecurringRules/saveRecurringRules.
 - RecurringTab supports create/edit/start date/local time and posting one due occurrence at a time in the current week/month. No background auto-posting. Transaction note is the durable receipt, written atomically with the balance.
 - Regression tests: recurrence.test.ts, storage.test.ts and transaction-customization.test.ts.
+
+## Liquid Finance 2.0 (2.0.0)
+- Ocean Blue design tokens in index.css; opaque content surfaces, glass header/navigation; separate dark palette. Six destinations stay reachable, with two navigation rows below 340px.
+- Overview has a compact available-balance hero, four quick actions, elapsed-day month comparison, interactive compact cashflow chart, compact category breakdown and recent rows. Hidden amounts also suppress the chart, tooltips, forecasts and recent amounts on Home.
+- financePresentation.ts calculates equal-elapsed-day month comparisons using local calendar dates; zero baseline returns no comparison. Tests: finance-presentation.test.ts.
+- TransactionsTab supports initialAccountId from account history, date/account/category/type/search filters, 60-row incremental display, touch swipe edit/delete actions and keyboard-accessible detail editing.
+- AssetsTab uses expandable account rows with edit/adjust/delete and history links plus positive balance allocation. Existing deletion semantics are unchanged; no financial schema change.
+- Add/Edit transaction sheets fill mobile viewports, retain category customization and use useDialogFocus for keyboard focus containment, Escape/dismiss confirmation and focus restoration.
+- AI cards allow editing each draft and confirmation independently; duplicate click guard prevents repeated execution in the current conversation. Missing offline amount/source/target no longer receives a fabricated default. No automatic saving.
+- Budgets show category spending-pace forecasts with an explicit estimate label. Settings use grouped sections; system theme updates react to device changes while the app is open.
+- All new labels have VI/EN entries in LanguageContext.tsx. New UI verification: scripts/verify-liquid-finance-ui.mjs; existing customization/recurrence verification retained.
+- release.json: versionName 2.0.0 / versionCode 20000, previousVersionCode 12500. Application ID, WebView origin, schema 7 and release certificate remain unchanged.

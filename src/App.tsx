@@ -25,6 +25,7 @@ export const App: React.FC = () => {
 
   // Storage data state
   const [currentTab, setCurrentTab] = useState<string>('overview');
+  const [historyAccountId, setHistoryAccountId] = useState<string | undefined>();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -65,17 +66,15 @@ export const App: React.FC = () => {
 
   // Sync theme with document element
   useEffect(() => {
-    const isDark =
-      settings.theme === 'dark' ||
-      (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#090d16');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f8fafc');
-    }
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+      const isDark = settings.theme === 'dark' || (settings.theme === 'system' && media.matches);
+      document.documentElement.classList.toggle('dark', isDark);
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#091321' : '#f3f7fc');
+    };
+    applyTheme();
+    media.addEventListener('change', applyTheme);
+    return () => media.removeEventListener('change', applyTheme);
   }, [settings.theme]);
 
   // Load data from storage
@@ -235,7 +234,7 @@ export const App: React.FC = () => {
       {/* Top App Bar with theme toggle */}
       <TopHeader
         isOnline={isOnline}
-        onNavigateTab={(tab) => setCurrentTab(tab)}
+        onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
         securityEnabled={settings.securityEnabled}
         onLockApp={() => setIsLocked(true)}
         theme={settings.theme}
@@ -243,7 +242,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)+96px)]">
+      <main className="finance-main flex-1 w-full max-w-3xl mx-auto px-4">
         
         {/* Tab views */}
         <div key={currentTab} className="animate-fade-in">
@@ -259,12 +258,13 @@ export const App: React.FC = () => {
               onOpenAdd={() => setIsAddModalOpen(true)}
               onOpenAi={() => setCurrentTab('ai')}
               onSelectTransaction={(tx) => setSelectedTxForEdit(tx)}
-              onNavigateTab={(tab) => setCurrentTab(tab)}
+              onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
             />
           )}
 
           {currentTab === 'transactions' && (
             <TransactionsTab
+              initialAccountId={historyAccountId}
               transactions={transactions}
               accounts={accounts}
               categories={categories}
@@ -280,7 +280,7 @@ export const App: React.FC = () => {
               categories={categories}
               settings={settings}
               onAddTransaction={handleAddTransaction}
-              onNavigateTab={(tab) => setCurrentTab(tab)}
+              onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
             />
           )}
 
@@ -296,6 +296,7 @@ export const App: React.FC = () => {
 
           {currentTab === 'assets' && (
             <AssetsTab
+              onViewAccount={(id) => { setHistoryAccountId(id); setCurrentTab('transactions'); }}
               accounts={accounts}
               debts={debts}
               onEditAccount={handleEditAccount}
@@ -321,7 +322,7 @@ export const App: React.FC = () => {
 
           {currentTab === 'settings' && (
             <>
-            <CategoryManager categories={categories} {...categoryActions}/>
+            <div className="finance-screen mb-4"><CategoryManager categories={categories} {...categoryActions}/></div>
             <SettingsTab
               settings={settings}
               auditLogs={auditLogs}
@@ -343,7 +344,7 @@ export const App: React.FC = () => {
       {/* Android Bottom Navigation */}
       <BottomNavBar
         currentTab={currentTab}
-        onTabChange={(tab) => setCurrentTab(tab)}
+        onTabChange={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
         onOpenAdd={() => setCurrentTab('ai')}
         isOnline={isOnline}
       />
@@ -372,7 +373,7 @@ export const App: React.FC = () => {
 
       {/* Notification Toast — appears in the current view, just above the bottom nav */}
       {toastMessage && (
-        <div className="fixed left-0 right-0 z-[60] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] pointer-events-none flex justify-center animate-fade-in-up">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,0px)+84px)] pointer-events-none flex justify-center animate-fade-in-up">
           <div className="w-full max-w-3xl flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 border border-emerald-500/40 text-xs sm:text-sm font-semibold text-white shadow-2xl backdrop-blur-md">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="flex-1 min-w-0">{toastMessage}</span>

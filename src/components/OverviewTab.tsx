@@ -5,6 +5,7 @@ import {
   ArrowUpRight, ArrowDownLeft, AlertTriangle, ShieldCheck, ChevronRight,
   BarChart3, PieChart, CalendarDays, Eye, EyeOff
 } from 'lucide-react';
+import { compareMonthToDate } from '../services/financePresentation';
 import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -36,6 +37,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onNavigateTab,
 }) => {
   const { t } = useLanguage();
+  const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
   const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
   const savingsBalance = accounts
     .filter(account => account.type === 'savings')
@@ -53,7 +55,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   const netWorth = totalAssets + totalLoans - totalDebts;
 
   // Monthly statistics
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const today = new Date();
+  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   const monthTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
   
   const monthIncome = monthTransactions
@@ -114,7 +117,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
     const inRangeTxs = transactions.filter(t => {
       if (!t.date) return false;
-      if (t.date < rangeStart || t.date > rangeEnd) return false;
+      if (t.date.slice(0, 10) < rangeStart || t.date.slice(0, 10) > rangeEnd) return false;
       return true;
     });
 
@@ -200,7 +203,12 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   };
 
   // Recent transactions (last 5)
-  const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  const comparison = compareMonthToDate(transactions, today);
+  const comparisonLabel = (kind: 'income' | 'expense') => {
+    const value = comparison[kind];
+    return value === null ? t('noComparisonBase') : `${value > 0 ? '+' : ''}${Math.round(value)}%`;
+  };
 
   // Budget warnings
   const budgetAlerts = budgets.map(b => {
@@ -222,50 +230,133 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   return (
     <div className="space-y-5 pb-6 stagger">
       
-      {/* Reference-style blue total balance and monthly cashflow hero */}
-      <section className="relative overflow-hidden rounded-[25px] border border-cyan-300/70 bg-gradient-to-br from-[#53d8f5] via-[#168bfa] to-[#0864e9] p-5 text-white shadow-[0_12px_28px_rgba(18,126,237,.27)]">
-        <div className="absolute -top-20 -right-10 h-48 w-48 rounded-full bg-white/20 blur-3xl pointer-events-none" />
-        <div className="relative flex items-center justify-between"><span className="text-sm font-medium text-white/90">{t('availableBalance')}</span><button
-          type="button"
-          onClick={onToggleAssetsVisibility}
-          aria-label={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
-          title={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
-          aria-pressed={assetsHidden}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-white hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-        >
-          {assetsHidden ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
-        </button></div>
-        <div className="relative mt-1 mb-4 text-[30px] sm:text-4xl font-extrabold tracking-tight tabular-nums break-all">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
-        <div className="relative mb-4 space-y-2 border-t border-white/25 pt-3 text-sm">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="text-white/90">{t('totalBalance')}</span>
-            <span className="min-w-0 font-semibold tabular-nums break-all">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</span>
-          </div>
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <span className="text-white/90">{t('savingsBalance')}</span>
-            <span className="min-w-0 font-semibold tabular-nums break-all">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</span>
-          </div>
+      <section className="balance-hero">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-white/90">{t('availableBalance')}</span>
+          <button type="button" onClick={onToggleAssetsVisibility}
+            aria-label={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
+            aria-pressed={assetsHidden} className="hero-eye">
+            {assetsHidden ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+          </button>
         </div>
-        <button type="button" onClick={() => onNavigateTab('assets')}
-          className="relative mb-4 flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl border border-white/25 bg-white/15 px-3 text-sm font-semibold text-white hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
-          <span className="flex items-center gap-2"><Wallet size={18} aria-hidden="true" />{t('manageAssets')}</span>
-          <ChevronRight size={18} aria-hidden="true" />
-        </button>
-        <div className="relative grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-white/15 border border-white/20 p-3 backdrop-blur-lg"><div className="flex items-center gap-1 text-xs text-white/90"><TrendingUp size={14}/> Thu nhập</div><div className="mt-1 font-bold text-sm sm:text-base tabular-nums">↑ {monthIncome.toLocaleString('vi-VN')} ₫</div></div>
-          <div className="rounded-2xl bg-white/15 border border-white/20 p-3 backdrop-blur-lg"><div className="flex items-center gap-1 text-xs text-white/90"><TrendingDown size={14}/> Chi tiêu</div><div className="mt-1 font-bold text-sm sm:text-base tabular-nums">↓ {monthExpense.toLocaleString('vi-VN')} ₫</div></div>
+        <div className="balance-amount">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
+        <div className="grid grid-cols-2 gap-3 border-t border-white/25 pt-3 mt-3 text-xs">
+          <div className="min-w-0"><span className="block text-white/85">{t('totalBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</strong></div>
+          <div className="min-w-0 border-l border-white/25 pl-3"><span className="block text-white/85">{t('savingsBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</strong></div>
         </div>
       </section>
-      <div className="grid grid-cols-4 gap-2 rounded-2xl bg-white/55 dark:bg-slate-900/40 p-1.5">
-        {([['month','Tháng này'],['quarter','Quý này'],['year','Năm nay']] as const).map(([period,label])=><button key={period} onClick={()=>setChartPeriod(period)} className={`col-span-1 rounded-xl py-2 text-[11px] font-semibold transition ${chartPeriod===period?'bg-gradient-to-r from-sky-400 to-blue-600 text-white shadow-md':'text-slate-600 dark:text-slate-300'}`}>{label}</button>)}
-        <button onClick={()=>onNavigateTab('reports')} aria-label="Xem báo cáo" className="rounded-xl flex justify-center items-center bg-white/75 dark:bg-slate-800 text-blue-600"><CalendarDays size={18}/></button>
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          {label:t('addTransaction'), icon:Plus, action:onOpenAdd},
+          {label:t('aiNavLabel'), icon:Sparkles, action:onOpenAi},
+          {label:t('recurringTitle'), icon:CalendarDays, action:()=>onNavigateTab('recurring')},
+          {label:t('manageAssets'), icon:Wallet, action:()=>onNavigateTab('assets')},
+        ].map(({label,icon:Icon,action})=><button key={label} onClick={action} className="quick-action">
+          <span className="quick-action-icon"><Icon size={21}/></span>
+          <span>{label}</span>
+        </button>)}
       </div>
+      {assetsHidden ? <div className="glass-card p-5 text-center text-sm text-slate-600 dark:text-slate-300"><EyeOff className="mx-auto mb-2" aria-hidden="true"/>{t('hiddenHomeHint')}</div> : <>
+      <div className="grid grid-cols-2 gap-3">
+        {([
+          ['income', t('income'), monthIncome, TrendingUp],
+          ['expense', t('expense'), monthExpense, TrendingDown],
+        ] as const).map(([kind,label,value,Icon]) => <div key={kind} className={`metric-tile metric-${kind}`}>
+          <span className="flex items-center gap-1.5 text-xs"><Icon size={15}/>{label}</span>
+          <strong className="block text-lg tabular-nums break-all mt-1">{kind === 'income' ? '+' : '−'}{value.toLocaleString('vi-VN')} ₫</strong>
+          <span className="block text-xs mt-1">{comparisonLabel(kind)}</span>
+        </div>)}
+      </div>
+      <p className="text-xs text-slate-600 dark:text-slate-400">{t('monthComparisonHint')}</p>
+      {/* Income vs Expense — paired bar chart with period selector */}
+      <div className="glass-card rounded-3xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>{t('incomeVsExpense')}</span>
+          </h2>
+          <div className="flex items-center gap-3 text-[10px] font-semibold shrink-0">
+            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />{t('cashIn')}
+            </span>
+            <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
+              <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block" />{t('cashOut')}
+            </span>
+          </div>
+        </div>
+
+        {/* Period selector */}
+        <div className="grid grid-cols-5 gap-1 p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-[11px] font-semibold">
+          {([
+            ['week', 'periodWeek'],
+            ['month', 'periodMonth'],
+            ['quarter', 'periodQuarter'],
+            ['sixMonths', 'period6Months'],
+            ['year', 'periodYear'],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setChartPeriod(key)}
+              className={`py-1.5 rounded-xl transition truncate ${
+                chartPeriod === key
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              {t(label)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-end justify-between gap-1 h-28 pt-1">
+          {chartData.buckets.map((b, i) => {
+            const many = chartData.buckets.length > 12;
+            const showLabel = !many || i % 5 === 0 || i === chartData.buckets.length - 1;
+            return (
+              <button key={b.key} type="button" onClick={() => setSelectedBucket(b.key)} aria-label={`${b.label}: ${t('cashIn')} ${b.income.toLocaleString('vi-VN')} ₫, ${t('cashOut')} ${b.expense.toLocaleString('vi-VN')} ₫`} aria-pressed={selectedBucket === b.key} className="flex-1 flex flex-col items-center gap-1.5 min-w-0 h-full focus-visible:outline-2 focus-visible:outline-blue-500">
+                <div className="flex-1 w-full flex items-end justify-center gap-px">
+                  <div
+                    className="w-1/2 max-w-[14px] rounded-t-sm bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all duration-500"
+                    style={{ height: `${Math.max(2, (b.income / chartData.barMax) * 100)}%` }}
+                    title={`${t('cashIn')}: ${b.income.toLocaleString('vi-VN')}₫`}
+                  />
+                  <div
+                    className="w-1/2 max-w-[14px] rounded-t-sm bg-gradient-to-t from-rose-600 to-rose-400 transition-all duration-500"
+                    style={{ height: `${Math.max(2, (b.expense / chartData.barMax) * 100)}%` }}
+                    title={`${t('cashOut')}: ${b.expense.toLocaleString('vi-VN')}₫`}
+                  />
+                </div>
+                <span className={`text-[9px] text-slate-500 dark:text-slate-400 font-medium h-3 ${showLabel ? '' : 'invisible'}`}>
+                  {b.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {selectedBucket && chartData.buckets.filter(b => b.key === selectedBucket).map(b => <p key={b.key} role="status" className="text-xs text-slate-700 dark:text-slate-200">{b.label} · {t('cashIn')}: +{b.income.toLocaleString('vi-VN')} ₫ · {t('cashOut')}: −{b.expense.toLocaleString('vi-VN')} ₫</p>)}
+        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800 text-xs">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-slate-500 dark:text-slate-400">{t('cashIn')}</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              +{chartData.totalIncome.toLocaleString('vi-VN')}₫
+            </span>
+          </div>
+          <div className="flex items-center justify-between px-1">
+            <span className="text-slate-500 dark:text-slate-400">{t('cashOut')}</span>
+            <span className="font-bold text-rose-600 dark:text-rose-400 tabular-nums">
+              -{chartData.totalExpense.toLocaleString('vi-VN')}₫
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Expense breakdown appears before shortcuts, matching the reference hierarchy. */}
       {/* Category share — pie/donut chart (selected period) */}
       <div className="glass-card rounded-3xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
         <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
           <PieChart className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <span>{t('expenseByCategory')}</span>
+          <span>{t('expenseByCategory')}</span><button className="ml-auto text-xs text-blue-700 dark:text-blue-300" onClick={() => onNavigateTab('reports')}>{t('all')}</button>
         </h2>
 
         {chartData.slices.length === 0 ? (
@@ -273,13 +364,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             {t('noExpenseData')}
           </div>
         ) : (
-          <div className="flex flex-col sm:flex-row items-center gap-5">
-            <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
+          <div className="flex flex-row items-center gap-3">
+            <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
               <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                 {chartData.slices.map((s, i) => (
                   <path
                     key={i}
-                    d={describeArc(50, 50, 38, s.startAngle, s.endAngle)}
+                    d={describeArc(50, 50, 38, s.startAngle, Math.min(s.endAngle, s.startAngle + 359.99))}
                     fill="none"
                     stroke={s.color}
                     strokeWidth="14"
@@ -296,7 +387,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
 
             <div className="w-full space-y-1.5 flex-1 max-h-44 overflow-y-auto no-scrollbar">
-              {chartData.slices.map((item, i) => (
+              {chartData.slices.slice(0, 3).map((item, i) => (
                 <div key={i} className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/60 gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
@@ -314,19 +405,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Four reference shortcuts; all use existing app routes and actions. */}
-      <div className="grid grid-cols-4 gap-2">
-        {[
-          {label:'Thêm giao dịch', icon:Plus, action:onOpenAdd},
-          {label:'Giao dịch định kỳ', icon:CalendarDays, action:()=>onNavigateTab('recurring')},
-          {label:'Phân tích AI', icon:Sparkles, action:onOpenAi},
-          {label:'Dự báo tài chính', icon:BarChart3, action:()=>onNavigateTab('reports')},
-        ].map(({label,icon:Icon,action})=><button key={label} onClick={action} className="glass-card flex min-w-0 flex-col items-center gap-2 rounded-[20px] px-1 py-4 active:scale-95 transition-transform">
-          <span className="rounded-2xl bg-gradient-to-b from-sky-50 to-blue-100 dark:from-slate-800 dark:to-slate-700 p-3 text-[#087cff]"><Icon size={21}/></span>
-          <span className="text-[10px] sm:text-xs leading-tight font-semibold text-center text-slate-700 dark:text-slate-200">{label}</span>
-        </button>)}
       </div>
 
       {/* Next-month expense forecast */}
@@ -359,88 +437,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{t('forecastNote')}</p>
         </div>
       )}
-
-      {/* Income vs Expense — paired bar chart with period selector */}
-      <div className="glass-card rounded-3xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>{t('incomeVsExpense')}</span>
-          </h2>
-          <div className="flex items-center gap-3 text-[10px] font-semibold shrink-0">
-            <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />{t('cashIn')}
-            </span>
-            <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
-              <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block" />{t('cashOut')}
-            </span>
-          </div>
-        </div>
-
-        {/* Period selector */}
-        <div className="grid grid-cols-5 gap-1 p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-[11px] font-semibold">
-          {([
-            ['week', 'periodWeek'],
-            ['month', 'periodMonth'],
-            ['quarter', 'periodQuarter'],
-            ['sixMonths', 'period6Months'],
-            ['year', 'periodYear'],
-          ] as const).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setChartPeriod(key)}
-              className={`py-1.5 rounded-xl transition truncate ${
-                chartPeriod === key
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
-            >
-              {t(label)}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-end justify-between gap-1 h-36 pt-1">
-          {chartData.buckets.map((b, i) => {
-            const many = chartData.buckets.length > 12;
-            const showLabel = !many || i % 5 === 0 || i === chartData.buckets.length - 1;
-            return (
-              <div key={b.key} className="flex-1 flex flex-col items-center gap-1.5 min-w-0 h-full">
-                <div className="flex-1 w-full flex items-end justify-center gap-px">
-                  <div
-                    className="w-1/2 max-w-[14px] rounded-t-sm bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all duration-500"
-                    style={{ height: `${Math.max(2, (b.income / chartData.barMax) * 100)}%` }}
-                    title={`${t('cashIn')}: ${b.income.toLocaleString('vi-VN')}₫`}
-                  />
-                  <div
-                    className="w-1/2 max-w-[14px] rounded-t-sm bg-gradient-to-t from-rose-600 to-rose-400 transition-all duration-500"
-                    style={{ height: `${Math.max(2, (b.expense / chartData.barMax) * 100)}%` }}
-                    title={`${t('cashOut')}: ${b.expense.toLocaleString('vi-VN')}₫`}
-                  />
-                </div>
-                <span className={`text-[9px] text-slate-500 dark:text-slate-400 font-medium h-3 ${showLabel ? '' : 'invisible'}`}>
-                  {b.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800 text-xs">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-slate-500 dark:text-slate-400">{t('cashIn')}</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              +{chartData.totalIncome.toLocaleString('vi-VN')}₫
-            </span>
-          </div>
-          <div className="flex items-center justify-between px-1">
-            <span className="text-slate-500 dark:text-slate-400">{t('cashOut')}</span>
-            <span className="font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-              -{chartData.totalExpense.toLocaleString('vi-VN')}₫
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* Budget Alerts */}
       {budgetAlerts.length > 0 && (
@@ -490,17 +486,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="finance-list">
           {recentTransactions.map(tx => {
             const acc = accounts.find(a => a.id === tx.accountId);
             const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
             const cat = categories.find(c => c.id === tx.categoryId);
 
             return (
-              <div
+              <button type="button"
                 key={tx.id}
                 onClick={() => onSelectTransaction(tx)}
-                className="group flex items-center justify-between p-3.5 rounded-2xl glass-card card-interactive hover:bg-slate-100 dark:hover:bg-slate-800/80 cursor-pointer"
+                className="transaction-row group w-full text-left flex items-center justify-between gap-2"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`p-2.5 rounded-xl shrink-0 ${
@@ -531,12 +527,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   </span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 block">{t('tapToEdit')}</span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
 
+      </>}
     </div>
   );
 };

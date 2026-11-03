@@ -121,7 +121,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 pb-12">
+    <div className="finance-screen settings-groups mb-6">
       
       {/* 1. Theme Configuration (Giao diện Sáng / Tối) */}
       <div className="glass-card p-5 rounded-3xl border space-y-3.5">
@@ -167,7 +167,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             onClick={() => onUpdateSettings({ ...settings, theme: 'system' })}
             className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition ${
               settings.theme === 'system'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
@@ -195,7 +195,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             onClick={() => setLanguage('vi')}
             className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition ${
               language === 'vi'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
@@ -207,7 +207,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             onClick={() => setLanguage('en')}
             className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition ${
               language === 'en'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
@@ -252,7 +252,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               })}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-slate-300 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            <div className="w-11 h-6 bg-slate-300 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
           </label>
         </div>
 
@@ -507,7 +507,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       window.location.reload();
                     }
                   }}
-                  className="shrink-0 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-700 dark:text-emerald-300 hover:text-white rounded-lg text-[11px] font-medium transition"
+                  className="shrink-0 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600 text-emerald-700 dark:text-emerald-300 hover:text-white rounded-lg text-[11px] font-medium transition"
                 >
                   {t('restore')}
                 </button>
@@ -674,7 +674,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     setSupportCopied(true);
                     setTimeout(() => setSupportCopied(false), 1800);
                   }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition active:scale-95 shrink-0"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold transition active:scale-95 shrink-0"
                 >
                   {supportCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{supportCopied ? t('copied') : t('copy')}</span>
@@ -755,7 +755,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-emerald-600 text-white font-semibold text-xs rounded-lg hover:bg-emerald-500 shadow-md"
+                  className="px-4 py-1.5 bg-blue-600 text-white font-semibold text-xs rounded-lg hover:bg-blue-700 shadow-md"
                 >
                   {t('savePin')}
                 </button>

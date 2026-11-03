@@ -84,7 +84,7 @@ export function parseVietnameseFinancialCommand(
   }
 
   // Detect Account
-  let matchedAccount = accountNames[0] || 'Tiền mặt';
+  let matchedAccount = ''; // Missing source is reviewed in the confirmation card.
   for (const acc of accountNames) {
     const accLow = acc.toLowerCase();
     if (
@@ -117,7 +117,7 @@ export function parseVietnameseFinancialCommand(
       }
     }
     if (!accountTo) {
-      accountTo = accountNames.find(a => a !== matchedAccount) || accountNames[1] || 'Vietcombank';
+      accountTo = null;
     }
   } else if (lower.includes('cho') && (lower.includes('vay') || lower.includes('mượn'))) {
     intent = 'lend';
@@ -178,7 +178,8 @@ export function parseVietnameseFinancialCommand(
   let description = text.replace(/^(hôm nay|vừa|đã|mới)\s+/i, '');
   if (description.length > 50) description = description.substring(0, 50);
 
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
   return {
     intent,
@@ -190,7 +191,7 @@ export function parseVietnameseFinancialCommand(
     commands: [
       {
         kind,
-        amount: amount || 50000,
+        amount,
         currency: 'VND',
         account: matchedAccount,
         account_to: accountTo,
@@ -220,7 +221,8 @@ export async function processAiMessage(
   if (hasGeminiKey) {
     try {
       const apiKey = settings!.geminiApiKey!.trim();
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
       const systemInstruction = `Bạn là trợ lý phân tích giao dịch tài chính thông minh cho ứng dụng LTMsav (tiếng Việt).
 
 NHIỆM VỤ:

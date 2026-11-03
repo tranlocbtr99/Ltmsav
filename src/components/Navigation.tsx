@@ -30,11 +30,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 }) => {
   const { language, setLanguage, t } = useLanguage();
   return (
-    <header className="sticky top-0 z-40 w-full glass-panel pt-safe transition-colors duration-200">
-      <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+    <header className="finance-header sticky top-0 z-40 w-full glass-panel pt-safe transition-colors duration-200">
+      <div className="max-w-3xl mx-auto px-4 py-1 flex items-center justify-between">
         
         {/* Brand */}
-        <div 
+        <button type="button" aria-label={t('homeNav')}
           onClick={() => onNavigateTab('overview')}
           className="flex items-center gap-2.5 cursor-pointer min-w-0"
         >
@@ -42,11 +42,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           <div className="min-w-0">
             <h1 className="text-sm sm:text-base font-extrabold tracking-tight flex items-center gap-1.5 text-slate-900 dark:text-white">
               <span>LTM</span>
-              <span className="text-emerald-500 font-black">sav</span>
+              <span className="text-blue-600 dark:text-blue-300 font-black">sav</span>
             </h1>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">{t('appSubtitle')}</p>
           </div>
-        </div>
+        </button>
 
         {/* Right tools */}
         <div className="flex items-center gap-1.5 shrink-0">
@@ -90,14 +90,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             </button>
           )}
 
-          {/* Settings shortcut moved to the top bar */}
-          <button
-            onClick={() => onNavigateTab('settings')}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60 transition active:scale-95"
-            title={t('settings')}
-          >
-            <Settings className="w-4 h-4" />
-          </button>
         </div>
 
       </div>
@@ -126,48 +118,43 @@ export const BottomNavBar: React.FC<NavigationProps> = ({
 
   const renderTab = (tab: { id: string; label: string; icon: typeof House }) => {
     const Icon = tab.icon;
+    const label = tab.id === 'ai' ? t('aiNavLabel') : tab.label;
     const isActive = currentTab === tab.id;
     return (
       <button
         key={tab.id}
         type="button"
         aria-current={isActive ? 'page' : undefined}
-        aria-label={tab.label}
+        aria-label={label}
         onClick={() => onTabChange(tab.id)}
-        className={`min-w-0 min-h-14 flex-1 flex flex-col items-center gap-0.5 py-1 px-1 rounded-full transition duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500 ${
-          isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-        }`}
+        className="finance-nav-tab transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
       >
-        <div className={`p-2 rounded-full transition ${
-          isActive ? 'bg-emerald-500/15' : ''
-        }`}>
+        <div>
           <Icon className="w-5 h-5" />
         </div>
-        <span className={`text-[10px] font-medium tracking-tight w-full text-center truncate ${
-          isActive ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
-        }`}>
-          {tab.label}
+        <span>
+          {label}
         </span>
       </button>
     );
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-200 dark:border-slate-800/90 pb-safe transition-colors duration-200">
-      <div className="max-w-3xl mx-auto px-2 py-1.5 flex items-stretch justify-between relative">
+    <nav className="finance-nav fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-200 dark:border-slate-800/90 pb-safe transition-colors duration-200">
+      <div className="finance-nav-inner max-w-3xl mx-auto">
 
         {/* Left group */}
-        <div className="flex-1 flex items-center justify-around">
+        <div className="finance-nav-group">
           {leftTabs.map(renderTab)}
         </div>
 
         {/* Center: AI entry and asset management */}
-        <div className="flex-1 flex items-center justify-center">
+        <div className="finance-nav-group">
           {middleTabs.map(renderTab)}
         </div>
 
         {/* Right group */}
-        <div className="flex-1 flex items-center justify-around">
+        <div className="finance-nav-group">
           {rightTabs.map(renderTab)}
         </div>
 

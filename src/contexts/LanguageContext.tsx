@@ -9,6 +9,26 @@ interface LanguageContextType {
 }
 
 const vi: Record<string, string> = {
+  discardTransactionDraft: 'Bỏ các thay đổi chưa lưu của giao dịch này?',
+  aiNavLabel: 'Nhập bằng AI',
+  aiWelcomeShort: 'Bạn muốn ghi khoản nào?',
+  noComparisonBase: 'Chưa có cơ sở so sánh',
+  monthComparisonHint: 'So với cùng số ngày đã qua của tháng trước.',
+  hiddenHomeHint: 'Đã ẩn số tiền và biểu đồ. Chạm biểu tượng mắt để xem lại.',
+  budgetForecast: 'Ước tính chi cuối tháng',
+  budgetForecastHint: 'Theo tốc độ chi hiện tại; không phải kết quả chắc chắn.',
+  budgetEmptyHint: 'Đặt hạn mức theo danh mục để biết bạn còn bao nhiêu cho tháng này.',
+  assetAllocation: 'Cơ cấu số dư dương',
+  openAccountActions: 'Tùy chọn tài khoản',
+  seeHistory: 'Xem lịch sử',
+  aiEditHint: 'Kiểm tra và chỉnh sửa trước khi lưu.',
+  aiInvalidDraft: 'Vui lòng kiểm tra số tiền, tài khoản và danh mục trước khi lưu.',
+  fromDate: 'Từ ngày',
+  toDate: 'Đến ngày',
+  loadMore: 'Xem thêm giao dịch',
+  appearanceGroup: 'Giao diện và ngôn ngữ',
+  dataGroup: 'Dữ liệu và ứng dụng',
+
   chooseCategory: "Chọn danh mục",
   legacyCategory: "danh mục cũ",
   customizeCategories: "Tùy chỉnh danh mục",
@@ -467,6 +487,26 @@ const vi: Record<string, string> = {
 };
 
 const en: Record<string, string> = {
+  discardTransactionDraft: 'Discard the unsaved changes to this transaction?',
+  aiNavLabel: 'AI entry',
+  aiWelcomeShort: 'What would you like to record?',
+  noComparisonBase: 'No comparison data',
+  monthComparisonHint: 'Compared with the same elapsed days last month.',
+  hiddenHomeHint: 'Amounts and charts are hidden. Tap the eye to reveal them.',
+  budgetForecast: 'Estimated month-end spending',
+  budgetForecastHint: 'Based on your current spending pace; an estimate only.',
+  budgetEmptyHint: 'Set category limits to see how much you have left this month.',
+  assetAllocation: 'Positive balance allocation',
+  openAccountActions: 'Account options',
+  seeHistory: 'View history',
+  aiEditHint: 'Review and edit before saving.',
+  aiInvalidDraft: 'Check the amount, account and category before saving.',
+  fromDate: 'From date',
+  toDate: 'To date',
+  loadMore: 'Show more transactions',
+  appearanceGroup: 'Appearance and language',
+  dataGroup: 'Data and app',
+
   chooseCategory: "Choose a category",
   legacyCategory: "legacy category",
   customizeCategories: "Customize categories",

@@ -42,9 +42,9 @@ try {
   const computed=await dialog.evaluate(el=>{
     const style=getComputedStyle(el);
     const input=getComputedStyle(el.querySelector('input'));
-    return {image:style.backgroundImage,color:style.color,inputBg:input.backgroundColor,inputColor:input.color};
+    return {image:style.backgroundImage,surface:style.backgroundColor,color:style.color,inputBg:input.backgroundColor,inputColor:input.color};
   });
-  assert.match(computed.image,/23, 35, 56/);
+  assert.equal(computed.surface,'rgb(9, 19, 33)');
   assert.equal(computed.inputBg,'rgb(11, 18, 32)');
   assert.equal(computed.inputColor,'rgb(241, 245, 249)');
   for(const width of [360,412]){

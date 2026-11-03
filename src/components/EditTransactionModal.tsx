@@ -1,5 +1,6 @@
 import { CategoryPicker } from './CategoryPicker';
 import { categoryTypeFor } from '../services/categoryCatalog';
+import { useDialogFocus } from '../hooks/useDialogFocus';
 import React, { useState, useEffect, useId } from 'react';
 import { Transaction, Account, Category, TransactionType, CategoryActions } from '../types';
 import { X, Check, Trash2, ArrowRightLeft, Calendar, FileText, User, AlertCircle, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
@@ -59,6 +60,11 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
     }
   }, [transaction]);
 
+  const requestClose = () => {
+    const dirty = transaction && (type !== transaction.type || Number(amount) !== transaction.amount || accountId !== transaction.accountId || categoryId !== transaction.categoryId || date !== transaction.date || description !== transaction.description || note !== (transaction.note || '') || person !== (transaction.person || '') || (type === 'transfer' && targetAccountId !== transaction.targetAccountId));
+    if (!dirty || confirm(t('discardTransactionDraft'))) onClose();
+  };
+  const dialogRef = useDialogFocus(isOpen, requestClose);
   if (!isOpen || !transaction) return null;
 
   const numAmount = Math.max(0, parseInt(amount.replace(/\D/g, ''), 10) || 0);
@@ -99,8 +105,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   // Filter categories by type
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
-      <div role="dialog" aria-modal="true" aria-label={t('editTransactionTitle')} className="w-full max-w-lg transaction-dialog border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
+    <div className="transaction-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t('editTransactionTitle')} className="transaction-dialog border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
         
         {submitError && <p role="alert" className="p-4 text-rose-700 dark:text-rose-300">{submitError}</p>}
         {/* Header */}
@@ -121,7 +127,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={requestClose} aria-label={t('cancel')}
             className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0"
           >
             <X className="w-5 h-5" />
@@ -194,7 +200,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 value={numAmount ? numAmount.toLocaleString('vi-VN') : ''}
                 onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xl font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="amount-input w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xl font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 required
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-semibold">
@@ -383,7 +389,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
         </form>
 
         {/* Footer Actions */}
-        <div className="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 flex items-center justify-between gap-3">
+        <div className="dialog-footer px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 flex items-center justify-between gap-3">
           {!showDeleteConfirm ? (
             <button
               type="button"
@@ -400,7 +406,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs sm:text-sm font-medium rounded-xl transition"
             >
               {t('cancel')}
@@ -408,7 +414,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             <button
               type="submit"
               form={formId}
-              className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-emerald-900/30 transition shrink-0"
+              className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-emerald-900/30 transition shrink-0"
             >
               <Check className="w-4 h-4" />
               <span>{t('saveChanges')}</span>

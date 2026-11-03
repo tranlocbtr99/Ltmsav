@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Transaction, Account, Category, TransactionType } from '../types';
 import { 
   Search, Filter, Plus, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, 
@@ -8,6 +8,7 @@ import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface TransactionsTabProps {
+  initialAccountId?: string;
   transactions: Transaction[];
   accounts: Account[];
   categories: Category[];
@@ -18,6 +19,7 @@ interface TransactionsTabProps {
 
 export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   transactions,
+  initialAccountId,
   accounts,
   categories,
   onSelectTransaction,
@@ -27,13 +29,22 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedAccount, setSelectedAccount] = useState<string>('all');
+  const [selectedAccount, setSelectedAccount] = useState<string>(initialAccountId || 'all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [visibleCount, setVisibleCount] = useState(60);
+  const [swipedId, setSwipedId] = useState<string | null>(null);
+  const touchStart = useRef<{x: number; y: number} | null>(null);
+  useEffect(() => { setVisibleCount(60); }, [searchTerm, selectedType, selectedAccount, selectedCategory, fromDate, toDate]);
 
   // Filter logic
   const filteredTransactions = useMemo(() => {
     return transactions.filter(tx => {
+      if (fromDate && tx.date.slice(0,10) < fromDate) return false;
+      if (toDate && tx.date.slice(0,10) > toDate) return false;
       if (searchTerm) {
         const query = searchTerm.toLowerCase();
         const matchDesc = tx.description.toLowerCase().includes(query);
@@ -46,14 +57,14 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
       if (selectedCategory !== 'all' && tx.categoryId !== selectedCategory) return false;
 
       return true;
-    });
-  }, [transactions, searchTerm, selectedType, selectedAccount, selectedCategory]);
+    }).sort((a, b) => b.date.localeCompare(a.date));
+  }, [transactions, searchTerm, selectedType, selectedAccount, selectedCategory, fromDate, toDate]);
 
   // Group by date
   const groupedByDate = useMemo(() => {
     const groups: Record<string, { transactions: Transaction[]; incomeTotal: number; expenseTotal: number }> = {};
 
-    filteredTransactions.forEach(tx => {
+    filteredTransactions.slice(0, visibleCount).forEach(tx => {
       if (!groups[tx.date]) {
         groups[tx.date] = { transactions: [], incomeTotal: 0, expenseTotal: 0 };
       }
@@ -66,7 +77,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
     });
 
     return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filteredTransactions]);
+  }, [filteredTransactions, visibleCount]);
 
   const formatDateLabel = (dateStr: string) => {
     const today = new Date().toISOString().split('T')[0];
@@ -79,17 +90,18 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
     return `${day}/${month}/${year}`;
   };
 
-  const hasActiveFilters = selectedType !== 'all' || selectedAccount !== 'all' || selectedCategory !== 'all' || searchTerm !== '';
+  const hasActiveFilters = selectedType !== 'all' || selectedAccount !== 'all' || selectedCategory !== 'all' || searchTerm !== '' || !!fromDate || !!toDate;
 
   const clearFilters = () => {
     setSearchTerm('');
+    setFromDate(''); setToDate('');
     setSelectedType('all');
     setSelectedAccount('all');
     setSelectedCategory('all');
   };
 
   return (
-    <div className="space-y-4 pb-12 stagger">
+    <div className="finance-screen space-y-4 pb-6">
       
       {/* Top Search & Filter Bar */}
       <div className="space-y-2.5">
@@ -100,6 +112,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              aria-label={t('searchPlaceholder')}
               placeholder={t('searchPlaceholder')}
               className="w-full pl-9 pr-9 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs sm:text-sm placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-sm"
             />
@@ -120,14 +133,15 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
                 : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white shadow-sm'
             }`}
+            aria-label={t('advancedFilter')} aria-expanded={showFilters}
             title={t('advancedFilter')}
           >
             <SlidersHorizontal className="w-4 h-4" />
           </button>
 
           <button
-            onClick={onOpenAdd}
-            className="flex items-center gap-1 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs sm:text-sm transition shadow-md shadow-emerald-950/20 shrink-0"
+            onClick={onOpenAdd} aria-label={t('addTransaction')}
+            className="flex items-center gap-1 px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs sm:text-sm transition shadow-md shadow-emerald-950/20 shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">{t('addNew')}</span>
@@ -148,7 +162,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               onClick={() => setSelectedType(tab.id)}
               className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition font-medium ${
                 selectedType === tab.id
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-white dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800 shadow-sm'
               }`}
             >
@@ -171,6 +185,8 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
         {showFilters && (
           <div className="p-3.5 rounded-2xl glass-card space-y-3 animate-in fade-in duration-150">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <label className="text-slate-600 dark:text-slate-300">{t('fromDate')}<input aria-label={t('fromDate')} type="date" value={fromDate} max={toDate || undefined} onChange={e => setFromDate(e.target.value)} className="form-control w-full rounded-xl px-3 mt-1"/></label>
+              <label className="text-slate-600 dark:text-slate-300">{t('toDate')}<input aria-label={t('toDate')} type="date" value={toDate} min={fromDate || undefined} onChange={e => setToDate(e.target.value)} className="form-control w-full rounded-xl px-3 mt-1"/></label>
               <div>
                 <label className="text-slate-600 dark:text-slate-400 font-semibold mb-1 block">{t('filterBySource')}</label>
                 <select
@@ -214,11 +230,11 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
             {t('noTransactionsFilter')}
           </p>
           <button
-            onClick={onOpenAdd}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-md"
+            onClick={onOpenAdd} aria-label={t('addTransaction')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-md"
           >
             <Plus className="w-4 h-4" />
-            <span>{t('addTransactionNow')}</span>
+            <span>{t(hasActiveFilters ? 'clearFilter' : 'addTransactionNow')}</span>
           </button>
         </div>
       ) : (
@@ -242,19 +258,25 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               </div>
 
               {/* Transactions in this day */}
-              <div className="space-y-1.5">
+              <div className="finance-list">
                 {group.transactions.map(tx => {
                   const acc = accounts.find(a => a.id === tx.accountId);
                   const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
                   const cat = categories.find(c => c.id === tx.categoryId);
 
                   return (
-                    <div
-                      key={tx.id}
+                    <div key={tx.id}>
+                    <button type="button"
                       onClick={() => onSelectTransaction(tx)}
-                      className="group flex items-center justify-between p-3.5 rounded-2xl glass-card card-interactive hover:bg-slate-100 dark:hover:bg-slate-800/90 cursor-pointer"
+                      onTouchStart={e => { touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+                      onTouchEnd={e => {
+                        const start = touchStart.current;
+                        if (start && start.x - e.changedTouches[0].clientX > 60 && Math.abs(start.y - e.changedTouches[0].clientY) < 35) setSwipedId(tx.id);
+                        touchStart.current = null;
+                      }}
+                      className="transaction-row group flex items-center justify-between gap-2 w-full text-left"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="transaction-copy flex items-center gap-3 min-w-0">
                         <div className={`p-2.5 rounded-xl shrink-0 ${
                           tx.type === 'expense' ? 'bg-rose-500/15 text-rose-500 dark:text-rose-400' :
                           tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
@@ -280,7 +302,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0 ml-2">
+                      <div className="transaction-amount ml-2">
                         <div className="text-right">
                           <span className={`text-xs sm:text-sm font-bold block ${
                             tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' :
@@ -294,19 +316,13 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                             {t('tapToEdit')}
                           </span>
                         </div>
-                        
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectTransaction(tx);
-                          }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700/60 transition"
-                          title={t('editTransaction')}
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
                       </div>
+                    </button>
+                    {swipedId === tx.id && <div className="flex justify-end gap-2 px-3 pb-3">
+                      <button type="button" className="rounded-xl px-4 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200" onClick={() => { setSwipedId(null); onSelectTransaction(tx); }}>{t('editTransaction')}</button>
+                      <button type="button" className="rounded-xl px-4 bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-200" onClick={() => { if (confirm(t('confirmDeleteTx'))) { onDeleteTransaction(tx.id); setSwipedId(null); } }}>{t('delete')}</button>
+                      <button type="button" aria-label={t('cancel')} onClick={() => setSwipedId(null)} className="px-3"><X size={18}/></button>
+                    </div>}
                     </div>
                   );
                 })}
@@ -317,6 +333,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
         </div>
       )}
 
+      {visibleCount < filteredTransactions.length && <button className="w-full min-h-12 rounded-xl text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900" onClick={() => setVisibleCount(v => v + 60)}>{t('loadMore')} ({filteredTransactions.length - visibleCount})</button>}
     </div>
   );
 };

@@ -200,35 +200,6 @@
 
 
 
-/* LTMsav 2026 reference visual system — blue iOS Liquid Glass.
-   Visual-only: no storage keys, transaction logic or schema are modified. */
-:root {
-  --ltm-blue: #087cff;
-  --ltm-cyan: #32c7ef;
-  --ltm-ink: #102345;
-  --ltm-glass: rgba(255,255,255,.77);
-  --ltm-border: rgba(255,255,255,.82);
-  --ltm-shadow: 0 12px 36px rgba(36,111,185,.12);
-}
-html:not(.dark), html:not(.dark) body, html:not(.dark) #root {
-  background: radial-gradient(ellipse at 20% 0%,#d9f2ff 0%,transparent 50%),linear-gradient(150deg,#eff9ff,#e7f3ff 55%,#f6fbff) !important;
-  color: var(--ltm-ink) !important;
-}
-html:not(.dark) .glass-panel, html:not(.dark) .glass-card {
-  background: linear-gradient(145deg,rgba(255,255,255,.91),rgba(235,248,255,.73));
-  border: 1px solid var(--ltm-border);
-  box-shadow: var(--ltm-shadow), inset 0 1px 0 rgba(255,255,255,.95);
-  -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  backdrop-filter: blur(22px) saturate(1.3);
-  border-radius: 22px;
-}
-html:not(.dark) .text-emerald-500, html:not(.dark) .text-emerald-600 { color: var(--ltm-blue) !important; }
-html:not(.dark) .bg-emerald-500\/15 { background-color: rgba(0,126,255,.12) !important; }
-html:not(.dark) .from-emerald-500, html:not(.dark) .bg-emerald-500 { background-color: var(--ltm-blue) !important; }
-@media (prefers-reduced-motion: reduce) {
-  .animate-fade-in-up,.animate-fade-in,.animate-scale-in,.animate-slide-in,.animate-pop-in { animation: none !important; }
-}
-
 /* Transaction sheets: one surface in each theme; no light gradient leaks in dark mode. */
 :root { color-scheme: light; }
 html.dark { color-scheme: dark; }
@@ -260,3 +231,91 @@ html.dark .transaction-dialog input::placeholder, html.dark .form-control::place
 .form-control:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }
 
 .transaction-dialog input:focus, .transaction-dialog select:focus, .transaction-dialog textarea:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }
+
+/* Liquid Finance 2.0 — opaque content, glass on floating chrome only. */
+:root {
+  --bg-main: #f3f7fc; --bg-card: #fff; --border-card: #dce5f0;
+  --text-main: #122033; --text-muted: #526176;
+  --finance-nav-space: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+html.dark {
+  --bg-main: #091321; --bg-card: #142236; --border-card: #30435d;
+  --text-main: #f3f7ff; --text-muted: #b5c3d8;
+}
+html body, html #root, html.dark body, html.dark #root,
+html:not(.dark), html.dark {
+  background: var(--bg-main) !important;
+  color: var(--text-main) !important;
+}
+.glass-card, html.dark .glass-card {
+  background: var(--bg-card); border: 1px solid var(--border-card);
+  border-radius: 20px; box-shadow: 0 2px 8px rgb(10 40 80 / .025);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.glass-panel, html.dark .glass-panel {
+  background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+  border: 1px solid var(--border-card); box-shadow: 0 4px 20px rgb(10 40 80 / .06);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+.finance-header { border-width: 0 0 1px; box-shadow: none; }
+.finance-header button { min-width: 48px; min-height: 48px; }
+.finance-main { padding-top: 16px; padding-bottom: var(--finance-nav-space); }
+.finance-nav { border-radius: 24px 24px 0 0; }
+.finance-nav-inner { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); padding: 6px 8px; }
+.finance-nav-group { display: contents; }
+.finance-nav-tab { min-width: 0; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; font-size: 11px; color: var(--text-muted); }
+.finance-nav-tab[aria-current] { color: #075bc7; background: #e8f1ff; font-weight: 700; }
+html.dark .finance-nav-tab[aria-current] { color: #80b5ff; background: #203b60; }
+.finance-nav-tab span { white-space: normal; text-align: center; line-height: 1.2; overflow-wrap: anywhere; }
+.finance-nav-tab svg { width: 21px; height: 21px; }
+.balance-hero { border-radius: 22px; padding: 12px 18px 16px; color: white; background: linear-gradient(115deg,#0865df,#1677ff 60%,#258bff); box-shadow: 0 8px 20px rgb(22 119 255 / .16); }
+.balance-amount { font-size: clamp(1.875rem, 7vw, 2.125rem); line-height: 1.1; font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; letter-spacing: -.025em; }
+.hero-eye { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0; }
+.hero-eye:hover { background: rgb(255 255 255 / .14); }
+.quick-action { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; padding: 8px 2px; min-height: 80px; font-size: 12px; line-height: 1.3; font-weight: 600; color: var(--text-main); }
+.quick-action-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; color: #075bc7; background: #e4efff; }
+html.dark .quick-action-icon { color: #80b5ff; background: #203b60; }
+.metric-tile { padding: 12px; border-radius: 16px; min-width: 0; }
+.metric-income { color: #147a46; background: #e5f5ed; }
+.metric-expense { color: #ba3151; background: #ffedf1; }
+html.dark .metric-income { color: #63d99a; background: #16362e; }
+html.dark .metric-expense { color: #ff8ca6; background: #382333; }
+.finance-list { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; overflow: hidden; }
+.transaction-row { min-height: 72px; padding: 12px; background: transparent; border-bottom: 1px solid var(--border-card); }
+.transaction-row:last-child { border-bottom: 0; }
+.transaction-row:hover { background: color-mix(in srgb, var(--bg-main) 70%, transparent); }
+.transaction-row:focus-visible, button:focus-visible { outline: 2px solid #1677ff; outline-offset: 2px; }
+.transaction-row .transaction-copy { flex: 1; min-width: 0; }
+.transaction-row .transaction-amount { max-width: 46%; overflow-wrap: anywhere; text-align: right; font-variant-numeric: tabular-nums; }
+.finance-screen button, .transaction-dialog button { min-height: 48px; }
+.finance-screen input, .finance-screen select, .transaction-dialog input, .transaction-dialog select { min-height: 48px; }
+.transaction-overlay { padding: 0; align-items: stretch; }
+.transaction-dialog { width: 100%; height: 100dvh; max-height: 100dvh; max-width: none; border-radius: 0; padding-top: env(safe-area-inset-top,0px); background: var(--bg-main); }
+html.dark .transaction-dialog { background: var(--bg-main); }
+.transaction-dialog input[inputmode="numeric"] { font-variant-numeric: tabular-nums; }
+.transaction-dialog .amount-input { font-size: 32px; min-height: 84px; text-align: center; font-weight: 750; }
+.transaction-dialog .dialog-footer { padding-bottom: max(16px,env(safe-area-inset-bottom,0px)); }
+.settings-groups { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; overflow: hidden; }
+.settings-groups > .glass-card { border: 0; border-bottom: 1px solid var(--border-card); border-radius: 0; padding: 16px; box-shadow: none; }
+.settings-groups > .glass-card:last-child { border-bottom: 0; }
+.asset-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-card); }
+.asset-row:last-child { border-bottom: 0; }
+.asset-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.asset-actions button { flex: 1; font-size: 12px; padding: 8px; border-radius: 12px; background: var(--bg-main); }
+.ai-screen { height: calc(100dvh - 190px - env(safe-area-inset-bottom,0px)); min-height: 360px; }
+@media (min-width: 640px) {
+  .transaction-overlay { padding: 24px; align-items: center; }
+  .transaction-dialog { max-width: 560px; height: auto; max-height: 92dvh; border-radius: 28px; }
+}
+@media (max-width: 340px) {
+  :root { --finance-nav-space: calc(152px + env(safe-area-inset-bottom,0px)); }
+  .finance-nav-inner { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .ai-screen { height: calc(100dvh - 250px); }
+}
+.animate-fade-in-up, .animate-fade-in, .animate-scale-in, .animate-slide-in, .animate-pop-in, .stagger > *:not(.fixed) { animation-duration: 220ms; animation-delay: 0ms; }
+.card-interactive { will-change: auto; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+.budget-screen strong { overflow-wrap: anywhere; }
+.budget-screen .justify-between > div { min-width: 0; }
