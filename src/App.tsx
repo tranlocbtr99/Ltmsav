@@ -285,6 +285,7 @@ export const App: React.FC = () => {
 
           <section className="motion-tab" hidden={currentTab !== 'ai'}>{(currentTab === 'ai' || visitedTabs.includes('ai')) && (
             <AiChatTab
+              transactions={transactions}
               accounts={accounts}
               categories={categories}
               settings={settings}

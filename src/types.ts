@@ -84,6 +84,10 @@ export interface AppSettings {
 }
 
 export interface AiParsedCommand {
+  /** Transient draft bindings, never stored as financial schema fields. */
+  account_id?: string;
+  account_to_id?: string;
+  category_id?: string;
   kind: 'expense' | 'income' | 'transfer' | 'lend' | 'debt_repay';
   amount: number;
   currency: string;

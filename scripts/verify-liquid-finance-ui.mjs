@@ -83,7 +83,7 @@ try {
     await route.fulfill({json:{intent:'create_expense',needs_confirmation:true,analysis:'Kiểm tra trước khi lưu.',commands:[cmd,{...cmd,amount:25000,description:'AI second'}]}});
   });
   await nav.getByRole('button',{name:'Nhập bằng AI',exact:true}).click();
-  await page.getByRole('textbox').fill('Ăn trưa 65k bằng tiền mặt');
+  await page.getByRole('textbox').fill('Ăn trưa 65k bằng tiền mặt; cafe 25k bằng tiền mặt');
   await page.locator('main').getByRole('button',{name:'Nhập bằng AI',exact:true}).click();
   await page.getByText('Kiểm tra trước khi lưu.',{exact:true}).waitFor();
   const drafts=page.locator('fieldset');

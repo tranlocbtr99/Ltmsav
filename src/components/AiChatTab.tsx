@@ -1,3 +1,5 @@
+import { confirmAction } from './Confirmation';
+import { resolveAiDraft, parseDraftAmount, aiTransactionFingerprint } from '../services/aiFinancial';
 import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
 import React, { useState, useRef, useEffect } from 'react';
@@ -15,6 +17,7 @@ interface AiChatTabProps {
   accounts: Account[];
   categories: Category[];
   settings?: AppSettings;
+  transactions: Transaction[];
   onAddTransaction: (tx: Omit<Transaction, 'id' | 'createdAt'>) => void;
   onNavigateTab: (tab: string) => void;
 }
@@ -33,6 +36,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
   accounts,
   categories,
   settings,
+  transactions,
   onAddTransaction,
   onNavigateTab,
 }) => {
@@ -59,6 +63,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const executedKeys = useRef(new Set<string>());
   const sending = useRef(false);
+  const savedFingerprints = useRef(new Set<string>());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -75,7 +80,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
     sending.current = true;
 
     const userMsg: ChatMessage = {
-      id: 'msg_' + Date.now(),
+      id: crypto.randomUUID(),
       sender: 'user',
       text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -97,7 +102,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
       }
 
       const botMsg: ChatMessage = {
-        id: 'msg_' + (Date.now() + 1),
+        id: crypto.randomUUID(),
         sender: 'bot',
         text: botReply,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -107,11 +112,11 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
 
       setMessages(prev => [...prev, botMsg]);
     } catch (err: any) {
-      setInputText(text);
+      setInputText(previous=>previous || text);
       setMessages(prev => [
         ...prev,
         {
-          id: 'msg_err_' + Date.now(),
+          id: crypto.randomUUID(),
           sender: 'bot',
           text: t('aiError'),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -128,42 +133,22 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
       ...m, response: {...m.response, commands: m.response.commands?.map((cmd,i) => i === index ? {...cmd,...updates} : cmd)}
     }));
   };
-  const handleExecuteCommand = (messageId: string, cmd: AiParsedCommand, index: number) => {
+  const handleExecuteCommand = async (messageId: string, cmd: AiParsedCommand, index: number) => {
     const executionKey = `${messageId}:${index}`;
     if (executedKeys.current.has(executionKey)) return;
     executedKeys.current.add(executionKey);
-    const matchedAccount = accounts.find(
-      a => a.name.toLowerCase() === cmd.account.toLowerCase()
-    );
-
-    let matchedTargetAccount = undefined;
-    if (cmd.account_to) {
-      matchedTargetAccount = accounts.find(
-        a => a.name.toLowerCase() === cmd.account_to?.toLowerCase()
-      )?.id;
-    }
-
-    const matchedCategory = categories.find(
-      c => c.name.toLowerCase() === cmd.category.toLowerCase() && c.type === categoryTypeFor(cmd.kind)
-    );
-
     try {
-    if (!matchedAccount || !Number.isSafeInteger(cmd.amount) || cmd.amount <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(cmd.date || '') || (cmd.kind !== 'transfer' && !matchedCategory) || (cmd.kind === 'transfer' && (!matchedTargetAccount || matchedTargetAccount === matchedAccount.id))) throw new Error(t('aiInvalidDraft'));
-    onAddTransaction({
-      type: cmd.kind,
-      amount: cmd.amount,
-      accountId: matchedAccount.id,
-      targetAccountId: matchedTargetAccount,
-      categoryId: matchedCategory?.id || '',
-      date: cmd.date || new Date().toISOString().split('T')[0],
-      description: cmd.description || t('aiTransaction'),
-      note: cmd.note || undefined,
-      person: cmd.person || undefined,
-    });
-
+      const resolved=resolveAiDraft(cmd,accounts,categories);
+      if(!resolved)throw new Error(t('aiInvalidDraft'));
+      const fingerprint=aiTransactionFingerprint(resolved);
+      if((savedFingerprints.current.has(fingerprint)||transactions.some(tx=>aiTransactionFingerprint(tx)===fingerprint))&&!await confirmAction(t('aiDuplicateWarning'),{title:t('aiDuplicateTitle'),confirmLabel:t('confirmAndRecord')})){
+        executedKeys.current.delete(executionKey);return;
+      }
+      onAddTransaction({...resolved});
+      savedFingerprints.current.add(fingerprint);
     } catch (error) {
       executedKeys.current.delete(executionKey);
-      setMessages(prev => [...prev, { id: crypto.randomUUID(), sender: 'bot', text: error instanceof Error ? error.message : String(error), timestamp: new Date().toISOString() }]);
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), sender: 'bot', text: error instanceof Error ? error.message : String(error), timestamp: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }]);
       return;
     }
     setMessages(prev => prev.map(m => {
@@ -219,6 +204,8 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
                 </div>
               </div>
 
+              {(msg.response?.intent === 'query_balance' || msg.response?.intent === 'query_report') && <button className="text-blue-700 dark:text-blue-300 text-sm" onClick={()=>onNavigateTab(msg.response?.intent === 'query_balance'?'assets':'reports')}>{t(msg.response?.intent === 'query_balance'?'assetsNav':'reports')} →</button>}
+
               {/* Parsed Commands Preview Card */}
               {msg.response?.commands && msg.response.commands.length > 0 && (
                 <div className="w-full max-w-full p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-emerald-500/30 shadow-lg space-y-2.5 sm:space-y-3 animate-fade-in overflow-hidden">
@@ -250,23 +237,27 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
                         </span>
                       </div>
 
+                      {(cmd.kind === 'lend' || cmd.kind === 'debt_repay') && <p className="text-xs text-slate-600 dark:text-slate-300">{t('aiDebtHint')} <button className="text-blue-700 dark:text-blue-300" onClick={()=>onNavigateTab('assets')}>{t('assetsNav')} →</button></p>}
                       {!msg.executedCommands?.includes(idx) ? <fieldset className="space-y-2">
                         <legend className="text-xs text-slate-600 dark:text-slate-300 mb-2">{t('aiEditHint')}</legend>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <label className="text-xs">{t('transactionType')}<IOSSelect label={t('transactionType')} className="form-control w-full rounded-xl px-2 mt-1" value={cmd.kind} onChange={e => updateDraft(msg.id,idx,{kind:e.target.value as AiParsedCommand['kind'],category:''})}>{(['expense','income','transfer','lend'] as const).map(kind => <option key={kind} value={kind}>{t(kind === 'lend' ? 'loan' : kind)}</option>)}</IOSSelect></label>
-                          <label className="text-xs">{t('amountVnd')}<input className="form-control w-full rounded-xl px-2 mt-1" inputMode="numeric" value={cmd.amount ? cmd.amount.toLocaleString('vi-VN') : ''} onChange={e => updateDraft(msg.id,idx,{amount:Number(e.target.value.replace(/\D/g,''))})}/></label>
-                          <label className="text-xs">{t('source')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('source')} value={accounts.some(a=>a.name === cmd.account) ? cmd.account : ''} onChange={e => updateDraft(msg.id,idx,{account:e.target.value})}><option value="">{t('source')}</option>{accounts.map(a=><option key={a.id} value={a.name} data-icon={a.iconName} data-color={a.color} data-detail={a.balance.toLocaleString('vi-VN')+' ₫'}>{a.name}</option>)}</IOSSelect></label>
-                          {cmd.kind === 'transfer' ? <label className="text-xs">{t('toAccount')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('toAccount')} value={cmd.account_to || ''} onChange={e=>updateDraft(msg.id,idx,{account_to:e.target.value})}><option value="">{t('toAccount')}</option>{accounts.filter(a=>a.name !== cmd.account).map(a=><option key={a.id} value={a.name} data-icon={a.iconName} data-color={a.color} data-detail={a.balance.toLocaleString('vi-VN')+' ₫'}>{a.name}</option>)}</IOSSelect></label> : <label className="text-xs">{t('category')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('category')} layout="grid" value={categories.some(c=>c.name === cmd.category && c.type === categoryTypeFor(cmd.kind)) ? cmd.category : ''} onChange={e => updateDraft(msg.id,idx,{category:e.target.value})}><option value="">{t('chooseCategory')}</option>{categories.filter(c=>c.type === categoryTypeFor(cmd.kind)).map(c=><option key={c.id} value={c.name} data-icon={c.iconName} data-color={c.color}>{c.name}</option>)}</IOSSelect></label>}
+                          <label className="text-xs">{t('transactionType')}<IOSSelect label={t('transactionType')} className="form-control w-full rounded-xl px-2 mt-1" value={cmd.kind} onChange={e => updateDraft(msg.id,idx,{kind:e.target.value as AiParsedCommand['kind'],category:'',category_id:undefined,account_to:null,account_to_id:undefined})}>{(['expense','income','transfer','lend','debt_repay'] as const).map(kind => <option key={kind} value={kind}>{t(kind === 'lend' ? 'loan' : kind === 'debt_repay' ? 'debtRepay' : kind)}</option>)}</IOSSelect></label>
+                          <label className="text-xs">{t('amountVnd')}<input className="form-control w-full rounded-xl px-2 mt-1" inputMode="numeric" value={cmd.amount ? cmd.amount.toLocaleString('vi-VN') : ''} onChange={e => updateDraft(msg.id,idx,{amount:parseDraftAmount(e.target.value)})}/></label>
+                          <label className="text-xs">{t('source')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('source')} value={cmd.account_id || ''} onChange={e => updateDraft(msg.id,idx,{account_id:e.target.value,account:accounts.find(a=>a.id===e.target.value)?.name||'',...(cmd.account_to_id===e.target.value?{account_to:null,account_to_id:undefined}:{})})}><option value="">{t('source')}</option>{accounts.map(a=><option key={a.id} value={a.id} data-icon={a.iconName} data-color={a.color} data-detail={a.balance.toLocaleString('vi-VN')+' ₫'}>{a.name}</option>)}</IOSSelect></label>
+                          {cmd.kind === 'transfer' ? <label className="text-xs">{t('toAccount')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('toAccount')} value={cmd.account_to_id || ''} onChange={e=>updateDraft(msg.id,idx,{account_to_id:e.target.value,account_to:accounts.find(a=>a.id===e.target.value)?.name||''})}><option value="">{t('toAccount')}</option>{accounts.filter(a=>a.id !== cmd.account_id).map(a=><option key={a.id} value={a.id} data-icon={a.iconName} data-color={a.color} data-detail={a.balance.toLocaleString('vi-VN')+' ₫'}>{a.name}</option>)}</IOSSelect></label> : <label className="text-xs">{t('category')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('category')} layout="grid" value={cmd.category_id || ''} onChange={e => updateDraft(msg.id,idx,{category_id:e.target.value,category:categories.find(c=>c.id===e.target.value)?.name||''})}><option value="">{t('chooseCategory')}</option>{categories.filter(c=>c.type === categoryTypeFor(cmd.kind)).map(c=><option key={c.id} value={c.id} data-icon={c.iconName} data-color={c.color}>{c.name}</option>)}</IOSSelect></label>}
+                          {(cmd.kind === 'lend' || cmd.kind === 'debt_repay') && <label className="text-xs">{t('aiPerson')}<input className="form-control w-full rounded-xl px-2 mt-1" value={cmd.person||''} onChange={e=>updateDraft(msg.id,idx,{person:e.target.value})}/></label>}
                           <label className="text-xs">{t('date')}<DateField label={t('date')} type="date" className="form-control w-full rounded-xl px-2 mt-1" value={cmd.date || ''} onChange={e => updateDraft(msg.id,idx,{date:e.target.value})}/></label>
                           <label className="text-xs">{t('transactionDesc')}<input className="form-control w-full rounded-xl px-2 mt-1" value={cmd.description || ''} onChange={e=>updateDraft(msg.id,idx,{description:e.target.value})}/></label>
                         </div>
                       </fieldset> : <p className="text-xs text-emerald-700 dark:text-emerald-300">{t('recorded')} · {cmd.account} · {cmd.category}</p>}
 
                       {!msg.executedCommands?.includes(idx) && (
-                        <div className="pt-2 flex items-center justify-end gap-2">
+                        <div className="pt-2 flex flex-wrap items-center justify-end gap-2">
+                          {!resolveAiDraft(cmd,accounts,categories) && <p role="status" className="w-full text-xs text-rose-700 dark:text-rose-300">{t('aiDraftIncomplete')}</p>}
                           <button
+                            disabled={!resolveAiDraft(cmd,accounts,categories)}
                             onClick={() => handleExecuteCommand(msg.id, cmd, idx)}
-                            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-[11px] sm:text-xs shadow-md shadow-emerald-950 transition active:scale-95 whitespace-nowrap"
+                            className="disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-[11px] sm:text-xs shadow-md shadow-emerald-950 transition active:scale-95 whitespace-nowrap"
                           >
                             <Check className="w-3.5 h-3.5 shrink-0" />
                             <span>{t('confirmAndRecord')}</span>
@@ -313,7 +304,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && handleSend()}
-          aria-label={t('aiInputPlaceholder')} placeholder={t('aiInputPlaceholder')}
+          maxLength={4000} aria-label={t('aiInputPlaceholder')} placeholder={t('aiInputPlaceholder')}
           className="flex-1 min-w-0 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
         />
         <button

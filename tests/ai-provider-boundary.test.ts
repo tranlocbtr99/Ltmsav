@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {processAiMessage} from '../src/services/aiParser';import {localDay} from '../src/services/aiFinancial';
+const accounts=[{id:'cash',name:'Tiền mặt',type:'cash' as const,balance:1000000,currency:'VND',iconName:'Wallet',color:'#000'}];const categories=[{id:'food',name:'Ăn uống',type:'expense' as const,iconName:'Utensils',color:'#000'}];
+test('Every provider failure/malformed response falls back to the same non-inventing parser',async t=>{
+ const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});let calls=0;
+ globalThis.fetch=async()=>{calls++;return new Response('{"commands":[{"kind":"delete"}]}',{status:200});};
+ const r=await processAiMessage('ăn trưa 65k bằng tiền mặt',accounts,categories,{geminiApiKey:'test-only',customServerUrl:'https://example.invalid'} as any);
+ assert.equal(calls,3);assert.equal(r.commands![0].amount,65000);assert.equal(r.commands![0].account_id,'cash');
+});
+test('Remote false-confirmation and hallucinated category/date cannot bypass the boundary',async t=>{const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});globalThis.fetch=async()=>new Response(JSON.stringify({intent:'create_expense',needs_confirmation:false,analysis:'Draft',commands:[{kind:'expense',amount:65000,currency:'VND',account:'Tiền mặt',category:'Nonexistent',date:'2026-02-30',description:'Lunch'}]}));const r=await processAiMessage('ăn trưa 65k bằng tiền mặt',accounts,categories);assert.equal(r.needs_confirmation,true);assert.equal(r.commands![0].category,'');assert.equal(r.commands![0].date,localDay());});
+test('Non-posting prompts do not contact providers or accept injected writes',async t=>{const original=globalThis.fetch;t.after(()=>{globalThis.fetch=original;});globalThis.fetch=async()=>{throw Error('Must not call');};for(const text of ['chưa chi 65k bằng tiền mặt','số dư còn bao nhiêu','tôi vay Nam 2tr'])assert.deepEqual((await processAiMessage(text,accounts,categories)).commands,[]);await assert.rejects(processAiMessage('x'.repeat(4001),accounts,categories));});

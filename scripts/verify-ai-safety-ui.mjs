@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {spawn} from 'node:child_process';
+import {chromium} from 'playwright';
+await mkdir('ui-proof/ai-safety',{recursive:true});
+const server=spawn('node',['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port','4179'],{stdio:'inherit'});
+let browser;
+try{
+ for(let i=0;i<60;i++){try{if((await fetch('http://127.0.0.1:4179')).ok)break;}catch{}await new Promise(r=>setTimeout(r,250));}
+ browser=await chromium.launch({headless:true});
+ const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Asia/Ho_Chi_Minh',serviceWorkers:'block'});
+ await context.addInitScript(()=>{
+  if(localStorage.getItem('silver-proof'))return;
+  const now=new Date(),date=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  localStorage.setItem('silver-proof','1');localStorage.setItem('ltmsav_schema_version','7');localStorage.setItem('ltmsav_language','vi');
+  localStorage.setItem('ltmsav_accounts_v1',JSON.stringify([{id:'cash',name:'Tiền mặt',type:'cash',balance:2480000,currency:'VND',iconName:'Wallet',color:'#087cfa'},{id:'bank',name:'Ngân hàng',type:'bank',balance:10000000,currency:'VND',iconName:'Landmark',color:'#087cfa'},{id:'saving',name:'Tiết kiệm',type:'savings',balance:12000000,currency:'VND',iconName:'PiggyBank',color:'#7045ba'}]));
+  localStorage.setItem('ltmsav_categories_v1',JSON.stringify([{id:'food',name:'Ăn uống',type:'expense',iconName:'Utensils',color:'#ba3151'},{id:'salary',name:'Lương',type:'income',iconName:'Briefcase',color:'#147a46'}]));
+  localStorage.setItem('ltmsav_transactions_v1',JSON.stringify([{id:'original',type:'expense',amount:35000,accountId:'cash',categoryId:'food',date,description:'Original transaction',createdAt:date}]));
+  localStorage.setItem('ltmsav_budgets_v1',JSON.stringify([{id:'budget',categoryId:'food',monthlyLimit:2000000}]));
+  localStorage.setItem('ltmsav_settings_v1',JSON.stringify({theme:'light',securityEnabled:false,pinCode:'123456',biometricEnabled:false,allowNegativeBalance:false,currency:'VND',autoConfirmAi:false}));
+ });
+ const page=await context.newPage(),errors=[],nativeDialogs=[];
+ page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{nativeDialogs.push(d.message());await d.dismiss();});
+ await page.goto('http://127.0.0.1:4179');const nav=page.locator('nav');
+ await nav.getByRole('button',{name:'Trang chủ',exact:true}).waitFor();
+ assert.equal(await page.locator('.silver-balance').evaluate(el=>getComputedStyle(el).backgroundImage),'none');
+ assert.match(await page.locator('.balance-amount').innerText(),/12\.480\.000/);
+ await page.route('**/api/chat',route=>{
+ const {message}=route.request().postDataJSON();const now=new Date(),date=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+ let cmd={kind:'expense',amount:65000,currency:'VND',account:'Tiền mặt',category:'Ăn uống',date,description:'AI safe lunch'};
+ if(message.includes('chuyển'))cmd={...cmd,kind:'transfer',amount:500000,account:'Tiền mặt',account_to:'Ngân hàng',category:''};
+ if(message.includes('bất thường'))cmd={...cmd,amount:6500000,currency:'USD',account:'Ghost',category:'Lương',date:'2026-02-30'};
+ return route.fulfill({json:{intent:'create_expense',needs_confirmation:false,analysis:'Draft',commands:[cmd]}});
+ });
+ await nav.getByRole('button',{name:'Nhập bằng AI',exact:true}).click();
+ const send=async text=>{await page.getByRole('textbox',{name:'Nhập câu nói: vd Ăn sáng 30k tiền mặt...',exact:true}).fill(text);await page.locator('main').getByRole('button',{name:'Nhập bằng AI',exact:true}).click();await page.locator('.ai-screen fieldset').last().waitFor();};
+ const ledger=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_transactions_v1')));
+ await send('ăn trưa 65k bằng tiền mặt');
+ const save=()=>page.getByRole('button',{name:'Xác Nhận & Ghi Sổ Ngay',exact:true}).last();
+ assert.equal((await ledger()).length,1);await save().evaluate(el=>{el.click();el.click();});
+ assert.equal((await ledger()).length,2);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_accounts_v1'))[0].balance),2415000);
+ await send('ăn trưa 65k bằng tiền mặt');await save().click();const alert=page.getByRole('alertdialog');await alert.waitFor();
+ await alert.getByRole('button',{name:'Hủy',exact:true}).click();assert.equal((await ledger()).length,2);
+ await save().click();await alert.getByRole('button',{name:'Xác Nhận & Ghi Sổ Ngay',exact:true}).click();assert.equal((await ledger()).length,3);
+ await send('bất thường ăn trưa 65k bằng tiền mặt');assert.equal(await save().isDisabled(),true);assert.equal((await ledger()).length,3);
+ const fields=page.locator('.ai-screen fieldset').last();
+ await fields.getByLabel('Số tiền (VND)',{exact:true}).fill('65000');
+ await fields.getByRole('combobox',{name:'Nguồn',exact:true}).click();await page.locator('.ios-picker-sheet').getByRole('option',{name:'Tiền mặt',exact:true}).click();
+ await fields.getByRole('combobox',{name:'Danh mục',exact:true}).click();await page.locator('.ios-picker-sheet').getByRole('option',{name:'Ăn uống',exact:true}).click();assert.equal(await save().isDisabled(),false);
+ await fields.getByLabel('Số tiền (VND)',{exact:true}).fill('-50000');assert.equal(await save().isDisabled(),true);
+ assert.equal((await ledger()).length,3);
+ await send('chuyển 500k từ Ngân hàng sang Tiền mặt');
+ const transferFields=page.locator('.ai-screen fieldset').last();
+ await transferFields.getByLabel('Số tiền (VND)',{exact:true}).fill('20000000');await save().click();
+ await page.getByText('Số dư không đủ',{exact:false}).waitFor();assert.equal((await ledger()).length,3,'Insufficient balance cannot partially post');
+ await transferFields.getByLabel('Số tiền (VND)',{exact:true}).fill('500000');await save().click();
+ const records=await ledger();assert.equal(records.length,4);assert.equal(records[0].type,'transfer');assert.equal(records[0].accountId,'bank');assert.equal(records[0].targetAccountId,'cash');
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_accounts_v1')).find(a=>a.id==='bank').balance),9500000);
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_accounts_v1')).find(a=>a.id==='cash').balance),2850000);
+ assert.deepEqual(errors,[]);assert.deepEqual(nativeDialogs,[]);
+ await writeFile('ui-proof/ai-safety/result.json',JSON.stringify({passed:true,noAutomaticPosting:true,doubleClickGuard:true,duplicateCancelAndConfirm:true,invalidRemoteDraftBlocked:true,manualRepair:true,negativeEditBlocked:true,transferDirectionAndBalances:true,insufficientFundsAtomicity:true}));
+}finally{await browser?.close();server.kill('SIGTERM');}
