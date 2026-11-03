@@ -168,3 +168,13 @@ test('invalid recurring backup cannot overwrite current data',async()=>{
   assert.equal(storage.importBackup(JSON.stringify({schemaVersion:7,data:{accounts:storage.getAccounts(),transactions:[],recurringRules:[invalid]}})).success,false);
   assert.deepEqual(Object.fromEntries(memory.data),before);
 });
+
+test('retries of a recurring occurrence cannot charge twice even after its note is edited',async()=>{
+  const {storage}=await load({ltmsav_schema_version:'7',ltmsav_accounts_v1:'[{"id":"a","name":"Cash","balance":500}]',ltmsav_transactions_v1:'[]'});
+  const data={type:'expense' as const,amount:100,accountId:'a',categoryId:'cat_food',date:'2026-11-03',description:'Recurring',note:'Giao dịch định kỳ: r / 2026-11-03',recurringOccurrenceId:'r/2026-11-03'};
+  const first=storage.addTransaction(data);
+  storage.editTransaction(first.id,{note:'User edited note'});
+  assert.equal(storage.addTransaction(data).id,first.id);
+  assert.equal(storage.getTransactions().length,1);
+  assert.equal(storage.getAccounts()[0].balance,400);
+});

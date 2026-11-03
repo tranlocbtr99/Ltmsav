@@ -36,6 +36,7 @@ export interface Transaction {
   person?: string;
   createdAt: string;
   updatedAt?: string;
+  recurringOccurrenceId?: string;
 }
 
 export interface Budget {

@@ -47,7 +47,7 @@ export function isOccurrencePosted(rule: RecurringRule, date: string, txs: Trans
   if (rule.lastApplied === month) return true;
   const marker=occurrenceNote(rule,date);
   const legacy='Giao dịch định kỳ: ' + rule.id + ' / ' + month;
-  return txs.some(tx => tx.note === marker || tx.note === legacy);
+  return txs.some(tx => tx.recurringOccurrenceId === rule.id + '/' + date || tx.note === marker || tx.note === legacy);
 }
 export function isDue(rule: RecurringRule, date: string, now: Date): boolean {
   if (!validDate(date)) return false;

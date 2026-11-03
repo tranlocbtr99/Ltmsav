@@ -53,3 +53,8 @@ test('localDateKey uses the supplied local date components',()=>{
   const date=new Date(2026,10,3,0,5);
   assert.equal(localDateKey(date),'2026-11-03');
 });
+
+test('posting receipt survives editing the displayed transaction note',()=>{
+  const rule={...monthly,frequency:'monthly' as const,daysOfMonth:[3]};
+  assert.equal(isOccurrencePosted(rule,'2026-11-03',[{note:'Changed',recurringOccurrenceId:'r1/2026-11-03'} as Transaction]),true);
+});

@@ -62,7 +62,7 @@ export const RecurringTab: React.FC<Props> = ({accounts,categories,transactions,
     if(!accounts.some(a=>a.id===rule.accountId)||!categories.some(c=>c.id===rule.categoryId&&c.type===rule.type)){setError(t('recurringMissingSource'));return;}
     submitted.current.add(key);
     try {
-      onAdd({type:rule.type,amount:rule.amount,accountId:rule.accountId,categoryId:rule.categoryId,date,description:rule.title,note:key});setError('');
+      onAdd({type:rule.type,amount:rule.amount,accountId:rule.accountId,categoryId:rule.categoryId,date,description:rule.title,note:key,recurringOccurrenceId:rule.id+'/'+date});setError('');
     }catch(e){submitted.current.delete(key);setError(e instanceof Error?e.message:String(e));}
   };
   const remove=(rule:RecurringRule)=>{if(!confirm(t('deleteRecurringConfirm')))return;try{onSaveRules(rules.filter(r=>r.id!==rule.id));if(editing===rule.id)reset();setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};

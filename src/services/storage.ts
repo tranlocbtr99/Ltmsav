@@ -242,6 +242,7 @@ class StorageManager {
   private validateTransaction(tx: Omit<Transaction, 'id' | 'createdAt'>, accounts: Account[]): void {
     if (!['income', 'expense', 'transfer', 'lend', 'debt_repay'].includes(tx.type)
       || !Number.isSafeInteger(tx.amount) || tx.amount <= 0) throw new Error('Giao dịch không hợp lệ.');
+    if (tx.recurringOccurrenceId !== undefined && (typeof tx.recurringOccurrenceId !== 'string' || tx.recurringOccurrenceId.length > 200 || !/^.+\/\d{4}-\d{2}-\d{2}$/.test(tx.recurringOccurrenceId))) throw new Error('Mã lần định kỳ không hợp lệ.');
     if (!accounts.some(account => account.id === tx.accountId)) throw new Error('Tài khoản nguồn không hợp lệ.');
     if (tx.type === 'transfer' && (tx.accountId === tx.targetAccountId || !accounts.some(account => account.id === tx.targetAccountId))) {
       throw new Error('Tài khoản đích phải khác tài khoản nguồn.');
@@ -387,6 +388,11 @@ class StorageManager {
 
   addTransaction(txData: Omit<Transaction, 'id' | 'createdAt'>): Transaction {
     const transactions = this.getTransactions();
+    // A durable occurrence ID prevents a retry after a successful write (or a note edit) from charging twice.
+    if (txData.recurringOccurrenceId) {
+      const existing = transactions.find(tx => tx.recurringOccurrenceId === txData.recurringOccurrenceId);
+      if (existing) return existing;
+    }
     let accounts = this.getAccounts();
 
     this.validateTransaction(txData, accounts);
