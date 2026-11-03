@@ -81,16 +81,16 @@ export function parseAiDate(text: string, now = new Date()): string {
     const offsets: [
         string,
         number
-    ][] = [['hom qua', -1], ['hom kia', -2], ['hom nay', 0], ['ngay mai', 1]];
+    ][] = [['hom qua', -1], ['hom kia', -2], ['hom nay', 0], ['ngay mai', 1], ['toi qua', -1], ['dem qua', -1], ['sang qua', -1], ['trua qua', -1], ['chieu qua', -1], ['ngay kia', 2], ['ngay mot', 2]];
     const matched = offsets.filter(([p]) => has(s, p));
-    if (matched.length > 1)
+    if (new Set(matched.map(([,offset])=>offset)).size > 1)
         return '';
     if (matched.length) {
         const d = new Date(now);
         d.setDate(d.getDate() + matched[0][1]);
         return localDay(d);
     }
-    if (/\b(thu [2-7]|chu nhat|tuan truoc|thang truoc|ngay \d+)\b/.test(s))
+    if (/\b(thu [2-7]|chu nhat|tuan truoc|thang truoc|hom truoc|ngay truoc|nam ngoai|cuoi tuan|dau thang|cuoi thang|thang \d+|mung \d+|ngay \d+)\b/.test(s))
         return '';
     return localDay(now);
 }
