@@ -228,3 +228,35 @@ html:not(.dark) .from-emerald-500, html:not(.dark) .bg-emerald-500 { background-
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,.animate-fade-in,.animate-scale-in,.animate-slide-in,.animate-pop-in { animation: none !important; }
 }
+
+/* Transaction sheets: one surface in each theme; no light gradient leaks in dark mode. */
+:root { color-scheme: light; }
+html.dark { color-scheme: dark; }
+.transaction-dialog {
+  background: #f8fafc;
+  color: #0f172a;
+  box-shadow: 0 24px 80px rgba(15,23,42,.22);
+}
+html.dark .transaction-dialog {
+  background: linear-gradient(160deg,#172338 0%,#101827 65%,#0f172a 100%);
+  color: #f1f5f9;
+  border-color: #334155;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
+}
+.transaction-dialog button { min-height: 44px; }
+.transaction-dialog input, .transaction-dialog select, .transaction-dialog textarea, .form-control {
+  color: #0f172a;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+html.dark .transaction-dialog input, html.dark .transaction-dialog select,
+html.dark .transaction-dialog textarea, html.dark .form-control {
+  color: #f1f5f9;
+  background-color: #0b1220;
+  border-color: #475569;
+}
+.transaction-dialog input::placeholder, .form-control::placeholder { color: #64748b; }
+html.dark .transaction-dialog input::placeholder, html.dark .form-control::placeholder { color: #94a3b8; }
+.form-control:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }
+
+.transaction-dialog input:focus, .transaction-dialog select:focus, .transaction-dialog textarea:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }

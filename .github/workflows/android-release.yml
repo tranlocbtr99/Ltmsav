@@ -30,6 +30,16 @@ jobs:
           java-version: '21'
       - run: npm ci --no-audit --no-fund
       - run: npm run lint && npm test && npm run build
+      - run: npm install --no-save --package-lock=false @playwright/test@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-customization-ui.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: customization-ui-${{ github.sha }}
+          path: ui-proof/
+          if-no-files-found: warn
+          retention-days: 7
       - run: npm ci --no-audit --no-fund
         working-directory: mobile
       - run: python3 -m pip install Pillow==11.3.0

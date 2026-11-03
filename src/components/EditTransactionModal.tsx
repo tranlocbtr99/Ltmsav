@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Transaction, Account, Category, TransactionType } from '../types';
+import { CategoryPicker } from './CategoryPicker';
+import { categoryTypeFor } from '../services/categoryCatalog';
+import React, { useState, useEffect, useId } from 'react';
+import { Transaction, Account, Category, TransactionType, CategoryActions } from '../types';
 import { X, Check, Trash2, ArrowRightLeft, Calendar, FileText, User, AlertCircle, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 
-interface EditTransactionModalProps {
+interface EditTransactionModalProps extends CategoryActions {
   transaction: Transaction | null;
   accounts: Account[];
   categories: Category[];
@@ -18,12 +20,16 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   transaction,
   accounts,
   categories,
+  onCreateCategory,
+  onUpdateCategory,
+  onDeleteCategory,
   isOpen,
   onClose,
   onSave,
   onDelete,
 }) => {
   const { t } = useLanguage();
+  const formId = useId();
 
   const [type, setType] = useState<TransactionType>(transaction?.type || 'expense');
   const [amount, setAmount] = useState<string>(transaction?.amount.toString() || '');
@@ -63,7 +69,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (numAmount <= 0) return;
+    if (!Number.isSafeInteger(numAmount) || numAmount <= 0) return;
+    if (type !== 'transfer' && !categories.some(c => c.id === categoryId && (c.type === categoryTypeFor(type) || (type === 'lend' && transaction.type === 'lend' && c.id === transaction.categoryId)))) {
+      setSubmitError(t('chooseCategory')); return;
+    }
 
     try {
     onSave(transaction.id, {
@@ -88,14 +97,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   const currentCategory = categories.find(c => c.id === categoryId);
 
   // Filter categories by type
-  const availableCategories = categories.filter(c => {
-    if (type === 'income') return c.type === 'income';
-    return c.type === 'expense';
-  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
+      <div role="dialog" aria-modal="true" aria-label={t('editTransactionTitle')} className="w-full max-w-lg transaction-dialog border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
         
         {submitError && <p role="alert" className="p-4 text-rose-700 dark:text-rose-300">{submitError}</p>}
         {/* Header */}
@@ -124,7 +129,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSave} className="overflow-y-auto p-5 space-y-4 flex-1">
+        <form id={formId} onSubmit={handleSave} className="min-h-0 overflow-y-auto p-5 space-y-4 flex-1">
           {/* Type Selector Tabs */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
@@ -133,7 +138,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
               <button
                 type="button"
-                onClick={() => setType('expense')}
+                onClick={() => { setType('expense'); setCategoryId(categories.find(c=>c.type===categoryTypeFor('expense'))?.id || ''); }}
                 className={`py-2 text-xs font-medium rounded-lg transition ${
                   type === 'expense'
                     ? 'bg-rose-600 text-white shadow-sm'
@@ -144,7 +149,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setType('income')}
+                onClick={() => { setType('income'); setCategoryId(categories.find(c=>c.type===categoryTypeFor('income'))?.id || ''); }}
                 className={`py-2 text-xs font-medium rounded-lg transition ${
                   type === 'income'
                     ? 'bg-emerald-600 text-white shadow-sm'
@@ -155,7 +160,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setType('transfer')}
+                onClick={() => { setType('transfer'); setCategoryId(categories.find(c=>c.type===categoryTypeFor('transfer'))?.id || ''); }}
                 className={`py-2 text-xs font-medium rounded-lg transition ${
                   type === 'transfer'
                     ? 'bg-blue-600 text-white shadow-sm'
@@ -166,7 +171,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setType('lend')}
+                onClick={() => { setType('lend'); setCategoryId(categories.find(c=>c.type===categoryTypeFor('lend'))?.id || ''); }}
                 className={`py-2 text-xs font-medium rounded-lg transition ${
                   type === 'lend'
                     ? 'bg-purple-600 text-white shadow-sm'
@@ -273,20 +278,9 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               </div>
             ) : (
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
-                  {t('category')}
-                </label>
-                <select
-                  value={categoryId}
-                  onChange={e => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
-                >
-                  {availableCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <CategoryPicker categories={categories} type={categoryTypeFor(type)} value={categoryId} onChange={setCategoryId}
+                  legacyCategoryId={transaction.categoryId}
+                  onCreateCategory={onCreateCategory} onUpdateCategory={onUpdateCategory} onDeleteCategory={onDeleteCategory} />
               </div>
             )}
           </div>
@@ -412,8 +406,8 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               {t('cancel')}
             </button>
             <button
-              type="button"
-              onClick={handleSave}
+              type="submit"
+              form={formId}
               className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-emerald-900/30 transition shrink-0"
             >
               <Check className="w-4 h-4" />

@@ -10,7 +10,7 @@ export interface Account {
   color: string;
 }
 
-export type CategoryType = 'expense' | 'income';
+export type CategoryType = 'expense' | 'income' | 'lend';
 
 export interface Category {
   id: string;
@@ -36,6 +36,7 @@ export interface Transaction {
   person?: string;
   createdAt: string;
   updatedAt?: string;
+  recurringOccurrenceId?: string;
 }
 
 export interface Budget {
@@ -103,4 +104,27 @@ export interface AiChatResponse {
   analysis: string;
   answer?: string | null;
   commands?: AiParsedCommand[];
+}
+
+/** Optional scheduling fields preserve compatibility with monthly rules from schema 6. */
+export interface RecurringRule {
+  id: string;
+  title: string;
+  amount: number;
+  type: 'expense' | 'income';
+  accountId: string;
+  categoryId: string;
+  day: number;
+  startMonth: string;
+  lastApplied?: string;
+  frequency?: 'monthly' | 'weekly';
+  daysOfMonth?: number[];
+  daysOfWeek?: number[];
+  time?: string;
+  startDate?: string;
+}
+export interface CategoryActions {
+  onCreateCategory?: (category: Omit<Category, 'id'>) => Category;
+  onUpdateCategory?: (id: string, name: string) => void;
+  onDeleteCategory?: (id: string) => void;
 }

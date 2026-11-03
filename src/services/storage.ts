@@ -1,7 +1,8 @@
+import { validRecurringRule } from './recurrence';
 import release from '../../release.json';
-import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from '../types';
+import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings, RecurringRule } from '../types';
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 const STORAGE_KEYS = {
   SCHEMA_VERSION: 'ltmsav_schema_version',
@@ -241,6 +242,7 @@ class StorageManager {
   private validateTransaction(tx: Omit<Transaction, 'id' | 'createdAt'>, accounts: Account[]): void {
     if (!['income', 'expense', 'transfer', 'lend', 'debt_repay'].includes(tx.type)
       || !Number.isSafeInteger(tx.amount) || tx.amount <= 0) throw new Error('Giao dịch không hợp lệ.');
+    if (tx.recurringOccurrenceId !== undefined && (typeof tx.recurringOccurrenceId !== 'string' || tx.recurringOccurrenceId.length > 200 || !/^.+\/\d{4}-\d{2}-\d{2}$/.test(tx.recurringOccurrenceId))) throw new Error('Mã lần định kỳ không hợp lệ.');
     if (!accounts.some(account => account.id === tx.accountId)) throw new Error('Tài khoản nguồn không hợp lệ.');
     if (tx.type === 'transfer' && (tx.accountId === tx.targetAccountId || !accounts.some(account => account.id === tx.targetAccountId))) {
       throw new Error('Tài khoản đích phải khác tài khoản nguồn.');
@@ -312,20 +314,46 @@ class StorageManager {
 
   addCategory(cat: Omit<Category, 'id'>): Category {
     const categories = this.getCategories();
+    const name = cat.name.trim();
+    if (!name || name.length > 80 || !['expense','income','lend'].includes(cat.type)) throw new Error('Danh mục không hợp lệ.');
+    const existing = categories.find(c => c.type === cat.type && c.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    if (existing) return existing;
     const newCategory: Category = {
       ...cat,
-      id: 'cat_' + Date.now(),
+      name,
+      id: 'cat_' + crypto.randomUUID(),
     };
     categories.push(newCategory);
     this.saveCategories(categories);
     return newCategory;
   }
 
+  updateCategory(id: string, name: string): void {
+    const categories = this.getCategories();
+    const current = categories.find(c => c.id === id);
+    if (!current) throw new Error('Danh mục không còn tồn tại.');
+    const trimmed = name.trim();
+    if (!trimmed || trimmed.length > 80) throw new Error('Tên danh mục phải có 1–80 ký tự.');
+    if (categories.some(c => c.id !== id && c.type === current.type && c.name.toLocaleLowerCase() === trimmed.toLocaleLowerCase())) throw new Error('Tên danh mục đã tồn tại.');
+    this.saveCategories(categories.map(c => c.id === id ? {...c, name: trimmed} : c));
+  }
+
   deleteCategory(id: string): boolean {
-    let categories = this.getCategories();
-    categories = categories.filter(c => c.id !== id);
-    this.saveCategories(categories);
+    if (this.getTransactions().some(tx => tx.categoryId === id) || this.getBudgets().some(b => b.categoryId === id)
+      || this.getRecurringRules().some(r => r.categoryId === id)) throw new Error('Danh mục đang được sử dụng trong giao dịch, ngân sách hoặc lịch định kỳ. Hãy đổi danh mục ở những mục đó trước.');
+    this.saveCategories(this.getCategories().filter(c => c.id !== id));
     return true;
+  }
+
+  getRecurringRules(): RecurringRule[] {
+    const rules = this.get<RecurringRule[]>(STORAGE_KEYS.RECURRING, []);
+    if (!Array.isArray(rules) || rules.some(rule => !validRecurringRule(rule))) throw new Error('Lịch định kỳ không hợp lệ. Hãy khôi phục bản sao lưu.');
+    return rules;
+  }
+
+  saveRecurringRules(rules: RecurringRule[]): void {
+    if (rules.some(rule => !validRecurringRule(rule)) || new Set(rules.map(rule => rule.id)).size !== rules.length) throw new Error('Lịch định kỳ không hợp lệ.');
+    this.set(STORAGE_KEYS.RECURRING, rules);
   }
 
   // --- Transactions ---
@@ -360,6 +388,11 @@ class StorageManager {
 
   addTransaction(txData: Omit<Transaction, 'id' | 'createdAt'>): Transaction {
     const transactions = this.getTransactions();
+    // A durable occurrence ID prevents a retry after a successful write (or a note edit) from charging twice.
+    if (txData.recurringOccurrenceId) {
+      const existing = transactions.find(tx => tx.recurringOccurrenceId === txData.recurringOccurrenceId);
+      if (existing) return existing;
+    }
     let accounts = this.getAccounts();
 
     this.validateTransaction(txData, accounts);
@@ -581,7 +614,7 @@ class StorageManager {
           throw new Error('Dữ liệu không hợp lệ hoặc trùng ID: ' + key);
         }
       }
-      if (data.recurringRules !== undefined && (!Array.isArray(data.recurringRules) || data.recurringRules.some((rule: any) => !rule || typeof rule.id !== 'string' || typeof rule.title !== 'string' || !['income','expense'].includes(rule.type) || !Number.isSafeInteger(rule.amount) || rule.amount <= 0 || !Number.isInteger(rule.day) || rule.day < 1 || rule.day > 31 || typeof rule.accountId !== 'string' || typeof rule.categoryId !== 'string') || new Set(data.recurringRules.map((rule: any) => rule.id)).size !== data.recurringRules.length)) throw new Error('Lịch định kỳ không hợp lệ.');
+      if (data.recurringRules !== undefined && (!Array.isArray(data.recurringRules) || data.recurringRules.some((rule: unknown) => !validRecurringRule(rule)) || new Set(data.recurringRules.map((rule: RecurringRule) => rule.id)).size !== data.recurringRules.length)) throw new Error('Lịch định kỳ không hợp lệ.');
       if (data.accounts.some((account: any) => typeof account.name !== 'string' || !Number.isFinite(account.balance))) {
         throw new Error('Số dư tài khoản không hợp lệ.');
       }
@@ -594,7 +627,7 @@ class StorageManager {
         || !['loan', 'debt'].includes(debt.type) || !['active', 'settled'].includes(debt.status) || typeof debt.person !== 'string')) {
         throw new Error('Công nợ không hợp lệ.');
       }
-      if (data.categories?.some((category: any) => typeof category.name !== 'string' || !['income', 'expense'].includes(category.type))) {
+      if (data.categories?.some((category: any) => typeof category.name !== 'string' || !['income', 'expense', 'lend'].includes(category.type))) {
         throw new Error('Danh mục không hợp lệ.');
       }
       if (data.settings !== undefined && (!data.settings || typeof data.settings !== 'object' || Array.isArray(data.settings))) {

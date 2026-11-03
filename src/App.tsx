@@ -1,6 +1,7 @@
+import { CategoryManager } from './components/CategoryManager';
 import React, { useState, useEffect } from 'react';
 import { storage } from './services/storage';
-import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings } from './types';
+import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings, RecurringRule } from './types';
 import { TopHeader, BottomNavBar } from './components/Navigation';
 import { useLanguage } from './contexts/LanguageContext';
 import { OverviewTab } from './components/OverviewTab';
@@ -32,6 +33,7 @@ export const App: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [settings, setSettings] = useState<AppSettings>(storage.getSettings());
   const [showSplash, setShowSplash] = useState(true);
+  const [recurringRules, setRecurringRules] = useState<RecurringRule[]>([]);
 
   // Presentation preference only; financial records and settings are untouched.
   const [assetsHidden, setAssetsHidden] = useState(() => {
@@ -80,6 +82,7 @@ export const App: React.FC = () => {
   const reloadData = () => {
     setAccounts(storage.getAccounts());
     setCategories(storage.getCategories());
+    setRecurringRules(storage.getRecurringRules());
     setTransactions(storage.getTransactions());
     setBudgets(storage.getBudgets());
     setDebts(storage.getDebtsAndLoans());
@@ -100,6 +103,13 @@ export const App: React.FC = () => {
     setSettings(updated);
     showToast(`${t('themeSwitched')} ${newTheme === 'dark' ? t('dark') : t('light')}`);
   };
+
+  const categoryActions = {
+    onCreateCategory: (category: Omit<Category,'id'>) => { const created=storage.addCategory(category); reloadData(); return created; },
+    onUpdateCategory: (id: string, name: string) => { storage.updateCategory(id,name); reloadData(); },
+    onDeleteCategory: (id: string) => { storage.deleteCategory(id); reloadData(); },
+  };
+  const handleSaveRecurring = (rules: RecurringRule[]) => { storage.saveRecurringRules(rules); setRecurringRules(rules); };
 
   const handleAddTransaction = (txData: Omit<Transaction, 'id' | 'createdAt'>) => {
     const created = storage.addTransaction(txData);
@@ -298,7 +308,7 @@ export const App: React.FC = () => {
           )}
 
           {currentTab === 'recurring' && (
-            <RecurringTab accounts={accounts} categories={categories} transactions={transactions} onAdd={handleAddTransaction} />
+            <RecurringTab accounts={accounts} categories={categories} transactions={transactions} rules={recurringRules} onSaveRules={handleSaveRecurring} onAdd={handleAddTransaction} {...categoryActions} />
           )}
 
           {currentTab === 'reports' && (
@@ -310,6 +320,8 @@ export const App: React.FC = () => {
           )}
 
           {currentTab === 'settings' && (
+            <>
+            <CategoryManager categories={categories} {...categoryActions}/>
             <SettingsTab
               settings={settings}
               auditLogs={auditLogs}
@@ -323,6 +335,7 @@ export const App: React.FC = () => {
               onResetData={handleResetData}
               onLockAppNow={() => setIsLocked(true)}
             />
+            </>
           )}
         </div>
       </main>
@@ -337,6 +350,7 @@ export const App: React.FC = () => {
 
       {/* Add Transaction Modal */}
       <AddTransactionModal
+        {...categoryActions}
         accounts={accounts}
         categories={categories}
         isOpen={isAddModalOpen}
@@ -346,6 +360,7 @@ export const App: React.FC = () => {
 
       {/* Edit Transaction Modal */}
       <EditTransactionModal
+        {...categoryActions}
         transaction={selectedTxForEdit}
         accounts={accounts}
         categories={categories}
