@@ -1,3 +1,4 @@
+import { AssetSheet } from './AssetSheet';
 import { confirmAction } from './Confirmation';
 import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
@@ -391,16 +392,16 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
       {/* Modal: Adjust Balance */}
       {isAdjustModalOpen && selectedAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto">
+        <AssetSheet title={t('adjustLedgerTitle')} onClose={() => setIsAdjustModalOpen(false)}>
+          <div className="silver-asset-panel">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('adjustLedgerTitle')}</h3>
-              <button onClick={() => setIsAdjustModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <button aria-label={t('close')} onClick={() => setIsAdjustModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleAdjustSubmit} className="space-y-3.5">
+            <form onSubmit={handleAdjustSubmit} className="space-y-3.5"><div className="silver-asset-fields">
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('account')}: <strong className="text-slate-900 dark:text-white">{selectedAccount.name}</strong></label>
                 <div className="relative">
@@ -428,7 +429,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              </div><div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsAdjustModalOpen(false)}
@@ -445,21 +446,21 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </AssetSheet>
       )}
 
       {/* Modal: Add Account */}
       {isAccountModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
+        <AssetSheet title={t(editingAccountId ? 'editAccount' : 'addMoneySource')} onClose={() => setIsAccountModalOpen(false)}>
+          <div className="silver-asset-panel">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t(editingAccountId ? 'editAccount' : 'addMoneySource')}</h3>
-              <button onClick={() => setIsAccountModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <button aria-label={t('close')} onClick={() => setIsAccountModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateAccount} className="space-y-3.5">
+            <form onSubmit={handleCreateAccount} className="space-y-3.5"><div className="silver-asset-fields">
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('accountName')}</label>
                 <input
@@ -561,7 +562,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 />
               </div>}
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              </div><div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsAccountModalOpen(false)}
@@ -578,23 +579,23 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </AssetSheet>
       )}
 
       {/* Modal: Add Debt/Loan */}
       {isDebtModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
+        <AssetSheet title={(debtType === 'loan' ? t('addLoanTitle') : t('addDebtTitle'))} onClose={() => setIsDebtModalOpen(false)}>
+          <div className="silver-asset-panel">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 {debtType === 'loan' ? t('addLoanTitle') : t('addDebtTitle')}
               </h3>
-              <button onClick={() => setIsDebtModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <button aria-label={t('close')} onClick={() => setIsDebtModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateDebt} className="space-y-3">
+            <form onSubmit={handleCreateDebt} className="space-y-3"><div className="silver-asset-fields">
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('relatedPerson')}</label>
                 <input
@@ -640,7 +641,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              </div><div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsDebtModalOpen(false)}
@@ -659,23 +660,23 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </AssetSheet>
       )}
 
       {/* Modal: Payment Record */}
       {isPaymentModalOpen && selectedDebt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
+        <AssetSheet title={(selectedDebt.type === 'loan' ? t('collectFrom') : t('payTo')) + ' ' + selectedDebt.person} onClose={() => setIsPaymentModalOpen(false)}>
+          <div className="silver-asset-panel">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 {selectedDebt.type === 'loan' ? t('collectFrom') : t('payTo')} {selectedDebt.person}
               </h3>
-              <button onClick={() => setIsPaymentModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <button aria-label={t('close')} onClick={() => setIsPaymentModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handlePaymentSubmit} className="space-y-3.5">
+            <form onSubmit={handlePaymentSubmit} className="space-y-3.5"><div className="silver-asset-fields">
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('paymentAmount')}</label>
                 <input
@@ -690,7 +691,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              </div><div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsPaymentModalOpen(false)}
@@ -707,7 +708,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </AssetSheet>
       )}
 
     </div>

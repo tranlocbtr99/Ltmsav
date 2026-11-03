@@ -1,3 +1,4 @@
+import { AssetSheet } from './AssetSheet';
 import { DynamicIcon } from './DynamicIcon';
 import { confirmAction } from './Confirmation';
 import React, { useState, useRef, useEffect } from 'react';
@@ -635,8 +636,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
       {/* Support Author Modal */}
       {isSupportOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
+        <AssetSheet title={t('supportAuthor')} onClose={() => setIsSupportOpen(false)}>
+          <div className="silver-asset-panel">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Heart className="w-4 h-4 text-rose-500" />
@@ -647,7 +648,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            <div className="silver-asset-fields"><p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               {t('supportDesc')}
             </p>
 
@@ -685,14 +686,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </div>
 
             <p className="text-[11px] text-center text-slate-500 dark:text-slate-400">{t('supportThanks')}</p>
-          </div>
-        </div>
+          </div></div>
+        </AssetSheet>
       )}
 
       {/* Change PIN Modal */}
       {isPinModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto">
+        <AssetSheet title={t('changePinTitle')} onClose={() => setIsPinModalOpen(false)}>
+          <div className="silver-asset-panel">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-amber-500 dark:text-amber-400" />
@@ -703,7 +704,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSavePin} className="space-y-3.5">
+            <form onSubmit={handleSavePin} className="space-y-3.5"><div className="silver-asset-fields">
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mb-1">{t('newPinLabel')}</label>
                 <input
@@ -747,7 +748,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </p>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              </div><div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsPinModalOpen(false)}
@@ -764,7 +765,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </AssetSheet>
       )}
 
     </div>

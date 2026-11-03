@@ -1,8 +1,8 @@
 {
   "applicationId": "com.ltmsav.app",
-  "versionCode": 30000,
-  "versionName": "3.0.0",
-  "previousVersionCode": 20200,
+  "versionCode": 30001,
+  "versionName": "3.0.1",
+  "previousVersionCode": 30000,
   "certificateSha256": "fd714dfb07beaaca658d99bdcab1982c964eeb3c24e1f66c0ab084ae14731ac7",
   "baselineVerified": false,
   "reportedInstalledVersion": "1.9.2500",

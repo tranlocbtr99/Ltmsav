@@ -165,3 +165,10 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - Add/Edit use a large amount and compact grouped fields. Existing account/category IDs, validation, balance calculations and transaction posting remain unchanged. Splash and security screens share the palette. All added labels have VI/EN translations.
 - scripts/verify-silver-ui.mjs checks theme/layout, calendar cancellation, custom confirmation, add/delete ledger restoration, persistent filters/AI, preserved PIN and no native dialogs across narrow/landscape/large-text layouts. Included in release CI alongside existing UI tests.
 - release.json: 3.0.0 / 30000, previousVersionCode 20200. Application ID, WebView origin, schema 7, financial storage and existing signing certificate remain unchanged.
+
+## Uncovered asset sheets (3.0.1)
+- AssetSheet.tsx portals account create/edit, balance adjustment, loan/debt creation and payment dialogs to document.body above header/navigation, outside animated tab stacking/containing contexts. Background is inert and scrolling/focus use useDialogFocus.
+- Panel header and action footer stay visible; only .silver-asset-fields scrolls. visualViewport resize/scroll adapts the available height when the keyboard opens. Safe-area padding applies to all edges; icon/color controls retain compact touch targets.
+- scripts/verify-asset-sheets-ui.mjs checks uncovered submit controls, independent scrolling, light/dark, four viewport sizes including a keyboard-height simulation, 200% text, nested picker draft preservation and account creation. Added to CI.
+- Release 3.0.1 / 30001, previous 30000. No financial storage/schema/app ID/signing changes.
+- The same portal/pinned-action layout is also used for budget setup, PIN changes and the support panel, which had the same tab stacking issue.
