@@ -32,7 +32,7 @@ jobs:
       - run: npm run lint && npm test && npm run build
       - run: npm install --no-save --package-lock=false @playwright/test@1.56.1
       - run: npx playwright install --with-deps chromium
-      - run: node scripts/verify-customization-ui.mjs && node scripts/verify-liquid-finance-ui.mjs && node scripts/verify-ios-pickers-ui.mjs && node scripts/verify-silver-ui.mjs && node scripts/verify-asset-sheets-ui.mjs
+      - run: node scripts/verify-customization-ui.mjs && node scripts/verify-liquid-finance-ui.mjs && node scripts/verify-ios-pickers-ui.mjs && node scripts/verify-silver-ui.mjs && node scripts/verify-asset-sheets-ui.mjs && node scripts/verify-motion-ui.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

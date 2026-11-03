@@ -172,3 +172,10 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - scripts/verify-asset-sheets-ui.mjs checks uncovered submit controls, independent scrolling, light/dark, four viewport sizes including a keyboard-height simulation, 200% text, nested picker draft preservation and account creation. Added to CI.
 - Release 3.0.1 / 30001, previous 30000. No financial storage/schema/app ID/signing changes.
 - The same portal/pinned-action layout is also used for budget setup, PIN changes and the support panel, which had the same tab stacking issue.
+
+## Liquid motion (3.1.0)
+- motion.css, loaded after silver.css, defines 140–280ms control/page/sheet/alert/toast motion and a 440ms cashflow line reveal. Tab ancestors animate opacity only, preserving fixed dialog positioning. Existing tab instances remain mounted; headings alone remount on navigation.
+- Overview amount fades on an actual available-balance/privacy change, without interpolating financial values. SVG pathLength normalizes the chart reveal. Button press feedback uses scale without affecting layout.
+- prefers-reduced-motion disables all new and legacy animations/transitions, including pickers and splash. No perpetual decorative animations or financial storage/schema changes.
+- Release 3.1.0 / 30100, previous 30001; same app ID and signing certificate.
+- scripts/verify-motion-ui.mjs verifies page/revisit/navigation/sheet animations, no transformed tab ancestor, reduced-motion behavior and restored focus/scroll state; enabled in release CI.

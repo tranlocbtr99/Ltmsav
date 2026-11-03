@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import './index.css';
 import './silver.css';
+import './motion.css';
 import { registerSW } from 'virtual:pwa-register';
 import { LanguageProvider } from './contexts/LanguageContext';
 

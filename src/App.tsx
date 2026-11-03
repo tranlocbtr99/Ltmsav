@@ -248,14 +248,14 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="finance-main flex-1 w-full max-w-3xl mx-auto px-4">
         
-        <div className="silver-page-heading"><h1>{t(currentTab === 'overview' ? 'overview' : currentTab === 'ai' ? 'assistantTitle' : currentTab === 'assets' ? 'assetsNav' : currentTab === 'budgets' || currentTab === 'recurring' ? 'planNav' : currentTab === 'settings' ? 'profileNav' : currentTab === 'reports' ? 'reports' : 'transactions')}</h1></div>
+        <div key={currentTab} className="silver-page-heading motion-heading"><h1>{t(currentTab === 'overview' ? 'overview' : currentTab === 'ai' ? 'assistantTitle' : currentTab === 'assets' ? 'assetsNav' : currentTab === 'budgets' || currentTab === 'recurring' ? 'planNav' : currentTab === 'settings' ? 'profileNav' : currentTab === 'reports' ? 'reports' : 'transactions')}</h1></div>
         {(currentTab === 'budgets' || currentTab === 'recurring') && <div className="silver-segments silver-plan-tabs" role="group" aria-label={t('planNav')}>
           <button type="button" aria-pressed={currentTab === 'budgets'} onClick={()=>setCurrentTab('budgets')}>{t('budget')}</button>
           <button type="button" aria-pressed={currentTab === 'recurring'} onClick={()=>setCurrentTab('recurring')}>{t('recurringTitle')}</button>
         </div>}
         {/* Tab views */}
         <div className="animate-fade-in">
-          <section hidden={currentTab !== 'overview'}>{(currentTab === 'overview' || visitedTabs.includes('overview')) && (
+          <section className="motion-tab" hidden={currentTab !== 'overview'}>{(currentTab === 'overview' || visitedTabs.includes('overview')) && (
             <OverviewTab
               assetsHidden={assetsHidden}
               onToggleAssetsVisibility={toggleAssetsVisibility}
@@ -271,7 +271,7 @@ export const App: React.FC = () => {
             />
           )}</section>
 
-          <section hidden={currentTab !== 'transactions'}>{(currentTab === 'transactions' || visitedTabs.includes('transactions')) && (
+          <section className="motion-tab" hidden={currentTab !== 'transactions'}>{(currentTab === 'transactions' || visitedTabs.includes('transactions')) && (
             <TransactionsTab
               initialAccountId={historyAccountId}
               transactions={transactions}
@@ -283,7 +283,7 @@ export const App: React.FC = () => {
             />
           )}</section>
 
-          <section hidden={currentTab !== 'ai'}>{(currentTab === 'ai' || visitedTabs.includes('ai')) && (
+          <section className="motion-tab" hidden={currentTab !== 'ai'}>{(currentTab === 'ai' || visitedTabs.includes('ai')) && (
             <AiChatTab
               accounts={accounts}
               categories={categories}
@@ -293,7 +293,7 @@ export const App: React.FC = () => {
             />
           )}</section>
 
-          <section hidden={currentTab !== 'budgets'}>{(currentTab === 'budgets' || visitedTabs.includes('budgets')) && (
+          <section className="motion-tab" hidden={currentTab !== 'budgets'}>{(currentTab === 'budgets' || visitedTabs.includes('budgets')) && (
             <BudgetsTab
               budgets={budgets}
               categories={categories}
@@ -303,7 +303,7 @@ export const App: React.FC = () => {
             />
           )}</section>
 
-          <section hidden={currentTab !== 'assets'}>{(currentTab === 'assets' || visitedTabs.includes('assets')) && (
+          <section className="motion-tab" hidden={currentTab !== 'assets'}>{(currentTab === 'assets' || visitedTabs.includes('assets')) && (
             <AssetsTab
               onViewAccount={(id) => { setHistoryAccountId(id); setCurrentTab('transactions'); }}
               accounts={accounts}
@@ -317,11 +317,11 @@ export const App: React.FC = () => {
             />
           )}</section>
 
-          <section hidden={currentTab !== 'recurring'}>{(currentTab === 'recurring' || visitedTabs.includes('recurring')) && (
+          <section className="motion-tab" hidden={currentTab !== 'recurring'}>{(currentTab === 'recurring' || visitedTabs.includes('recurring')) && (
             <RecurringTab accounts={accounts} categories={categories} transactions={transactions} rules={recurringRules} onSaveRules={handleSaveRecurring} onAdd={handleAddTransaction} {...categoryActions} />
           )}</section>
 
-          <section hidden={currentTab !== 'reports'}>{(currentTab === 'reports' || visitedTabs.includes('reports')) && (
+          <section className="motion-tab" hidden={currentTab !== 'reports'}>{(currentTab === 'reports' || visitedTabs.includes('reports')) && (
             <ReportsTab
               transactions={transactions}
               categories={categories}
@@ -329,7 +329,7 @@ export const App: React.FC = () => {
             />
           )}</section>
 
-          <section hidden={currentTab !== 'settings'}>{(currentTab === 'settings' || visitedTabs.includes('settings')) && (
+          <section className="motion-tab" hidden={currentTab !== 'settings'}>{(currentTab === 'settings' || visitedTabs.includes('settings')) && (
             <>
             <div className="silver-profile-card"><img src="/logo.png" alt="LTMsav"/><div><strong>LTMsav</strong><p>{t('appSubtitle')}</p></div></div>
             <details className="silver-settings-section silver-category-settings"><summary><span>{t('categoryManagerTitle')}</span><span aria-hidden="true">›</span></summary><CategoryManager categories={categories} {...categoryActions}/></details>

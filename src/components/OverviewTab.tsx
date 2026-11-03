@@ -239,7 +239,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             {assetsHidden ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
           </button>
         </div>
-        <div className="balance-amount">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
+        <div key={`${assetsHidden}-${availableBalance}`} className="balance-amount motion-value">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
         <div className="silver-balance-secondary grid grid-cols-2 gap-3 mt-4 text-xs">
           <div className="min-w-0"><span className="block silver-muted">{t('totalBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</strong></div>
           <div className="min-w-0 silver-savings border-l pl-3"><span className="block silver-muted">{t('savingsBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</strong></div>
@@ -304,7 +304,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
         <div className="silver-cashflow" aria-label={t('incomeVsExpense')}>
           <svg viewBox="0 0 320 100" preserveAspectRatio="none" aria-hidden="true">
-            {(['income','expense'] as const).map(kind=><polyline key={kind} points={chartData.buckets.map((bucket,i)=>`${chartData.buckets.length > 1 ? i/(chartData.buckets.length-1)*320 : 160},${92-bucket[kind]/chartData.barMax*78}`).join(' ')} fill="none" stroke={kind === 'income' ? '#087cfa' : '#df4775'} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>)}
+            {(['income','expense'] as const).map(kind=><polyline pathLength={1} key={kind} points={chartData.buckets.map((bucket,i)=>`${chartData.buckets.length > 1 ? i/(chartData.buckets.length-1)*320 : 160},${92-bucket[kind]/chartData.barMax*78}`).join(' ')} fill="none" stroke={kind === 'income' ? '#087cfa' : '#df4775'} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>)}
           </svg>
           <div className="silver-chart-targets">{chartData.buckets.map(bucket=><button key={bucket.key} type="button" aria-label={`${bucket.label}: ${t('cashIn')} ${bucket.income.toLocaleString('vi-VN')} ₫, ${t('cashOut')} ${bucket.expense.toLocaleString('vi-VN')} ₫`} onClick={()=>setSelectedBucket(bucket.key)} aria-pressed={selectedBucket === bucket.key}/>)}</div>
           <div className="silver-chart-labels"><span>{chartData.buckets[0]?.label}</span><span>{chartData.buckets[Math.floor(chartData.buckets.length/2)]?.label}</span><span>{chartData.buckets.at(-1)?.label}</span></div>

@@ -1,0 +1,31 @@
+/* Motion never translates tab ancestors: fixed dialogs keep viewport positioning. */
+:root { --motion-quick:140ms; --motion-normal:220ms; --motion-ease:cubic-bezier(.2,.8,.2,1); }
+@keyframes ltm-reveal { from { opacity:.25; } to { opacity:1; } }
+@keyframes ltm-rise { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+@keyframes ltm-sheet { from { opacity:0; transform:translateY(20px) scale(.985); } to { opacity:1; transform:none; } }
+@keyframes ltm-icon { 0% { transform:scale(.84); } 65% { transform:scale(1.08); } 100% { transform:none; } }
+@keyframes ltm-value { from { opacity:.35; } to { opacity:1; } }
+@keyframes ltm-chart { from { stroke-dashoffset:1; opacity:.35; } to { stroke-dashoffset:0; opacity:1; } }
+@media (prefers-reduced-motion:no-preference) {
+  .motion-tab:not([hidden]) { animation:ltm-reveal var(--motion-normal) ease-out; }
+  .motion-heading { animation:ltm-rise var(--motion-normal) var(--motion-ease); }
+  .motion-value { animation:ltm-value 260ms ease-out; }
+  .motion-tab:not([hidden]) .transaction-row, .motion-tab:not([hidden]) .account-details { animation:ltm-rise 240ms var(--motion-ease); }
+  .motion-tab:not([hidden]) .transaction-row:nth-child(2), .motion-tab:not([hidden]) .account-details:nth-child(2) { animation-delay:25ms; }
+  .motion-tab:not([hidden]) .transaction-row:nth-child(3), .motion-tab:not([hidden]) .account-details:nth-child(3) { animation-delay:50ms; }
+  .finance-nav-tab[aria-current] svg { animation:ltm-icon 280ms var(--motion-ease); }
+  .finance-nav-tab, .silver-app button:not(.finance-nav-tab), .silver-asset-dialog button, .ios-picker-sheet button, .silver-alert button, .transaction-dialog button { transition:scale var(--motion-quick) var(--motion-ease),background-color 180ms ease,border-color 180ms ease,box-shadow 180ms ease; }
+  .finance-nav-tab:active, .silver-app button:active, .silver-asset-dialog button:active, .ios-picker-sheet button:active, .silver-alert button:active, .transaction-dialog button:active { scale:.97; }
+  button:disabled:active { scale:1; }
+  .silver-asset-overlay { animation:ltm-reveal 180ms ease-out; }
+  .silver-asset-panel, .transaction-dialog { animation:ltm-sheet 240ms var(--motion-ease); }
+  .silver-alert { animation:ltm-sheet 200ms var(--motion-ease); }
+  .silver-toast { animation:ltm-rise 220ms var(--motion-ease); }
+  .silver-settings-section[open] > :not(summary) { animation:ltm-reveal 180ms ease-out; }
+  .silver-cashflow polyline { stroke-dasharray:1; stroke-dashoffset:0; animation:ltm-chart 440ms ease-out; }
+}
+/* Include legacy loading/splash/picker animations, not just this motion layer. */
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+  button:active, .card-interactive:active { transform:none!important; scale:1!important; }
+}

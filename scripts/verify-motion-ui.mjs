@@ -1,0 +1,52 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {spawn} from 'node:child_process';
+import {chromium} from 'playwright';
+await mkdir('ui-proof/motion',{recursive:true});
+const server=spawn('node',['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port','4178'],{stdio:'inherit'});
+let browser;
+try{
+ for(let i=0;i<60;i++){try{if((await fetch('http://127.0.0.1:4178')).ok)break;}catch{}await new Promise(r=>setTimeout(r,250));}
+ browser=await chromium.launch({headless:true});
+ const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Asia/Ho_Chi_Minh',serviceWorkers:'block'});
+ await context.addInitScript(()=>{
+  if(localStorage.getItem('silver-proof'))return;
+  const now=new Date(),date=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  localStorage.setItem('silver-proof','1');localStorage.setItem('ltmsav_schema_version','7');localStorage.setItem('ltmsav_language','vi');
+  localStorage.setItem('ltmsav_accounts_v1',JSON.stringify([{id:'cash',name:'Tiền mặt',type:'cash',balance:2480000,currency:'VND',iconName:'Wallet',color:'#087cfa'},{id:'bank',name:'Ngân hàng',type:'bank',balance:10000000,currency:'VND',iconName:'Landmark',color:'#087cfa'},{id:'saving',name:'Tiết kiệm',type:'savings',balance:12000000,currency:'VND',iconName:'PiggyBank',color:'#7045ba'}]));
+  localStorage.setItem('ltmsav_categories_v1',JSON.stringify([{id:'food',name:'Ăn uống',type:'expense',iconName:'Utensils',color:'#ba3151'},{id:'salary',name:'Lương',type:'income',iconName:'Briefcase',color:'#147a46'}]));
+  localStorage.setItem('ltmsav_transactions_v1',JSON.stringify([{id:'original',type:'expense',amount:35000,accountId:'cash',categoryId:'food',date,description:'Original transaction',createdAt:date}]));
+  localStorage.setItem('ltmsav_budgets_v1',JSON.stringify([{id:'budget',categoryId:'food',monthlyLimit:2000000}]));
+  localStorage.setItem('ltmsav_settings_v1',JSON.stringify({theme:'light',securityEnabled:false,pinCode:'123456',biometricEnabled:false,allowNegativeBalance:false,currency:'VND',autoConfirmAi:false}));
+ });
+ const page=await context.newPage(),errors=[],nativeDialogs=[];
+ page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{nativeDialogs.push(d.message());await d.dismiss();});
+ await page.goto('http://127.0.0.1:4178');const nav=page.locator('nav');
+ await nav.getByRole('button',{name:'Trang chủ',exact:true}).waitFor();
+ assert.equal(await page.locator('.silver-balance').evaluate(el=>getComputedStyle(el).backgroundImage),'none');
+ assert.match(await page.locator('.balance-amount').innerText(),/12\.480\.000/);
+ const active=()=>page.locator('.motion-tab:not([hidden])');
+ assert.equal(await active().evaluate(el=>getComputedStyle(el).animationName),'ltm-reveal');
+ await nav.getByRole('button',{name:'Tài sản',exact:true}).click();
+ assert.equal(await active().evaluate(el=>getComputedStyle(el).animationName),'ltm-reveal');
+ assert.equal(await active().evaluate(el=>getComputedStyle(el).transform),'none','Tab animations do not create fixed-position containing blocks');
+ assert.equal(await nav.getByRole('button',{name:'Tài sản',exact:true}).locator('svg').evaluate(el=>getComputedStyle(el).animationName),'ltm-icon');
+ await page.getByRole('button',{name:'Thêm tài khoản',exact:true}).click();
+ const dialog=page.locator('.silver-asset-dialog'),panel=page.locator('.silver-asset-panel');await dialog.waitFor();
+ assert.equal(await panel.evaluate(el=>getComputedStyle(el).animationName),'ltm-sheet');
+ await dialog.getByRole('button',{name:'Tạo tài khoản',exact:true}).click({trial:true});
+ await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+ await nav.getByRole('button',{name:'Trang chủ',exact:true}).click();
+ assert.equal(await active().evaluate(el=>getComputedStyle(el).animationName),'ltm-reveal','Revisited tabs animate without remounting');
+ assert.equal(await page.locator('.silver-cashflow polyline').first().getAttribute('pathLength'),'1');
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await nav.getByRole('button',{name:'Tài sản',exact:true}).click();
+ assert.equal(await active().evaluate(el=>getComputedStyle(el).animationName),'none');
+ await page.getByRole('button',{name:'Thêm tài khoản',exact:true}).click();
+ assert.equal(await panel.evaluate(el=>getComputedStyle(el).animationName),'none');
+ assert.equal(await dialog.getByRole('button',{name:'Tạo tài khoản',exact:true}).evaluate(el=>getComputedStyle(el).transitionDuration),'0s');
+ await dialog.getByRole('button',{name:'Đóng',exact:true}).click();
+ assert.equal(await page.locator('#root').evaluate(el=>el.inert),false);assert.equal(await page.evaluate(()=>document.body.style.overflow),'');
+ assert.deepEqual(errors,[]);assert.deepEqual(nativeDialogs,[]);
+ await writeFile('ui-proof/motion/result.json',JSON.stringify({passed:true,pageReveal:true,revisitAnimation:true,navFeedback:true,sheetReveal:true,reducedMotion:true,noTransformedTabAncestor:true}));
+}finally{await browser?.close();server.kill('SIGTERM');}
