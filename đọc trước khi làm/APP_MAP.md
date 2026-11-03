@@ -147,3 +147,12 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - Bottom navigation has five evenly spaced destinations: Home, Transactions, AI, Assets, Plans. Floating rounded glass capsule with safe-area offsets; stays one row at 320px. Main and toast padding reserve its floating footprint.
 - release.json: 2.1.0 / 20100, previousVersionCode 20000; no financial storage, schema, signing key or app ID changes.
 - UI verification covers header profile reachability, five bottom touch targets >=48px and one-row layout across tested widths, with both themes and large text.
+
+## App-owned iOS pickers (2.2.0)
+- IOSSelect.tsx renders app-themed selection sheets via a portal; no native HTML select is mounted. Existing option declarations are configuration for controlled React state and preserve IDs/financial validation.
+- CategoryPicker uses a three-column icon grid with selection checks and accent-insensitive search. Account/source/destination lists have icons and balances; other selectors use the same component across Add/Edit, AI, filters, budgets, assets and recurrence.
+- Selection applies immediately to the draft, never posts a transaction. Close, backdrop, header swipe and Escape dismiss only the selection sheet; root becomes inert, focus stays in the topmost modal and returns to its trigger. useDialogFocus has a stack to prevent two dialogs consuming the same key.
+- New VI/EN strings: chooseOption, pickerChoiceHint, closePicker, searchOptions, noOptionsFound, tryAnotherSearch. Styling in index.css separates the opaque option surface from the translucent toolbar.
+- UI regression: scripts/verify-ios-pickers-ui.mjs checks themes, search, selected state, draft preservation, keyboard navigation, narrow/landscape sizing, large text and the final persisted account/category/amount. Existing customization and finance UI checks remain enabled in CI.
+- Version: 2.2.0 / 20200, previous 20100. No financial schema, storage or signing changes.
+- Design references: https://developer.apple.com/design/human-interface-guidelines/pickers ; https://developer.apple.com/design/human-interface-guidelines/materials ; https://developer.apple.com/design/human-interface-guidelines/sheets ; https://developer.apple.com/design/tips/ .

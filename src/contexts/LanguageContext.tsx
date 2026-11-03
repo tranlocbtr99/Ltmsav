@@ -9,6 +9,13 @@ interface LanguageContextType {
 }
 
 const vi: Record<string, string> = {
+  chooseOption: 'Chọn một mục',
+  pickerChoiceHint: 'Chọn một mục để áp dụng',
+  closePicker: 'Đóng bảng chọn',
+  searchOptions: 'Tìm trong danh sách',
+  noOptionsFound: 'Không tìm thấy mục phù hợp',
+  tryAnotherSearch: 'Thử từ khóa khác hoặc xóa tìm kiếm.',
+
   discardTransactionDraft: 'Bỏ các thay đổi chưa lưu của giao dịch này?',
   aiNavLabel: 'Nhập bằng AI',
   aiWelcomeShort: 'Bạn muốn ghi khoản nào?',
@@ -487,6 +494,13 @@ const vi: Record<string, string> = {
 };
 
 const en: Record<string, string> = {
+  chooseOption: 'Choose an option',
+  pickerChoiceHint: 'Select an option to apply',
+  closePicker: 'Close picker',
+  searchOptions: 'Search options',
+  noOptionsFound: 'No matching options',
+  tryAnotherSearch: 'Try another term or clear the search.',
+
   discardTransactionDraft: 'Discard the unsaved changes to this transaction?',
   aiNavLabel: 'AI entry',
   aiWelcomeShort: 'What would you like to record?',

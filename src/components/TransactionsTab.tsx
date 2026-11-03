@@ -1,3 +1,4 @@
+import { IOSSelect } from './IOSSelect';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Transaction, Account, Category, TransactionType } from '../types';
 import { 
@@ -189,30 +190,30 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
               <label className="text-slate-600 dark:text-slate-300">{t('toDate')}<input aria-label={t('toDate')} type="date" value={toDate} min={fromDate || undefined} onChange={e => setToDate(e.target.value)} className="form-control w-full rounded-xl px-3 mt-1"/></label>
               <div>
                 <label className="text-slate-600 dark:text-slate-400 font-semibold mb-1 block">{t('filterBySource')}</label>
-                <select
-                  value={selectedAccount}
+                <IOSSelect
+                  label={t('filterBySource')} value={selectedAccount}
                   onChange={e => setSelectedAccount(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                 >
                   <option value="all">{t('allAccounts')}</option>
                   {accounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    <option key={acc.id} value={acc.id} data-icon={acc.iconName} data-color={acc.color}>{acc.name}</option>
                   ))}
-                </select>
+                </IOSSelect>
               </div>
 
               <div>
                 <label className="text-slate-600 dark:text-slate-400 font-semibold mb-1 block">{t('filterByCategory')}</label>
-                <select
-                  value={selectedCategory}
+                <IOSSelect
+                  label={t('filterByCategory')} value={selectedCategory}
                   onChange={e => setSelectedCategory(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                 >
                   <option value="all">{t('allCategories')}</option>
                   {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name} ({cat.type === 'expense' ? t('out') : t('in')})</option>
+                    <option key={cat.id} value={cat.id} data-icon={cat.iconName} data-color={cat.color}>{cat.name} ({cat.type === 'expense' ? t('out') : t('in')})</option>
                   ))}
-                </select>
+                </IOSSelect>
               </div>
             </div>
           </div>

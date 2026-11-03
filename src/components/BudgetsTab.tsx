@@ -1,3 +1,4 @@
+import { IOSSelect } from './IOSSelect';
 import React, { useState } from 'react';
 import { Budget, Category, Transaction } from '../types';
 import { Target, Plus, AlertTriangle, CheckCircle2, Edit3, Trash2, X } from 'lucide-react';
@@ -227,15 +228,15 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
             <form onSubmit={handleSave} className="space-y-3.5">
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 font-semibold block mb-1">{t('expenseCategory')}</label>
-                <select
-                  value={selectedCatId}
+                <IOSSelect
+                  label={t('expenseCategory')} value={selectedCatId}
                   onChange={e => setSelectedCatId(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
                 >
                   {expenseCategories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id} data-icon={c.iconName} data-color={c.color}>{c.name}</option>
                   ))}
-                </select>
+                </IOSSelect>
               </div>
 
               <div>

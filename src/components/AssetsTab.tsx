@@ -1,3 +1,4 @@
+import { IOSSelect } from './IOSSelect';
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Account, DebtOrLoan } from '../types';
@@ -471,8 +472,8 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('accountType')}</label>
-                <select
-                  value={accType}
+                <IOSSelect
+                  label={t('accountType')} value={accType}
                   onChange={e => {
                     const type = e.target.value as Account['type'];
                     setAccType(type);
@@ -484,12 +485,12 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   }}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
                 >
-                  <option value="cash">{t('cash')}</option>
-                  <option value="bank">{t('bankAccount')}</option>
-                  <option value="wallet">{t('eWallet')}</option>
-                  <option value="savings">{t('savingsBook')}</option>
-                  <option value="credit">{t('creditCard')}</option>
-                </select>
+                  <option value="cash" data-icon="Banknote">{t('cash')}</option>
+                  <option value="bank" data-icon="Landmark">{t('bankAccount')}</option>
+                  <option value="wallet" data-icon="Wallet">{t('eWallet')}</option>
+                  <option value="savings" data-icon="PiggyBank">{t('savingsBook')}</option>
+                  <option value="credit" data-icon="CreditCard">{t('creditCard')}</option>
+                </IOSSelect>
               </div>
 
               {/* Icon picker */}

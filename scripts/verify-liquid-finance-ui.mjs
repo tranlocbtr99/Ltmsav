@@ -50,7 +50,7 @@ try {
   await nav.getByRole('button',{name:'Tài sản',exact:true}).click();
   await page.getByLabel('Tùy chọn tài khoản: Tiền mặt').click();
   await page.getByRole('button',{name:'Xem lịch sử',exact:true}).click();
-  assert.equal(await page.locator('main select').count(),0); // filter initially collapsed
+  assert.equal(await page.locator('main').getByRole('combobox').count(),0); // filter initially collapsed
   assert.match(await page.locator('main').innerText(),/Bữa trưa/);
   await page.getByRole('button',{name:'Thêm giao dịch',exact:true}).click();
   await page.getByRole('dialog').waitFor();

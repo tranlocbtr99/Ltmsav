@@ -1,3 +1,4 @@
+import { IOSSelect } from './IOSSelect';
 import React, { useEffect, useRef, useState } from 'react';
 import { Account, Category, CategoryActions, RecurringRule, Transaction } from '../types';
 import { CalendarDays, Plus, Pencil, Trash2, Clock } from 'lucide-react';
@@ -77,9 +78,9 @@ export const RecurringTab: React.FC<Props> = ({accounts,categories,transactions,
         <h3 className="font-semibold text-slate-900 dark:text-white">{t(editing?'editRecurring':'createRecurring')}</h3>
         <label className={label}>{t('recurringName')}<input required maxLength={160} value={title} onChange={e=>setTitle(e.target.value)} className={control}/></label>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className={label}>{t('transactionType')}<select value={type} onChange={e=>setType(e.target.value as 'expense'|'income')} className={control}><option value="expense">{t('expense')}</option><option value="income">{t('income')}</option></select></label>
+          <label className={label}>{t('transactionType')}<IOSSelect label={t('transactionType')} value={type} onChange={e=>setType(e.target.value as 'expense'|'income')} className={control}><option value="expense">{t('expense')}</option><option value="income">{t('income')}</option></IOSSelect></label>
           <label className={label}>{t('amountVnd')}<input type="number" inputMode="numeric" min="1" step="1" required value={amount} onChange={e=>setAmount(e.target.value)} className={control}/></label>
-          <label className={label}>{t('account')}<select value={accountId} onChange={e=>setAccountId(e.target.value)} className={control}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+          <label className={label}>{t('account')}<IOSSelect label={t('account')} value={accountId} onChange={e=>setAccountId(e.target.value)} className={control}>{accounts.map(a=><option key={a.id} value={a.id} data-icon={a.iconName} data-color={a.color}>{a.name}</option>)}</IOSSelect></label>
           <CategoryPicker categories={categories} type={type} value={categoryId} onChange={setCategoryId} {...categoryActions}/>
         </div>
         <fieldset><legend className="mb-2 text-xs font-semibold text-slate-600 dark:text-slate-300">{t('repeatFrequency')}</legend>

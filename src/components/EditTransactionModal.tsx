@@ -1,3 +1,4 @@
+import { IOSSelect } from './IOSSelect';
 import { CategoryPicker } from './CategoryPicker';
 import { categoryTypeFor } from '../services/categoryCatalog';
 import { useDialogFocus } from '../hooks/useDialogFocus';
@@ -250,17 +251,17 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
                 {type === 'transfer' ? t('fromAccount') : t('moneySourcesCount')}
               </label>
-              <select
+              <IOSSelect label={type === 'transfer' ? t('fromAccount') : t('moneySourcesCount')}
                 value={accountId}
                 onChange={e => setAccountId(e.target.value)}
                 className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
               >
                 {accounts.map(acc => (
-                  <option key={acc.id} value={acc.id} className="tabular-nums break-all">
-                    {acc.name} ({acc.balance.toLocaleString('vi-VN')}₫)
+                  <option key={acc.id} value={acc.id} data-icon={acc.iconName} data-color={acc.color} data-detail={acc.balance.toLocaleString('vi-VN')+' ₫'}>
+                    {acc.name}
                   </option>
                 ))}
-              </select>
+              </IOSSelect>
             </div>
 
             {type === 'transfer' ? (
@@ -268,7 +269,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
                   {t('toAccountLabel')}
                 </label>
-                <select
+                <IOSSelect label={t('toAccountLabel')}
                   value={targetAccountId}
                   onChange={e => setTargetAccountId(e.target.value)}
                   className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
@@ -276,11 +277,11 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                   {accounts
                     .filter(a => a.id !== accountId)
                     .map(acc => (
-                      <option key={acc.id} value={acc.id} className="tabular-nums break-all">
-                        {acc.name} ({acc.balance.toLocaleString('vi-VN')}₫)
+                      <option key={acc.id} value={acc.id} data-icon={acc.iconName} data-color={acc.color} data-detail={acc.balance.toLocaleString('vi-VN')+' ₫'}>
+                        {acc.name}
                       </option>
                     ))}
-                </select>
+                </IOSSelect>
               </div>
             ) : (
               <div>

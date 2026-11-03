@@ -35,7 +35,7 @@ try {
   await dialog.getByRole('button',{name:'Tùy chỉnh danh mục'}).click();
   await dialog.getByPlaceholder('Tên danh mục').fill('Bạn dự án');
   await dialog.getByRole('button',{name:'Thêm danh mục',exact:true}).click();
-  const loanId=await dialog.getByLabel('Danh mục',{exact:true}).inputValue();
+  const loanId=await page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_categories_v1')).find(c=>c.name==='Bạn dự án').id);
   assert.ok(loanId);
   await dialog.locator('input[type="text"]').nth(0).fill('1000');
   await dialog.locator('input[type="text"]').nth(1).fill('UI loan test');
