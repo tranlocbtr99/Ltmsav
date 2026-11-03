@@ -121,3 +121,11 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 ## Home balance hierarchy (1.9.2420)
 - Available balance is the primary hero amount. Total balance and savings appear as smaller supporting rows below; no formula text is displayed.
 - Version numbers may jump, provided versionCode and versionName increase.
+
+## Categories, dark sheets and flexible recurrence (1.9.2500)
+- Schema 7: snapshot raw keys before upgrade. Existing category IDs, loan category references, balances and legacy monthly schedules remain unchanged; new fields are optional.
+- CategoryPicker + CategoryManager (Personal/Settings) support existing options, presets, custom names, renaming and deletion of unused expense/income/lend categories. Storage protects categories referenced by transactions, budgets or recurring rules.
+- Add/Edit forms share category actions, native form validation and a dark-safe transaction-dialog surface.
+- RecurringRule is in types.ts. recurrence.ts handles local dates/times, weekly/monthly multi-select dates, end-of-month clamping/deduplication, legacy monthly receipts and occurrence receipts. App owns persisted rules via storage.getRecurringRules/saveRecurringRules.
+- RecurringTab supports create/edit/start date/local time and posting one due occurrence at a time in the current week/month. No background auto-posting. Transaction note is the durable receipt, written atomically with the balance.
+- Regression tests: recurrence.test.ts, storage.test.ts and transaction-customization.test.ts.

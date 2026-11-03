@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Account, Category, TransactionType, Transaction } from '../types';
+import { CategoryPicker } from './CategoryPicker';
+import { categoryTypeFor } from '../services/categoryCatalog';
+import React, { useState, useEffect, useId } from 'react';
+import { Account, Category, TransactionType, Transaction, CategoryActions } from '../types';
 import { X, Check, ArrowRightLeft, ArrowUpRight, ArrowDownLeft, Plus } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-interface AddTransactionModalProps {
+interface AddTransactionModalProps extends CategoryActions {
   accounts: Account[];
   categories: Category[];
   isOpen: boolean;
@@ -14,11 +16,15 @@ interface AddTransactionModalProps {
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   accounts,
   categories,
+  onCreateCategory,
+  onUpdateCategory,
+  onDeleteCategory,
   isOpen,
   onClose,
   onAdd,
 }) => {
   const { t } = useLanguage();
+  const formId = useId();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState<string>('');
@@ -47,13 +53,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
-    if (newType === 'income') {
-      const incomeCat = categories.find(c => c.type === 'income');
-      if (incomeCat) setCategoryId(incomeCat.id);
-    } else {
-      const expCat = categories.find(c => c.type === 'expense');
-      if (expCat) setCategoryId(expCat.id);
-    }
+    setCategoryId(categories.find(c => c.type === categoryTypeFor(newType))?.id || '');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -70,7 +70,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setSubmitError('Tài khoản nhận phải khác tài khoản nguồn.');
       return;
     }
-    if (type !== 'transfer' && !categories.some(c => c.id === categoryId && c.type === (type === 'income' ? 'income' : 'expense'))) {
+    if (type !== 'transfer' && !categories.some(c => c.id === categoryId && c.type === categoryTypeFor(type))) {
       setSubmitError('Vui lòng chọn danh mục hợp lệ.');
       return;
     }
@@ -101,14 +101,10 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
     setPerson('');
   };
 
-  const availableCategories = categories.filter(c => {
-    if (type === 'income') return c.type === 'income';
-    return c.type === 'expense';
-  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-in fade-in duration-200 animate-fade-in">
-      <div className="w-full max-w-lg bg-gradient-to-b from-[#f7fcff] to-[#eaf6ff] dark:bg-slate-900 border border-white/90 dark:border-slate-800 rounded-[28px] shadow-[0_25px_80px_rgba(24,112,209,.25)] overflow-hidden flex flex-col max-h-[92dvh] animate-pop-in">
+      <div role="dialog" aria-modal="true" aria-label={t('addTransactionTitle')} className="w-full max-w-lg transaction-dialog border border-white/90 dark:border-slate-800 rounded-[28px] shadow-[0_25px_80px_rgba(24,112,209,.25)] overflow-hidden flex flex-col max-h-[92dvh] animate-pop-in">
         
         {submitError && <p role="alert" className="p-4 text-rose-700 dark:text-rose-300">{submitError}</p>}
         {/* Header */}
@@ -137,7 +133,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-5 space-y-4 flex-1">
+        <form id={formId} onSubmit={handleSubmit} className="min-h-0 overflow-y-auto p-5 space-y-4 flex-1">
           {/* Type Selector */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
@@ -204,7 +200,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 placeholder="0"
                 className="w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xl font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
                 required
-                autoFocus
+                inputMode="numeric"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-semibold">
                 ₫
@@ -280,20 +276,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               </div>
             ) : (
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
-                  {t('category')}
-                </label>
-                <select
-                  value={categoryId}
-                  onChange={e => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
-                >
-                  {availableCategories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                <CategoryPicker categories={categories} type={categoryTypeFor(type)} value={categoryId} onChange={setCategoryId}
+                  
+                  onCreateCategory={onCreateCategory} onUpdateCategory={onUpdateCategory} onDeleteCategory={onDeleteCategory} />
               </div>
             )}
           </div>
@@ -354,8 +339,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             {t('cancel')}
           </button>
           <button
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
+            form={formId}
             disabled={numAmount <= 0}
             className="flex items-center justify-center gap-1.5 px-5 py-3 bg-gradient-to-r from-sky-400 to-blue-600 hover:brightness-105 disabled:opacity-50 disabled:pointer-events-none text-white text-xs sm:text-sm font-semibold rounded-2xl shadow-lg shadow-blue-500/20 transition flex-1"
           >
