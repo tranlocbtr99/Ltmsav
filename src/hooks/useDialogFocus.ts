@@ -1,6 +1,7 @@
 import {useEffect, useRef} from 'react';
 
 const modalStack: HTMLDivElement[] = [];
+let originalBodyOverflow: string | undefined;
 
 /** Keep keyboard navigation within a sheet and restore the invoking control. */
 export function useDialogFocus(open: boolean, onDismiss: () => void) {
@@ -11,9 +12,9 @@ export function useDialogFocus(open: boolean, onDismiss: () => void) {
     if (!open) return;
     const node=ref.current;
     if (!node) return;
+    if (!modalStack.length) originalBodyOverflow=document.body.style.overflow;
     modalStack.push(node);
     const previous = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const controls = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]') || []).filter(el => el.getClientRects().length);
     controls()[0]?.focus();
@@ -32,7 +33,8 @@ export function useDialogFocus(open: boolean, onDismiss: () => void) {
     return () => {
       const index=modalStack.indexOf(node);
       if(index>=0)modalStack.splice(index,1);
-      document.body.style.overflow = modalStack.length ? 'hidden' : overflow;
+      if (modalStack.length) document.body.style.overflow='hidden';
+      else { document.body.style.overflow=originalBodyOverflow || ''; originalBodyOverflow=undefined; }
       document.removeEventListener('keydown',keydown);
       queueMicrotask(() => { if (previous?.isConnected) previous.focus(); });
     };

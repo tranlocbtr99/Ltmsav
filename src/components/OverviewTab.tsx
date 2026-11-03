@@ -230,9 +230,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   return (
     <div className="space-y-5 pb-6 stagger">
       
-      <section className="balance-hero">
+      <section className="balance-hero silver-balance">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-white/90">{t('availableBalance')}</span>
+          <span className="text-sm font-medium silver-muted">{t('availableBalance')}</span>
           <button type="button" onClick={onToggleAssetsVisibility}
             aria-label={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
             aria-pressed={assetsHidden} className="hero-eye">
@@ -240,22 +240,16 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </button>
         </div>
         <div className="balance-amount">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
-        <div className="grid grid-cols-2 gap-3 border-t border-white/25 pt-3 mt-3 text-xs">
-          <div className="min-w-0"><span className="block text-white/85">{t('totalBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</strong></div>
-          <div className="min-w-0 border-l border-white/25 pl-3"><span className="block text-white/85">{t('savingsBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</strong></div>
+        <div className="silver-balance-secondary grid grid-cols-2 gap-3 mt-4 text-xs">
+          <div className="min-w-0"><span className="block silver-muted">{t('totalBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</strong></div>
+          <div className="min-w-0 silver-savings border-l pl-3"><span className="block silver-muted">{t('savingsBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</strong></div>
         </div>
       </section>
-      <div className="grid grid-cols-4 gap-2">
-        {[
-          {label:t('addTransaction'), icon:Plus, action:onOpenAdd},
-          {label:t('aiNavLabel'), icon:Sparkles, action:onOpenAi},
-          {label:t('recurringTitle'), icon:CalendarDays, action:()=>onNavigateTab('recurring')},
-          {label:t('manageAssets'), icon:Wallet, action:()=>onNavigateTab('assets')},
-        ].map(({label,icon:Icon,action})=><button key={label} onClick={action} className="quick-action">
-          <span className="quick-action-icon"><Icon size={21}/></span>
-          <span>{label}</span>
-        </button>)}
+      <div className="silver-home-actions">
+        <button type="button" onClick={onOpenAdd} className="silver-primary"><Plus size={20}/><span>{t('addTransaction')}</span></button>
+        <button type="button" onClick={onOpenAi} aria-label={t('aiNavLabel')} className="silver-glass-button"><Sparkles size={20}/><span>{t('quickAi')}</span></button>
       </div>
+
       {assetsHidden ? <div className="glass-card p-5 text-center text-sm text-slate-600 dark:text-slate-300"><EyeOff className="mx-auto mb-2" aria-hidden="true"/>{t('hiddenHomeHint')}</div> : <>
       <div className="grid grid-cols-2 gap-3">
         {([
@@ -308,32 +302,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           ))}
         </div>
 
-        <div className="flex items-end justify-between gap-1 h-28 pt-1">
-          {chartData.buckets.map((b, i) => {
-            const many = chartData.buckets.length > 12;
-            const showLabel = !many || i % 5 === 0 || i === chartData.buckets.length - 1;
-            return (
-              <button key={b.key} type="button" onClick={() => setSelectedBucket(b.key)} aria-label={`${b.label}: ${t('cashIn')} ${b.income.toLocaleString('vi-VN')} ₫, ${t('cashOut')} ${b.expense.toLocaleString('vi-VN')} ₫`} aria-pressed={selectedBucket === b.key} className="flex-1 flex flex-col items-center gap-1.5 min-w-0 h-full focus-visible:outline-2 focus-visible:outline-blue-500">
-                <div className="flex-1 w-full flex items-end justify-center gap-px">
-                  <div
-                    className="w-1/2 max-w-[14px] rounded-t-sm bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all duration-500"
-                    style={{ height: `${Math.max(2, (b.income / chartData.barMax) * 100)}%` }}
-                    title={`${t('cashIn')}: ${b.income.toLocaleString('vi-VN')}₫`}
-                  />
-                  <div
-                    className="w-1/2 max-w-[14px] rounded-t-sm bg-gradient-to-t from-rose-600 to-rose-400 transition-all duration-500"
-                    style={{ height: `${Math.max(2, (b.expense / chartData.barMax) * 100)}%` }}
-                    title={`${t('cashOut')}: ${b.expense.toLocaleString('vi-VN')}₫`}
-                  />
-                </div>
-                <span className={`text-[9px] text-slate-500 dark:text-slate-400 font-medium h-3 ${showLabel ? '' : 'invisible'}`}>
-                  {b.label}
-                </span>
-              </button>
-            );
-          })}
+        <div className="silver-cashflow" aria-label={t('incomeVsExpense')}>
+          <svg viewBox="0 0 320 100" preserveAspectRatio="none" aria-hidden="true">
+            {(['income','expense'] as const).map(kind=><polyline key={kind} points={chartData.buckets.map((bucket,i)=>`${chartData.buckets.length > 1 ? i/(chartData.buckets.length-1)*320 : 160},${92-bucket[kind]/chartData.barMax*78}`).join(' ')} fill="none" stroke={kind === 'income' ? '#087cfa' : '#df4775'} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>)}
+          </svg>
+          <div className="silver-chart-targets">{chartData.buckets.map(bucket=><button key={bucket.key} type="button" aria-label={`${bucket.label}: ${t('cashIn')} ${bucket.income.toLocaleString('vi-VN')} ₫, ${t('cashOut')} ${bucket.expense.toLocaleString('vi-VN')} ₫`} onClick={()=>setSelectedBucket(bucket.key)} aria-pressed={selectedBucket === bucket.key}/>)}</div>
+          <div className="silver-chart-labels"><span>{chartData.buckets[0]?.label}</span><span>{chartData.buckets[Math.floor(chartData.buckets.length/2)]?.label}</span><span>{chartData.buckets.at(-1)?.label}</span></div>
         </div>
-
         {selectedBucket && chartData.buckets.filter(b => b.key === selectedBucket).map(b => <p key={b.key} role="status" className="text-xs text-slate-700 dark:text-slate-200">{b.label} · {t('cashIn')}: +{b.income.toLocaleString('vi-VN')} ₫ · {t('cashOut')}: −{b.expense.toLocaleString('vi-VN')} ₫</p>)}
         <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800 text-xs">
           <div className="flex items-center justify-between px-1">
@@ -534,6 +509,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       </div>
 
       </>}
+      <div className="silver-home-links"><button type="button" onClick={()=>onNavigateTab('assets')}><Wallet size={16}/>{t('manageAssets')}</button><button type="button" onClick={()=>onNavigateTab('recurring')}><CalendarDays size={16}/>{t('recurringTitle')}</button><button type="button" onClick={()=>onNavigateTab('reports')}><BarChart3 size={16}/>{t('reports')}</button></div>
     </div>
   );
 };

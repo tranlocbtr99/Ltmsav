@@ -41,12 +41,12 @@ try {
   await dialog.locator('input[type="text"]').nth(1).fill('UI loan test');
   const computed=await dialog.evaluate(el=>{
     const style=getComputedStyle(el);
-    const input=getComputedStyle(el.querySelector('input'));
+    const input=getComputedStyle(el.querySelector('input:not(.amount-input)'));
     return {image:style.backgroundImage,surface:style.backgroundColor,color:style.color,inputBg:input.backgroundColor,inputColor:input.color};
   });
-  assert.equal(computed.surface,'rgb(9, 19, 33)');
-  assert.equal(computed.inputBg,'rgb(11, 18, 32)');
-  assert.equal(computed.inputColor,'rgb(241, 245, 249)');
+  assert.equal(computed.surface,'rgb(11, 16, 25)');
+  assert.equal(computed.inputBg,'rgb(23, 34, 51)');
+  assert.equal(computed.inputColor,'rgb(243, 245, 250)');
   for(const width of [360,412]){
     await page.setViewportSize({width,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Horizontal overflow at '+width);
@@ -55,7 +55,7 @@ try {
   await page.evaluate(()=>document.documentElement.classList.remove('dark'));
   await dialog.screenshot({path:'ui-proof/transaction-light.png'});
   await page.evaluate(()=>document.documentElement.classList.add('dark'));
-  await dialog.getByRole('button',{name:'Thêm Giao Dịch',exact:true}).click();
+  await dialog.getByRole('button',{name:'Lưu giao dịch',exact:true}).click();
   await dialog.waitFor({state:'hidden'});
   const records=await page.evaluate(()=>({accounts:JSON.parse(localStorage.getItem('ltmsav_accounts_v1')),transactions:JSON.parse(localStorage.getItem('ltmsav_transactions_v1'))}));
   assert.equal(records.accounts[0].balance,499000);
@@ -70,7 +70,11 @@ try {
     const button=page.getByRole('button',{name:label,exact:true});
     if((await button.getAttribute('aria-pressed')==='true')!==selected)await button.click();
   }
-  await page.getByLabel('Giờ thực hiện',{exact:true}).fill('08:15');
+  await page.getByRole('combobox',{name:'Giờ thực hiện',exact:true}).click();
+  const timeSheet=page.getByRole('dialog',{name:'Giờ thực hiện',exact:true});
+  await timeSheet.getByRole('textbox',{name:'Giờ',exact:true}).fill('08');
+  await timeSheet.getByRole('textbox',{name:'Phút',exact:true}).fill('15');
+  await timeSheet.getByRole('button',{name:'Xác nhận',exact:true}).click();
   await page.getByRole('button',{name:'Tạo lịch định kỳ',exact:true}).click();
   let rules=await page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_recurring_rules_v1')));
   assert.deepEqual(rules[0].daysOfWeek,[1,3,5]);
@@ -83,13 +87,14 @@ try {
   // Editing a weekly schedule retains a harmless monthly default; explicitly unselect it.
   const first=page.getByRole('button',{name:'Ngày 1',exact:true});
   if(await first.getAttribute('aria-pressed')==='true')await first.click();
-  await page.getByRole('button',{name:'Lưu Thay Đổi',exact:true}).click();
+  await page.getByRole('button',{name:'Lưu thay đổi',exact:true}).click();
   rules=await page.evaluate(()=>JSON.parse(localStorage.getItem('ltmsav_recurring_rules_v1')));
   assert.equal(rules.length,1);
   assert.deepEqual(rules[0].daysOfMonth,[5,15,25]);
   assert.equal(rules[0].frequency,'monthly');
   await page.screenshot({path:'ui-proof/recurring-dark.png',fullPage:true});
   await page.getByRole('button',{name:'Cá nhân',exact:true}).click();
+  await page.locator('summary').filter({hasText:'Quản lý danh mục'}).click();
   await page.getByRole('heading',{name:'Quản lý danh mục'}).waitFor();
   await page.screenshot({path:'ui-proof/category-manager.png',fullPage:true});
   assert.deepEqual(errors,[]);

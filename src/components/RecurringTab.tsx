@@ -1,3 +1,5 @@
+import { confirmAction } from './Confirmation';
+import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
 import React, { useEffect, useRef, useState } from 'react';
 import { Account, Category, CategoryActions, RecurringRule, Transaction } from '../types';
@@ -66,7 +68,7 @@ export const RecurringTab: React.FC<Props> = ({accounts,categories,transactions,
       onAdd({type:rule.type,amount:rule.amount,accountId:rule.accountId,categoryId:rule.categoryId,date,description:rule.title,note:key,recurringOccurrenceId:rule.id+'/'+date});setError('');
     }catch(e){submitted.current.delete(key);setError(e instanceof Error?e.message:String(e));}
   };
-  const remove=(rule:RecurringRule)=>{if(!confirm(t('deleteRecurringConfirm')))return;try{onSaveRules(rules.filter(r=>r.id!==rule.id));if(editing===rule.id)reset();setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
+  const remove=async(rule:RecurringRule)=>{if(!await confirmAction(t('deleteRecurringConfirm'), {destructive:true}))return;try{onSaveRules(rules.filter(r=>r.id!==rule.id));if(editing===rule.id)reset();setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
   const control='form-control w-full min-h-11 min-w-0 rounded-xl px-3 py-2.5 text-sm';
   const label='block space-y-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300';
   const choice=(selected:boolean)=>'min-h-11 rounded-xl border px-2 text-sm font-semibold transition '+(selected?'border-blue-500 bg-blue-600 text-white':'border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200');
@@ -96,8 +98,8 @@ export const RecurringTab: React.FC<Props> = ({accounts,categories,transactions,
           <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{t(frequency==='monthly'?'monthEndHint':'multiDayHint')}</p>
         </fieldset>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className={label}>{t('executionTime')}<input type="time" required value={time} onChange={e=>setTime(e.target.value)} className={control}/></label>
-          <label className={label}>{t('scheduleStartDate')}<input type="date" required value={startDate} onChange={e=>setStartDate(e.target.value)} className={control}/></label>
+          <label className={label}>{t('executionTime')}<DateField label={t('executionTime')} type="time" required value={time} onChange={e=>setTime(e.target.value)} className={control}/></label>
+          <label className={label}>{t('scheduleStartDate')}<DateField label={t('scheduleStartDate')} type="date" required value={startDate} onChange={e=>setStartDate(e.target.value)} className={control}/></label>
         </div>
         <div className="flex gap-2">
           {editing&&<button type="button" onClick={reset} className="min-h-11 rounded-xl border border-slate-300 px-4 text-sm text-slate-700 dark:border-slate-600 dark:text-slate-200">{t('cancel')}</button>}

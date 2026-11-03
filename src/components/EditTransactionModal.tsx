@@ -1,3 +1,5 @@
+import { confirmAction } from './Confirmation';
+import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
 import { CategoryPicker } from './CategoryPicker';
 import { categoryTypeFor } from '../services/categoryCatalog';
@@ -42,7 +44,6 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
   const [description, setDescription] = useState<string>(transaction?.description || '');
   const [note, setNote] = useState<string>(transaction?.note || '');
   const [person, setPerson] = useState<string>(transaction?.person || '');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
@@ -56,14 +57,13 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       setDescription(transaction.description);
       setNote(transaction.note || '');
       setPerson(transaction.person || '');
-      setShowDeleteConfirm(false);
       setSubmitError('');
     }
   }, [transaction]);
 
-  const requestClose = () => {
+  const requestClose = async () => {
     const dirty = transaction && (type !== transaction.type || Number(amount) !== transaction.amount || accountId !== transaction.accountId || categoryId !== transaction.categoryId || date !== transaction.date || description !== transaction.description || note !== (transaction.note || '') || person !== (transaction.person || '') || (type === 'transfer' && targetAccountId !== transaction.targetAccountId));
-    if (!dirty || confirm(t('discardTransactionDraft'))) onClose();
+    if (!dirty || await confirmAction(t('discardTransactionDraft'))) onClose();
   };
   const dialogRef = useDialogFocus(isOpen, requestClose);
   if (!isOpen || !transaction) return null;
@@ -110,33 +110,11 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t('editTransactionTitle')} className="transaction-dialog border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88dvh] animate-pop-in">
         
         {submitError && <p role="alert" className="p-4 text-rose-700 dark:text-rose-300">{submitError}</p>}
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/80">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`p-2 rounded-xl ${
-              type === 'expense' ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400' :
-              type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
-              type === 'transfer' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' : 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
-            } shrink-0`}>
-              {type === 'expense' ? <ArrowUpRight className="w-5 h-5" /> :
-               type === 'income' ? <ArrowDownLeft className="w-5 h-5" /> :
-               <ArrowRightLeft className="w-5 h-5" />}
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{t('editTransactionTitle')}</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t('editTransactionSubtitle')}</p>
-            </div>
-          </div>
-          <button
-            onClick={requestClose} aria-label={t('cancel')}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        <header className="silver-editor-toolbar"><button type="button" onClick={requestClose} aria-label={t('cancel')} className="silver-round-button"><X size={21}/></button><button type="submit" form={formId} className="silver-primary silver-toolbar-save">{t('saveAction')}</button></header>
+        <h2 className="silver-editor-title">{t('editTransactionTitle')}</h2>
 
         {/* Form Body */}
-        <form id={formId} onSubmit={handleSave} className="min-h-0 overflow-y-auto p-5 space-y-4 flex-1">
+        <form id={formId} onSubmit={handleSave} className="silver-editor-form min-h-0 overflow-y-auto p-5 space-y-4 flex-1">
           {/* Type Selector Tabs */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
@@ -299,7 +277,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
                 {t('transactionDate')}
               </label>
               <div className="relative">
-                <input
+                <DateField
                   type="date"
                   value={date}
                   onChange={e => setDate(e.target.value)}
@@ -352,57 +330,14 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Delete Confirmation Warning */}
-          {showDeleteConfirm && (
-            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs text-rose-700 dark:text-rose-300 space-y-2 animate-in fade-in">
-              <div className="flex items-center gap-2 font-bold text-rose-800 dark:text-rose-200">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {t('confirmDeleteTx')}
-              </div>
-              <p className="tabular-nums break-all">
-                {t('deleteTxDesc', { amount: transaction.amount.toLocaleString('vi-VN') })}
-              </p>
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    try {
-                      onDelete(transaction.id);
-                      onClose();
-                    } catch (error) {
-                      setSubmitError(error instanceof Error ? error.message : String(error));
-                    }
-                  }}
-                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg transition"
-                >
-                  {t('deleteNow')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition"
-                >
-                  {t('cancelAction')}
-                </button>
-              </div>
-            </div>
-          )}
         </form>
 
         {/* Footer Actions */}
         <div className="dialog-footer px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 flex items-center justify-between gap-3">
-          {!showDeleteConfirm ? (
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-rose-600 dark:text-rose-400 hover:text-rose-500 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs sm:text-sm font-medium transition shrink-0"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>{t('delete')}</span>
-            </button>
-          ) : (
-            <div />
-          )}
+          <button type="button" className="silver-delete-button" onClick={async()=>{
+            if(!await confirmAction(t('deleteTxDesc',{amount:transaction.amount.toLocaleString('vi-VN')}),{title:t('confirmDeleteTx'),destructive:true}))return;
+            try {onDelete(transaction.id);onClose();}catch(error){setSubmitError(error instanceof Error ? error.message : String(error));}
+          }}><Trash2 size={18}/>{t('delete')}</button>
 
           <div className="flex items-center gap-2">
             <button

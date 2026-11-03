@@ -1,4 +1,5 @@
 import { CategoryManager } from './components/CategoryManager';
+import { ConfirmationHost } from './components/Confirmation';
 import React, { useState, useEffect } from 'react';
 import { storage } from './services/storage';
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings, RecurringRule } from './types';
@@ -25,6 +26,8 @@ export const App: React.FC = () => {
 
   // Storage data state
   const [currentTab, setCurrentTab] = useState<string>('overview');
+  const [visitedTabs,setVisitedTabs] = useState<string[]>(['overview']);
+  useEffect(()=>{setVisitedTabs(prev=>prev.includes(currentTab)?prev:[...prev,currentTab]);},[currentTab]);
   const [historyAccountId, setHistoryAccountId] = useState<string | undefined>();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -70,7 +73,7 @@ export const App: React.FC = () => {
     const applyTheme = () => {
       const isDark = settings.theme === 'dark' || (settings.theme === 'system' && media.matches);
       document.documentElement.classList.toggle('dark', isDark);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#091321' : '#f3f7fc');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#0b1019' : '#f5f6f8');
     };
     applyTheme();
     media.addEventListener('change', applyTheme);
@@ -96,7 +99,7 @@ export const App: React.FC = () => {
 
   // Handlers
   const handleToggleTheme = () => {
-    const newTheme: 'dark' | 'light' = settings.theme === 'dark' ? 'light' : 'dark';
+    const newTheme: 'dark' | 'light' = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
     const updated: AppSettings = { ...settings, theme: newTheme };
     storage.saveSettings(updated);
     setSettings(updated);
@@ -229,7 +232,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#f7f9fc] dark:bg-[#090d16] text-slate-900 dark:text-slate-50 flex flex-col font-sans transition-colors duration-200">
+    <div className="silver-app min-h-[100dvh] bg-[#f7f9fc] dark:bg-[#090d16] text-slate-900 dark:text-slate-50 flex flex-col font-sans transition-colors duration-200">
       
       {/* Top App Bar with theme toggle */}
       <TopHeader
@@ -245,9 +248,14 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="finance-main flex-1 w-full max-w-3xl mx-auto px-4">
         
+        <div className="silver-page-heading"><h1>{t(currentTab === 'overview' ? 'overview' : currentTab === 'ai' ? 'assistantTitle' : currentTab === 'assets' ? 'assetsNav' : currentTab === 'budgets' || currentTab === 'recurring' ? 'planNav' : currentTab === 'settings' ? 'profileNav' : currentTab === 'reports' ? 'reports' : 'transactions')}</h1></div>
+        {(currentTab === 'budgets' || currentTab === 'recurring') && <div className="silver-segments silver-plan-tabs" role="group" aria-label={t('planNav')}>
+          <button type="button" aria-pressed={currentTab === 'budgets'} onClick={()=>setCurrentTab('budgets')}>{t('budget')}</button>
+          <button type="button" aria-pressed={currentTab === 'recurring'} onClick={()=>setCurrentTab('recurring')}>{t('recurringTitle')}</button>
+        </div>}
         {/* Tab views */}
-        <div key={currentTab} className="animate-fade-in">
-          {currentTab === 'overview' && (
+        <div className="animate-fade-in">
+          <section hidden={currentTab !== 'overview'}>{(currentTab === 'overview' || visitedTabs.includes('overview')) && (
             <OverviewTab
               assetsHidden={assetsHidden}
               onToggleAssetsVisibility={toggleAssetsVisibility}
@@ -261,9 +269,9 @@ export const App: React.FC = () => {
               onSelectTransaction={(tx) => setSelectedTxForEdit(tx)}
               onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
             />
-          )}
+          )}</section>
 
-          {currentTab === 'transactions' && (
+          <section hidden={currentTab !== 'transactions'}>{(currentTab === 'transactions' || visitedTabs.includes('transactions')) && (
             <TransactionsTab
               initialAccountId={historyAccountId}
               transactions={transactions}
@@ -273,9 +281,9 @@ export const App: React.FC = () => {
               onOpenAdd={() => setIsAddModalOpen(true)}
               onDeleteTransaction={handleDeleteTransaction}
             />
-          )}
+          )}</section>
 
-          {currentTab === 'ai' && (
+          <section hidden={currentTab !== 'ai'}>{(currentTab === 'ai' || visitedTabs.includes('ai')) && (
             <AiChatTab
               accounts={accounts}
               categories={categories}
@@ -283,9 +291,9 @@ export const App: React.FC = () => {
               onAddTransaction={handleAddTransaction}
               onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
             />
-          )}
+          )}</section>
 
-          {currentTab === 'budgets' && (
+          <section hidden={currentTab !== 'budgets'}>{(currentTab === 'budgets' || visitedTabs.includes('budgets')) && (
             <BudgetsTab
               budgets={budgets}
               categories={categories}
@@ -293,9 +301,9 @@ export const App: React.FC = () => {
               onSetBudget={handleSetBudget}
               onDeleteBudget={handleDeleteBudget}
             />
-          )}
+          )}</section>
 
-          {currentTab === 'assets' && (
+          <section hidden={currentTab !== 'assets'}>{(currentTab === 'assets' || visitedTabs.includes('assets')) && (
             <AssetsTab
               onViewAccount={(id) => { setHistoryAccountId(id); setCurrentTab('transactions'); }}
               accounts={accounts}
@@ -307,23 +315,24 @@ export const App: React.FC = () => {
               onRecordPayment={handleRecordPayment}
               onDeleteAccount={handleDeleteAccountSource}
             />
-          )}
+          )}</section>
 
-          {currentTab === 'recurring' && (
+          <section hidden={currentTab !== 'recurring'}>{(currentTab === 'recurring' || visitedTabs.includes('recurring')) && (
             <RecurringTab accounts={accounts} categories={categories} transactions={transactions} rules={recurringRules} onSaveRules={handleSaveRecurring} onAdd={handleAddTransaction} {...categoryActions} />
-          )}
+          )}</section>
 
-          {currentTab === 'reports' && (
+          <section hidden={currentTab !== 'reports'}>{(currentTab === 'reports' || visitedTabs.includes('reports')) && (
             <ReportsTab
               transactions={transactions}
               categories={categories}
               accounts={accounts}
             />
-          )}
+          )}</section>
 
-          {currentTab === 'settings' && (
+          <section hidden={currentTab !== 'settings'}>{(currentTab === 'settings' || visitedTabs.includes('settings')) && (
             <>
-            <div className="finance-screen mb-4"><CategoryManager categories={categories} {...categoryActions}/></div>
+            <div className="silver-profile-card"><img src="/logo.png" alt="LTMsav"/><div><strong>LTMsav</strong><p>{t('appSubtitle')}</p></div></div>
+            <details className="silver-settings-section silver-category-settings"><summary><span>{t('categoryManagerTitle')}</span><span aria-hidden="true">›</span></summary><CategoryManager categories={categories} {...categoryActions}/></details>
             <SettingsTab
               settings={settings}
               auditLogs={auditLogs}
@@ -338,13 +347,13 @@ export const App: React.FC = () => {
               onLockAppNow={() => setIsLocked(true)}
             />
             </>
-          )}
+          )}</section>
         </div>
       </main>
 
       {/* Android Bottom Navigation */}
       <BottomNavBar
-        currentTab={currentTab}
+        currentTab={currentTab === 'recurring' ? 'budgets' : currentTab === 'reports' ? 'overview' : currentTab}
         onTabChange={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
         onOpenAdd={() => setCurrentTab('ai')}
         isOnline={isOnline}
@@ -375,13 +384,14 @@ export const App: React.FC = () => {
       {/* Notification Toast — appears in the current view, just above the bottom nav */}
       {toastMessage && (
         <div className="fixed bottom-0 left-0 right-0 z-[60] px-3 sm:px-4 pb-[var(--finance-nav-space)] pointer-events-none flex justify-center animate-fade-in-up">
-          <div className="w-full max-w-3xl flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 border border-emerald-500/40 text-xs sm:text-sm font-semibold text-white shadow-2xl backdrop-blur-md">
+          <div role="status" className="silver-toast w-full max-w-3xl flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 border border-emerald-500/40 text-xs sm:text-sm font-semibold text-white shadow-2xl backdrop-blur-md">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="flex-1 min-w-0">{toastMessage}</span>
           </div>
         </div>
       )}
 
+      <ConfirmationHost/>
     </div>
   );
 };

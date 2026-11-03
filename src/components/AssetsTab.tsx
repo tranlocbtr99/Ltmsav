@@ -1,3 +1,5 @@
+import { confirmAction } from './Confirmation';
+import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -144,7 +146,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
   };
 
   return (
-    <div className="finance-screen space-y-4 pb-6">
+    <div className="finance-screen silver-assets space-y-4 pb-6">
       
       {/* Sub tabs */}
         <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-[10px] sm:text-xs font-semibold">
@@ -179,7 +181,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              {t('totalAccountMoney')}: <strong className="text-slate-900 dark:text-white font-extrabold">{totalAssets.toLocaleString('vi-VN')}₫</strong>
+              <span className="silver-total-label">{t('totalAccountMoney')}</span><strong className="silver-total-amount text-slate-900 dark:text-white font-extrabold">{totalAssets.toLocaleString('vi-VN')}₫</strong>
             </span>
             <button
               onClick={() => { setEditingAccountId(null); setAccName(''); setAccType('bank'); setAccIcon('Landmark'); setAccColor('#10B981'); setAccBalanceStr(''); setIsAccountModalOpen(true); }}
@@ -232,7 +234,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   </button>
 
                 {onViewAccount && <button type="button" onClick={() => onViewAccount(acc.id)} className="text-blue-700 dark:text-blue-300">{t('seeHistory')}</button>}
-                <button type="button" className="text-rose-700 dark:text-rose-300" aria-label={`${t('deleteAccount')}: ${acc.name}`} onClick={() => { if (confirm(t('deleteAccountConfirm', {name:acc.name}))) onDeleteAccount(acc.id); }}><Trash2 className="inline w-4 h-4 mr-1"/>{t('delete')}</button>
+                <button type="button" className="text-rose-700 dark:text-rose-300" aria-label={`${t('deleteAccount')}: ${acc.name}`} onClick={async () => { if (await confirmAction(t('deleteAccountConfirm', {name:acc.name}), {destructive:true})) onDeleteAccount(acc.id); }}><Trash2 className="inline w-4 h-4 mr-1"/>{t('delete')}</button>
               </div>
             </details>)}
           </div>
@@ -390,7 +392,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {/* Modal: Adjust Balance */}
       {isAdjustModalOpen && selectedAccount && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto">
+          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('adjustLedgerTitle')}</h3>
               <button onClick={() => setIsAdjustModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
@@ -449,7 +451,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {/* Modal: Add Account */}
       {isAccountModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
+          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t(editingAccountId ? 'editAccount' : 'addMoneySource')}</h3>
               <button onClick={() => setIsAccountModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
@@ -582,7 +584,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {/* Modal: Add Debt/Loan */}
       {isDebtModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
+          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 {debtType === 'loan' ? t('addLoanTitle') : t('addDebtTitle')}
@@ -619,7 +621,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('paymentDue')}</label>
-                <input
+                <DateField
                   type="date"
                   value={debtDueDate}
                   onChange={e => setDebtDueDate(e.target.value)}
@@ -663,7 +665,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       {/* Modal: Payment Record */}
       {isPaymentModalOpen && selectedDebt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
+          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 {selectedDebt.type === 'loan' ? t('collectFrom') : t('payTo')} {selectedDebt.person}

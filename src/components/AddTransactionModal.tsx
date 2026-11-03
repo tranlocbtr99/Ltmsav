@@ -1,3 +1,5 @@
+import { confirmAction } from './Confirmation';
+import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
 import { CategoryPicker } from './CategoryPicker';
 import { localDateKey } from '../services/recurrence';
@@ -46,8 +48,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       setSubmitError('');
     }
   }, [isOpen]);
-  const requestClose = () => {
-    if (!(amount || description || note || person) || confirm(t('discardTransactionDraft'))) onClose();
+  const requestClose = async () => {
+    if (!(amount || description || note || person) || await confirmAction(t('discardTransactionDraft'))) onClose();
   };
   const dialogRef = useDialogFocus(isOpen, requestClose);
   if (!isOpen) return null;
@@ -114,33 +116,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={t('addTransactionTitle')} className="transaction-dialog border border-white/90 dark:border-slate-800 shadow-[0_25px_80px_rgba(24,112,209,.25)] overflow-hidden flex flex-col animate-pop-in">
         
         {submitError && <p role="alert" className="p-4 text-rose-700 dark:text-rose-300">{submitError}</p>}
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/80">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`p-2 rounded-xl ${
-              type === 'expense' ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400' :
-              type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
-              type === 'transfer' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' : 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
-            } shrink-0`}>
-              {type === 'expense' ? <ArrowUpRight className="w-5 h-5" /> :
-               type === 'income' ? <ArrowDownLeft className="w-5 h-5" /> :
-               <ArrowRightLeft className="w-5 h-5" />}
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{t('addTransactionTitle')}</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t('addTransactionSubtitle')}</p>
-            </div>
-          </div>
-          <button
-            onClick={requestClose} aria-label={t('cancel')}
-            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        <header className="silver-editor-toolbar"><button type="button" onClick={requestClose} aria-label={t('cancel')} className="silver-round-button"><X size={21}/></button><button type="submit" form={formId} className="silver-primary silver-toolbar-save">{t('saveAction')}</button></header>
+        <h2 className="silver-editor-title">{t('addTransactionTitle')}</h2>
 
         {/* Form Body */}
-        <form id={formId} onSubmit={handleSubmit} className="min-h-0 overflow-y-auto p-5 space-y-4 flex-1">
+        <form id={formId} onSubmit={handleSubmit} className="silver-editor-form min-h-0 overflow-y-auto p-5 space-y-4 flex-1">
           {/* Type Selector */}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
@@ -296,7 +276,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
                 {t('transactionDate')}
               </label>
-              <input
+              <DateField label={t('transactionDate')}
                 type="date"
                 value={date}
                 onChange={e => setDate(e.target.value)}

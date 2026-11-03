@@ -26,7 +26,7 @@ try {
   await page.goto('http://127.0.0.1:4175');
   await page.locator('nav').getByRole('button',{name:'Tài sản',exact:true}).waitFor();
   await page.getByRole('button',{name:'Thêm giao dịch',exact:true}).click();
-  const editor=page.getByRole('dialog',{name:'Thêm Giao Dịch Mới',exact:true});
+  const editor=page.getByRole('dialog',{name:'Thêm giao dịch',exact:true});
   await editor.waitFor();
   await editor.locator('input[inputmode=numeric]').fill('65000');
   await editor.locator('input[type=text]').nth(1).fill('Draft remains intact');
@@ -77,7 +77,7 @@ try {
   await page.keyboard.press('ArrowDown');assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')),'Mục tiêu tiết kiệm');
   await page.keyboard.press('Home');await page.keyboard.press('Enter');
   assert.match(await source.innerText(),/Tiền mặt/);
-  await editor.getByRole('button',{name:'Thêm Giao Dịch',exact:true}).click();
+  await editor.getByRole('button',{name:'Lưu giao dịch',exact:true}).click();
   const result=await page.evaluate(()=>({transactions:JSON.parse(localStorage.getItem('ltmsav_transactions_v1')),accounts:JSON.parse(localStorage.getItem('ltmsav_accounts_v1'))}));
   assert.equal(result.transactions.length,1);assert.equal(result.transactions[0].categoryId,'food');assert.equal(result.transactions[0].accountId,'cash');assert.equal(result.accounts[0].balance,1735000);
   assert.deepEqual(errors,[]);

@@ -40,11 +40,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           onClick={() => onNavigateTab('overview')}
           className="flex items-center gap-2.5 cursor-pointer min-w-0"
         >
-          <img src="/logo.png" alt="LTMsav Logo" className="w-8 h-8 rounded-xl object-contain shadow-md shadow-emerald-950/20 shrink-0" />
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-bold tracking-tight flex items-center gap-1.5 text-slate-900 dark:text-white">
               <span>LTM</span>
-              <span className="text-blue-600 dark:text-blue-300 font-black">sav</span>
+              <span className="font-bold">sav</span>
             </h1>
             <p className="finance-brand-subtitle text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">{t('appSubtitle')}</p>
           </div>

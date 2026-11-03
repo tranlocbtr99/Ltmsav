@@ -103,7 +103,7 @@ export const SecurityLockScreen: React.FC<SecurityLockScreenProps> = ({
   }, [enteredPin, correctPin]);
 
   return (
-    <div className="fixed inset-0 z-[80] flex flex-col items-center justify-center gap-4 py-6 px-6 overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white select-none backdrop-blur-xl">
+    <div className="silver-security fixed inset-0 z-[80] flex flex-col items-center justify-center gap-4 py-6 px-6 overflow-y-auto bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white select-none backdrop-blur-xl">
       
       {/* Top Branding */}
       <div className="pt-8 flex flex-col items-center space-y-3">

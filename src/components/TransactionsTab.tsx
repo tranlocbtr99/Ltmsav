@@ -1,3 +1,5 @@
+import { confirmAction } from './Confirmation';
+import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Transaction, Account, Category, TransactionType } from '../types';
@@ -40,6 +42,8 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   const [swipedId, setSwipedId] = useState<string | null>(null);
   const touchStart = useRef<{x: number; y: number} | null>(null);
   useEffect(() => { setVisibleCount(60); }, [searchTerm, selectedType, selectedAccount, selectedCategory, fromDate, toDate]);
+
+  useEffect(()=>{if(initialAccountId)setSelectedAccount(initialAccountId);},[initialAccountId]);
 
   // Filter logic
   const filteredTransactions = useMemo(() => {
@@ -186,8 +190,8 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
         {showFilters && (
           <div className="p-3.5 rounded-2xl glass-card space-y-3 animate-in fade-in duration-150">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <label className="text-slate-600 dark:text-slate-300">{t('fromDate')}<input aria-label={t('fromDate')} type="date" value={fromDate} max={toDate || undefined} onChange={e => setFromDate(e.target.value)} className="form-control w-full rounded-xl px-3 mt-1"/></label>
-              <label className="text-slate-600 dark:text-slate-300">{t('toDate')}<input aria-label={t('toDate')} type="date" value={toDate} min={fromDate || undefined} onChange={e => setToDate(e.target.value)} className="form-control w-full rounded-xl px-3 mt-1"/></label>
+              <label className="text-slate-600 dark:text-slate-300">{t('fromDate')}<DateField aria-label={t('fromDate')} type="date" value={fromDate} max={toDate || undefined} onChange={e => setFromDate(e.target.value)} className="form-control w-full rounded-xl px-3 mt-1"/></label>
+              <label className="text-slate-600 dark:text-slate-300">{t('toDate')}<DateField aria-label={t('toDate')} type="date" value={toDate} min={fromDate || undefined} onChange={e => setToDate(e.target.value)} className="form-control w-full rounded-xl px-3 mt-1"/></label>
               <div>
                 <label className="text-slate-600 dark:text-slate-400 font-semibold mb-1 block">{t('filterBySource')}</label>
                 <IOSSelect
@@ -321,7 +325,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                     </button>
                     {swipedId === tx.id && <div className="flex justify-end gap-2 px-3 pb-3">
                       <button type="button" className="rounded-xl px-4 bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200" onClick={() => { setSwipedId(null); onSelectTransaction(tx); }}>{t('editTransaction')}</button>
-                      <button type="button" className="rounded-xl px-4 bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-200" onClick={() => { if (confirm(t('confirmDeleteTx'))) { onDeleteTransaction(tx.id); setSwipedId(null); } }}>{t('delete')}</button>
+                      <button type="button" className="rounded-xl px-4 bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-200" onClick={async () => { if (await confirmAction(t('confirmDeleteTx'), {destructive:true})) { onDeleteTransaction(tx.id); setSwipedId(null); } }}>{t('delete')}</button>
                       <button type="button" aria-label={t('cancel')} onClick={() => setSwipedId(null)} className="px-3"><X size={18}/></button>
                     </div>}
                     </div>

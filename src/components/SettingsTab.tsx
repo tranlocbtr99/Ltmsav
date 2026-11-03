@@ -1,3 +1,5 @@
+import { DynamicIcon } from './DynamicIcon';
+import { confirmAction } from './Confirmation';
 import React, { useState, useRef, useEffect } from 'react';
 import { AppSettings, AuditLog } from '../types';
 import { 
@@ -124,7 +126,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     <div className="finance-screen settings-groups mb-6">
       
       {/* 1. Theme Configuration (Giao diện Sáng / Tối) */}
-      <div className="glass-card p-5 rounded-3xl border space-y-3.5">
+      <h2 className="silver-settings-group">{t('experienceGroup')}</h2><details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="Palette" className="w-5 h-5"/></span><span className="silver-settings-name">{t('theme')}</span><small>{t(settings.theme)}</small><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border space-y-3.5">
         <div className="flex items-center gap-2.5">
           <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-500 dark:text-indigo-400">
             {settings.theme === 'light' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-indigo-400" />}
@@ -175,10 +177,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <span>{t('system')}</span>
           </button>
         </div>
-      </div>
+      </div></details>
 
       {/* 1b. Language Configuration (Tiếng Việt / English) */}
-      <div className="glass-card p-5 rounded-3xl border space-y-3.5">
+      <details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="Globe" className="w-5 h-5"/></span><span className="silver-settings-name">{t('language')}</span><small>{language === 'vi' ? 'Tiếng Việt' : 'English'}</small><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border space-y-3.5">
         <div className="flex items-center gap-2.5">
           <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
             <Globe className="w-5 h-5" />
@@ -214,12 +216,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <span>🇬🇧 English</span>
           </button>
         </div>
-      </div>
+      </div></details>
 
       {/* 2. Data backup (merged: zero-data-loss + export/import) is below */}
 
       {/* 3. Security (single master toggle) */}
-      <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
+      <h2 className="silver-settings-group">{t('securityDataGroup')}</h2><details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="Lock" className="w-5 h-5"/></span><span className="silver-settings-name">{t('appSecurity')}</span><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="p-3 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -331,10 +333,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </button>
           </div>
         )}
-      </div>
+      </div></details>
 
       {/* 4.5. AI & Cloud Sync Configuration */}
-      <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
+      <details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="Sparkles" className="w-5 h-5"/></span><span className="silver-settings-name">{t('aiConfigTitle')}</span><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
         <div className="flex items-center gap-2.5">
           <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
             <Sparkles className="w-5 h-5" />
@@ -398,10 +400,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             />
           </div>
         </div>
-      </div>
+      </div></details>
 
       {/* 5. Backup and Restore */}
-      <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3.5">
+      <details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="ArchiveRestore" className="w-5 h-5"/></span><span className="silver-settings-name">{t('dataBackupTitle')}</span><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3.5">
         <div className="flex items-center gap-2.5">
           <div className="p-2.5 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400">
             <HardDrive className="w-5 h-5" />
@@ -501,8 +503,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm(t('restoreSnapshotConfirm'))) {
+                  onClick={async () => {
+                    if (await confirmAction(t('restoreSnapshotConfirm'), {destructive:false})) {
                       storage.importBackup(JSON.stringify({ data: s.data }));
                       window.location.reload();
                     }
@@ -515,10 +517,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             ))}
           </div>
         )}
-      </div>
+      </div></details>
 
       {/* 6. Audit Log */}
-      <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3">
+      <details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="History" className="w-5 h-5"/></span><span className="silver-settings-name">{t('auditLogTitle')}</span><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
@@ -563,17 +565,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             )}
           </div>
         )}
-      </div>
+      </div></details>
 
       {/* 7. Reset Data */}
-      <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="RotateCcw" className="w-5 h-5"/></span><span className="silver-settings-name">{t('restoreSampleData')}</span><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div>
           <h4 className="text-sm font-bold text-slate-900 dark:text-white">{t('restoreSampleData')}</h4>
           <p className="text-xs text-slate-500 dark:text-slate-400">{t('restoreSampleDesc')}</p>
         </div>
         <button
-          onClick={() => {
-            if (confirm(t('resetConfirm'))) {
+          onClick={async () => {
+            if (await confirmAction(t('resetConfirm'), {destructive:true})) {
               onResetData();
             }
           }}
@@ -582,10 +584,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <RotateCcw className="w-4 h-4" />
           <span>{t('resetBtn')}</span>
         </button>
-      </div>
+      </div></details>
 
       {/* 8. Author, Copyright & Contact Information (Designed by LocTM) */}
-      <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800/80 space-y-3">
+      <details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="Info" className="w-5 h-5"/></span><span className="silver-settings-name">{t('authorCopyright')}</span><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800/80 space-y-3">
         <div className="flex items-center gap-2.5">
           <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
             <User className="w-5 h-5" />
@@ -629,12 +631,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           <Heart className="w-4 h-4" />
           <span>{t('supportAuthor')}</span>
         </button>
-      </div>
+      </div></details>
 
       {/* Support Author Modal */}
       {isSupportOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
+          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 animate-pop-in max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Heart className="w-4 h-4 text-rose-500" />
@@ -690,7 +692,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       {/* Change PIN Modal */}
       {isPinModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto">
+          <div className="silver-form-sheet w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl space-y-4 max-h-[88dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-amber-500 dark:text-amber-400" />

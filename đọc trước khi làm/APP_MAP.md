@@ -156,3 +156,12 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - UI regression: scripts/verify-ios-pickers-ui.mjs checks themes, search, selected state, draft preservation, keyboard navigation, narrow/landscape sizing, large text and the final persisted account/category/amount. Existing customization and finance UI checks remain enabled in CI.
 - Version: 2.2.0 / 20200, previous 20100. No financial schema, storage or signing changes.
 - Design references: https://developer.apple.com/design/human-interface-guidelines/pickers ; https://developer.apple.com/design/human-interface-guidelines/materials ; https://developer.apple.com/design/human-interface-guidelines/sheets ; https://developer.apple.com/design/tips/ .
+
+## Liquid Silver redesign (3.0.0)
+- src/silver.css is the authoritative light/dark visual layer, imported after index.css. Pearl content surfaces, graphite dark palette, restrained glass navigation/toolbars and five floating tabs; profile stays in the header. Overview has an unboxed available balance, two primary actions and a compact interactive cashflow plot.
+- Settings uses grouped expandable rows. Plans groups budgets and recurring schedules; assets retains loans/debts and account history. App lazily mounts visited tabs and preserves their local state, including AI conversations and transaction filters.
+- DateField.tsx provides app-owned calendar/time sheets with staged selection, cancel/confirm, min/max validation and focus containment. All former native date/time fields use this component.
+- Confirmation.tsx provides shared asynchronous alert dialogs, destructive confirmation, cancel-first focus and inert background. All native confirm calls are replaced. useDialogFocus restores body scrolling only after the last stacked modal closes.
+- Add/Edit use a large amount and compact grouped fields. Existing account/category IDs, validation, balance calculations and transaction posting remain unchanged. Splash and security screens share the palette. All added labels have VI/EN translations.
+- scripts/verify-silver-ui.mjs checks theme/layout, calendar cancellation, custom confirmation, add/delete ledger restoration, persistent filters/AI, preserved PIN and no native dialogs across narrow/landscape/large-text layouts. Included in release CI alongside existing UI tests.
+- release.json: 3.0.0 / 30000, previousVersionCode 20200. Application ID, WebView origin, schema 7, financial storage and existing signing certificate remain unchanged.

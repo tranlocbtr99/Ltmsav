@@ -1,3 +1,4 @@
+import { confirmAction } from './Confirmation';
 import { IOSSelect } from './IOSSelect';
 import React, { useId, useState } from 'react';
 import { Category, CategoryActions, CategoryType } from '../types';
@@ -50,7 +51,7 @@ export const CategoryPicker: React.FC<Props> = ({categories,type,value,onChange,
       </div>
       <div className="max-h-48 space-y-1 overflow-y-auto">{categories.filter(c=>c.type===type).map(c=><div key={c.id} className="flex items-center gap-2 text-sm"><span className="min-w-0 flex-1 break-words text-slate-800 dark:text-slate-100">{c.name}</span>
         {onUpdateCategory&&<button type="button" aria-label={t('renameCategory')+': '+c.name} className="min-h-11 min-w-11 p-2 text-blue-600 dark:text-sky-300" onClick={()=>{setEditing(c.id);setName(c.name);}}><Pencil size={16}/></button>}
-        {onDeleteCategory&&<button type="button" aria-label={t('delete')+': '+c.name} className="min-h-11 min-w-11 p-2 text-rose-600 dark:text-rose-300" onClick={()=>run(()=>{if(confirm(t('deleteCategoryConfirm',{name:c.name}))){onDeleteCategory(c.id);if(value===c.id)onChange('');}})}><Trash2 size={16}/></button>}
+        {onDeleteCategory&&<button type="button" aria-label={t('delete')+': '+c.name} className="min-h-11 min-w-11 p-2 text-rose-600 dark:text-rose-300" onClick={async()=>{if(await confirmAction(t('deleteCategoryConfirm',{name:c.name}), {destructive:true}))run(()=>{onDeleteCategory(c.id);if(value===c.id)onChange('');});}}><Trash2 size={16}/></button>}
       </div>)}</div>
       <p className="text-xs text-slate-500 dark:text-slate-400">{t('categoryDeleteHint')}</p>
     </div>}

@@ -1,3 +1,4 @@
+import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
 import React, { useState, useRef, useEffect } from 'react';
 import { Account, Category, Transaction, AiChatResponse, AiParsedCommand, AppSettings } from '../types';
@@ -183,38 +184,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
   return (
     <div className="ai-screen finance-screen flex flex-col pb-2">
       
-      {/* Header bar */}
-      <div className="p-3.5 glass-panel rounded-2xl flex items-center justify-between mb-3 border border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <span>{t('aiTitle')}</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            </h2>
-            <p className="text-[11px] text-slate-600 dark:text-slate-400">{t('aiSubtitle')}</p>
-          </div>
-        </div>
-
-        <button
-          disabled={isLoading} onClick={() => {
-            setMessages([
-              {
-                id: 'msg_welcome_' + Date.now(),
-                sender: 'bot',
-                text: t('aiCleared'),
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              }
-            ]);
-          }}
-          className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition shrink-0"
-          title={t('clearChat')}
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
-      </div>
+      <div className="silver-ai-tools"><span>{t('aiWelcomeShort')}</span><button type="button" className="silver-round-button" disabled={isLoading} title={t('clearChat')} aria-label={t('clearChat')} onClick={()=>setMessages([{id:crypto.randomUUID(),sender:'bot',text:t('aiWelcomeShort'),timestamp:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}])}><RefreshCw size={18}/></button></div>
 
       {/* Messages stream */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3.5 pr-1">
@@ -287,7 +257,7 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
                           <label className="text-xs">{t('amountVnd')}<input className="form-control w-full rounded-xl px-2 mt-1" inputMode="numeric" value={cmd.amount ? cmd.amount.toLocaleString('vi-VN') : ''} onChange={e => updateDraft(msg.id,idx,{amount:Number(e.target.value.replace(/\D/g,''))})}/></label>
                           <label className="text-xs">{t('source')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('source')} value={accounts.some(a=>a.name === cmd.account) ? cmd.account : ''} onChange={e => updateDraft(msg.id,idx,{account:e.target.value})}><option value="">{t('source')}</option>{accounts.map(a=><option key={a.id} value={a.name} data-icon={a.iconName} data-color={a.color} data-detail={a.balance.toLocaleString('vi-VN')+' ₫'}>{a.name}</option>)}</IOSSelect></label>
                           {cmd.kind === 'transfer' ? <label className="text-xs">{t('toAccount')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('toAccount')} value={cmd.account_to || ''} onChange={e=>updateDraft(msg.id,idx,{account_to:e.target.value})}><option value="">{t('toAccount')}</option>{accounts.filter(a=>a.name !== cmd.account).map(a=><option key={a.id} value={a.name} data-icon={a.iconName} data-color={a.color} data-detail={a.balance.toLocaleString('vi-VN')+' ₫'}>{a.name}</option>)}</IOSSelect></label> : <label className="text-xs">{t('category')}<IOSSelect className="form-control w-full rounded-xl px-2 mt-1" label={t('category')} layout="grid" value={categories.some(c=>c.name === cmd.category && c.type === categoryTypeFor(cmd.kind)) ? cmd.category : ''} onChange={e => updateDraft(msg.id,idx,{category:e.target.value})}><option value="">{t('chooseCategory')}</option>{categories.filter(c=>c.type === categoryTypeFor(cmd.kind)).map(c=><option key={c.id} value={c.name} data-icon={c.iconName} data-color={c.color}>{c.name}</option>)}</IOSSelect></label>}
-                          <label className="text-xs">{t('date')}<input type="date" className="form-control w-full rounded-xl px-2 mt-1" value={cmd.date || ''} onChange={e => updateDraft(msg.id,idx,{date:e.target.value})}/></label>
+                          <label className="text-xs">{t('date')}<DateField label={t('date')} type="date" className="form-control w-full rounded-xl px-2 mt-1" value={cmd.date || ''} onChange={e => updateDraft(msg.id,idx,{date:e.target.value})}/></label>
                           <label className="text-xs">{t('transactionDesc')}<input className="form-control w-full rounded-xl px-2 mt-1" value={cmd.description || ''} onChange={e=>updateDraft(msg.id,idx,{description:e.target.value})}/></label>
                         </div>
                       </fieldset> : <p className="text-xs text-emerald-700 dark:text-emerald-300">{t('recorded')} · {cmd.account} · {cmd.category}</p>}

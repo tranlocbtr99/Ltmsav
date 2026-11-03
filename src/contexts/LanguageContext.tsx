@@ -9,6 +9,20 @@ interface LanguageContextType {
 }
 
 const vi: Record<string, string> = {
+  quickAi: 'Nhập AI',
+  saveAction: 'Lưu',
+  assistantTitle: 'Trợ lý AI',
+  confirmActionTitle: 'Xác nhận thao tác',
+  confirmActionLabel: 'Xác nhận',
+  previousMonth: 'Tháng trước',
+  nextMonth: 'Tháng sau',
+  hoursLabel: 'Giờ',
+  minutesLabel: 'Phút',
+  clearChoice: 'Bỏ chọn',
+  managementGroup: 'Quản lý',
+  experienceGroup: 'Trải nghiệm',
+  securityDataGroup: 'Bảo mật & dữ liệu',
+
   chooseOption: 'Chọn một mục',
   pickerChoiceHint: 'Chọn một mục để áp dụng',
   closePicker: 'Đóng bảng chọn',
@@ -86,7 +100,7 @@ const vi: Record<string, string> = {
   appSubtitle: 'Sổ thu chi & Quản lý tài chính',
   language: 'Ngôn ngữ',
   languageDesc: 'Chọn ngôn ngữ hiển thị của ứng dụng',
-  theme: 'Giao Diện Ứng Dụng',
+  theme: 'Giao diện',
   themeDesc: 'Tùy chỉnh chế độ Sáng / Tối theo sở thích',
   light: 'Sáng',
   dark: 'Tối',
@@ -302,7 +316,7 @@ const vi: Record<string, string> = {
   // Add/Edit transaction
   newIncome: 'Thu nhập mới',
   newExpense: 'Chi tiêu mới',
-  addTransactionTitle: 'Thêm Giao Dịch Mới',
+  addTransactionTitle: 'Thêm giao dịch',
   addTransactionSubtitle: 'Ghi thu chi & cập nhật số dư',
   transactionType: 'Loại giao dịch',
   transactionDesc: 'Mô tả giao dịch',
@@ -314,8 +328,8 @@ const vi: Record<string, string> = {
   relatedPersonExample: 'VD: Minh, Anh Hùng...',
   extraNote: 'Ghi chú thêm (tùy chọn)',
   locationDetails: 'Chi tiết địa điểm, cửa hàng...',
-  addTransactionBtn: 'Thêm Giao Dịch',
-  editTransactionTitle: 'Chỉnh Sửa Giao Dịch',
+  addTransactionBtn: 'Lưu giao dịch',
+  editTransactionTitle: 'Chỉnh sửa giao dịch',
   editTransactionSubtitle: 'Tự động đối soát số dư',
   clearAmount: 'Xóa số',
   contentDesc: 'Nội dung mô tả',
@@ -329,7 +343,7 @@ const vi: Record<string, string> = {
   deleteNow: 'Xóa Ngay',
   cancelAction: 'Hủy bỏ',
   delete: 'Xóa',
-  saveChanges: 'Lưu Thay Đổi',
+  saveChanges: 'Lưu thay đổi',
 
   // Security lock
   securityTitle: 'LTMsav Bảo Mật',
@@ -391,7 +405,7 @@ const vi: Record<string, string> = {
   restoreSnapshotConfirm: 'Khôi phục lại dữ liệu từ bản chụp này?',
   restore: 'Khôi phục',
 
-  appSecurity: 'Bảo Mật Ứng Dụng',
+  appSecurity: 'Khóa ứng dụng',
   statusEnabled: 'Đang bật',
   statusNotEnabled: 'Chưa bật',
   securitySubtitle: 'Khóa ứng dụng bằng mã PIN hoặc mã PIN + vân tay',
@@ -412,14 +426,14 @@ const vi: Record<string, string> = {
   installedOnHome: 'Đã cài đặt LTMsav trên màn hình chính',
   addHomeScreenHint: 'Bạn có thể nhấn menu trình duyệt và chọn "Thêm vào màn hình chính" bất kỳ lúc nào.',
 
-  aiConfigTitle: 'Cấu Hình Trí Tuệ Nhân Tạo (AI)',
+  aiConfigTitle: 'Cấu hình AI',
   aiConfigDesc: 'Hỗ trợ nhận diện giọng nói & văn bản tự nhiên khi dùng trên điện thoại',
   geminiKeyLabel: 'Google Gemini API Key (Tùy chọn)',
   geminiKeyPlaceholder: 'AIzaSy... (Để trống nếu dùng bộ AI Offline mặc định)',
   geminiKeyHint: 'Ứng dụng luôn tích hợp sẵn bộ phân tích tiếng Việt cục bộ (Offline). Nhập Gemini API Key nếu muốn AI phân tích các câu lệnh phức tạp.',
   backendUrlLabel: 'Địa chỉ máy chủ Backend (Tùy chọn)',
 
-  dataBackupTitle: 'Sao Lưu Dữ Liệu',
+  dataBackupTitle: 'Sao lưu dữ liệu',
   dataBackupDesc: 'Chống mất dữ liệu khi nâng cấp & sao lưu/khôi phục',
   exportJsonBackup: 'Xuất sao lưu JSON',
   importRestore: 'Nhập khôi phục',
@@ -494,6 +508,20 @@ const vi: Record<string, string> = {
 };
 
 const en: Record<string, string> = {
+  quickAi: 'AI entry',
+  saveAction: 'Save',
+  assistantTitle: 'AI assistant',
+  confirmActionTitle: 'Confirm action',
+  confirmActionLabel: 'Confirm',
+  previousMonth: 'Previous month',
+  nextMonth: 'Next month',
+  hoursLabel: 'Hours',
+  minutesLabel: 'Minutes',
+  clearChoice: 'Clear',
+  managementGroup: 'Management',
+  experienceGroup: 'Experience',
+  securityDataGroup: 'Security & data',
+
   chooseOption: 'Choose an option',
   pickerChoiceHint: 'Select an option to apply',
   closePicker: 'Close picker',
