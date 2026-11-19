@@ -129,14 +129,20 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
         </h3>
 
         {budgetStats.length === 0 ? (
-          <div className="glass-card p-8 rounded-2xl text-center space-y-2">
-            <Target className="w-8 h-8 text-slate-500 mx-auto" />
-            <h3 className="text-base font-bold">{t('noBudgets')}</h3><p className="text-sm text-slate-600 dark:text-slate-300">{t('budgetEmptyHint')}</p>
+          <div className="glass-card p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center space-y-3">
+            <div className="w-28 h-24 mx-auto flex items-center justify-center">
+              <img src="/illustrations/empty-budgets.svg" alt="Chưa có ngân sách" className="w-full h-full object-contain" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">{t('noBudgets')}</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">{t('budgetEmptyHint')}</p>
+            </div>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-500/20 active:scale-95 transition"
             >
-              {t('createLimitNow')}
+              <Plus className="w-4 h-4" />
+              <span className="whitespace-nowrap">{t('createLimitNow')}</span>
             </button>
           </div>
         ) : (

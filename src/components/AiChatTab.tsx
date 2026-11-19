@@ -273,21 +273,21 @@ export const AiChatTab: React.FC<AiChatTabProps> = ({
       <div className="liquid-glass p-3 rounded-3xl mb-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-purple-500/25 ring-2 ring-purple-400/30">
-              <Bot className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600/20 to-indigo-500/20 flex items-center justify-center p-0.5 shadow-md ring-2 ring-purple-400/30 overflow-hidden">
+              <img src="/illustrations/ai-finance-mascot.svg" alt="LTM AI" className="w-full h-full object-contain" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight">
+              <span className="text-xs sm:text-sm font-black text-slate-900 dark:text-white tracking-tight whitespace-nowrap">
                 LTM AI Financial
               </span>
-              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 whitespace-nowrap shrink-0">
                 Gemini Flash
               </span>
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap truncate">
               Trợ lý tài chính cá nhân thông minh
             </p>
           </div>

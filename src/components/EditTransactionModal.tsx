@@ -324,7 +324,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             <AlertCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="text-slate-600 dark:text-slate-300 font-medium">{t('preserveLedger')}</p>
-              <p className="tabular-nums break-all">
+              <p className="tabular-nums break-words">
                 {t('preserveLedgerDesc', { old: transaction.amount.toLocaleString('vi-VN'), new: numAmount.toLocaleString('vi-VN') })}
               </p>
             </div>

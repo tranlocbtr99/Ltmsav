@@ -159,23 +159,23 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('cashIn')}</span>
-            <span className="text-[11px] sm:text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums break-all">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col justify-between">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1 whitespace-nowrap">{t('cashIn')}</span>
+            <span className="text-[11px] sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400 tabular-nums whitespace-nowrap truncate">
               +{totalIncome.toLocaleString('vi-VN')}₫
             </span>
           </div>
 
-          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('cashOut')}</span>
-            <span className="text-[11px] sm:text-base font-bold text-rose-600 dark:text-rose-400 tabular-nums break-all">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col justify-between">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1 whitespace-nowrap">{t('cashOut')}</span>
+            <span className="text-[11px] sm:text-base font-extrabold text-rose-600 dark:text-rose-400 tabular-nums whitespace-nowrap truncate">
               -{totalExpense.toLocaleString('vi-VN')}₫
             </span>
           </div>
 
-          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('net')}</span>
-            <span className={`text-[11px] sm:text-base font-bold tabular-nums break-all ${netSavings >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col justify-between">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1 whitespace-nowrap">{t('net')}</span>
+            <span className={`text-[11px] sm:text-base font-extrabold tabular-nums whitespace-nowrap truncate ${netSavings >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
               {netSavings >= 0 ? '+' : ''}{netSavings.toLocaleString('vi-VN')}₫
             </span>
           </div>

@@ -240,20 +240,27 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
 
       {/* Transaction Groups */}
       {groupedByDate.length === 0 ? (
-        <div className="text-center py-12 glass-card rounded-2xl space-y-3">
-          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500">
-            <Calendar className="w-6 h-6" />
+        <div className="text-center py-10 px-4 glass-card rounded-3xl space-y-4 border border-slate-200/80 dark:border-slate-800">
+          <div className="w-36 h-32 mx-auto flex items-center justify-center animate-fade-in">
+            <img 
+              src="/illustrations/empty-transactions.svg" 
+              alt="Chưa có giao dịch" 
+              className="w-full h-full object-contain drop-shadow-md"
+            />
           </div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{t('noTransactions')}</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-            {t('noTransactionsFilter')}
-          </p>
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('noTransactions')}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+              {t('noTransactionsFilter')}
+            </p>
+          </div>
           <button
-            onClick={onOpenAdd} aria-label={t('addTransaction')}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-md"
+            onClick={hasActiveFilters ? () => { setSearchTerm(''); setSelectedCategory('all'); setSelectedAccount('all'); setTypeFilter('all'); } : onOpenAdd}
+            aria-label={t('addTransaction')}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-2xl transition shadow-lg shadow-blue-500/20 active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            <span>{t(hasActiveFilters ? 'clearFilter' : 'addTransactionNow')}</span>
+            <span className="whitespace-nowrap">{t(hasActiveFilters ? 'clearFilter' : 'addTransactionNow')}</span>
           </button>
         </div>
       ) : (
@@ -329,9 +336,9 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                         </div>
                       </div>
 
-                      <div className="transaction-amount ml-2">
-                        <div className="text-right">
-                          <span className={`text-xs sm:text-sm font-bold block ${
+                      <div className="transaction-amount ml-2 shrink-0">
+                        <div className="text-right whitespace-nowrap">
+                          <span className={`text-xs sm:text-sm font-extrabold tabular-nums block ${
                             tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' :
                             tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' :
                             tx.type === 'transfer' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'
@@ -339,7 +346,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                             {tx.type === 'expense' ? '-' : tx.type === 'income' ? '+' : ''}
                             {tx.amount.toLocaleString('vi-VN')}₫
                           </span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block whitespace-nowrap group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
                             {t('tapToEdit')}
                           </span>
                         </div>

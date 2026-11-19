@@ -413,7 +413,7 @@ export const ForecastSimulationTab: React.FC<ForecastSimulationTabProps> = ({
                       </span>
                     </div>
 
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shrink-0 ${
                       opt.isAffordable
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                         : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
@@ -425,41 +425,41 @@ export const ForecastSimulationTab: React.FC<ForecastSimulationTabProps> = ({
                   {/* Key Financial Numbers */}
                   <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-[11px]">
                     {opt.monthlyPayment > 0 && (
-                      <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                        <span>Đóng mỗi tháng:</span>
-                        <strong className="text-slate-900 dark:text-white font-bold">
-                          {formatMoneyVnd(opt.monthlyPayment)} ({opt.monthsCount} tháng)
+                      <div className="flex justify-between items-center text-slate-600 dark:text-slate-400 gap-2">
+                        <span className="whitespace-nowrap shrink-0">Đóng mỗi tháng:</span>
+                        <strong className="text-slate-900 dark:text-white font-bold whitespace-nowrap text-right">
+                          {formatMoneyVnd(opt.monthlyPayment)} ({opt.monthsCount}T)
                         </strong>
                       </div>
                     )}
                     
-                    <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                      <span>Tổng tiền chi thực tế:</span>
-                      <strong className="text-slate-900 dark:text-white font-extrabold text-xs">
+                    <div className="flex justify-between items-center text-slate-600 dark:text-slate-400 gap-2">
+                      <span className="whitespace-nowrap shrink-0">Tổng tiền chi:</span>
+                      <strong className="text-slate-900 dark:text-white font-extrabold text-xs whitespace-nowrap text-right">
                         {formatMoneyVnd(opt.totalPayment)}
                       </strong>
                     </div>
 
                     {opt.interestAndFees > 0 && (
-                      <div className="flex justify-between items-center text-amber-600 dark:text-amber-400 font-semibold">
-                        <span>Chênh lệch lãi & phí:</span>
-                        <span>+{formatMoneyVnd(opt.interestAndFees)}</span>
+                      <div className="flex justify-between items-center text-amber-600 dark:text-amber-400 font-semibold gap-2">
+                        <span className="whitespace-nowrap shrink-0">Lãi & phí phát sinh:</span>
+                        <span className="whitespace-nowrap text-right font-bold">+{formatMoneyVnd(opt.interestAndFees)}</span>
                       </div>
                     )}
 
                     {opt.debtBurdenRatio > 0 && (
-                      <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                        <span>Tỷ lệ chiếm thặng dư:</span>
-                        <span className={`font-bold ${opt.debtBurdenRatio > 50 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                          {opt.debtBurdenRatio}% thặng dư/tháng
+                      <div className="flex justify-between items-center text-slate-600 dark:text-slate-400 gap-2">
+                        <span className="whitespace-nowrap shrink-0">Chiếm thặng dư:</span>
+                        <span className={`font-bold whitespace-nowrap text-right ${opt.debtBurdenRatio > 50 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                          {opt.debtBurdenRatio}% thặng dư
                         </span>
                       </div>
                     )}
 
                     {opt.remainingBalanceAfterPayment !== 0 && (
-                      <div className="flex justify-between items-center text-slate-600 dark:text-slate-400">
-                        <span>Số dư còn lại sau thanh toán:</span>
-                        <span className={`font-bold ${opt.remainingBalanceAfterPayment < 0 ? 'text-rose-500 font-extrabold' : 'text-slate-900 dark:text-slate-200'}`}>
+                      <div className="flex justify-between items-center text-slate-600 dark:text-slate-400 gap-2">
+                        <span className="whitespace-nowrap shrink-0">Số dư còn lại:</span>
+                        <span className={`font-bold whitespace-nowrap text-right ${opt.remainingBalanceAfterPayment < 0 ? 'text-rose-500 font-extrabold' : 'text-slate-900 dark:text-slate-200'}`}>
                           {formatMoneyVnd(opt.remainingBalanceAfterPayment)}
                         </span>
                       </div>

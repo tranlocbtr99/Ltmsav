@@ -241,8 +241,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
         <div key={`${assetsHidden}-${availableBalance}`} className="balance-amount motion-value">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
         <div className="silver-balance-secondary grid grid-cols-2 gap-3 mt-4 text-xs">
-          <div className="min-w-0"><span className="block silver-muted">{t('totalBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</strong></div>
-          <div className="min-w-0 silver-savings border-l pl-3"><span className="block silver-muted">{t('savingsBalance')}</span><strong className="block mt-1 text-sm tabular-nums break-all">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</strong></div>
+          <div className="min-w-0"><span className="block silver-muted">{t('totalBalance')}</span><strong className="block mt-1 text-sm tabular-nums whitespace-nowrap truncate">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</strong></div>
+          <div className="min-w-0 silver-savings border-l pl-3"><span className="block silver-muted">{t('savingsBalance')}</span><strong className="block mt-1 text-sm tabular-nums whitespace-nowrap truncate">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</strong></div>
         </div>
       </section>
       <div className="silver-home-actions">
@@ -257,7 +257,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           ['expense', t('expense'), monthExpense, TrendingDown],
         ] as const).map(([kind,label,value,Icon]) => <div key={kind} className={`metric-tile metric-${kind}`}>
           <span className="flex items-center gap-1.5 text-xs"><Icon size={15}/>{label}</span>
-          <strong className="block text-lg tabular-nums break-all mt-1">{kind === 'income' ? '+' : '−'}{value.toLocaleString('vi-VN')} ₫</strong>
+          <strong className="block text-lg tabular-nums whitespace-nowrap truncate mt-1">{kind === 'income' ? '+' : '−'}{value.toLocaleString('vi-VN')} ₫</strong>
           <span className="block text-xs mt-1">{comparisonLabel(kind)}</span>
         </div>)}
       </div>
@@ -395,7 +395,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </span>
           </div>
           <div>
-            <span className="text-2xl sm:text-3xl font-extrabold text-indigo-700 dark:text-indigo-300 tabular-nums break-all">
+            <span className="text-2xl sm:text-3xl font-extrabold text-indigo-700 dark:text-indigo-300 tabular-nums whitespace-nowrap">
               ~{forecast.predicted.toLocaleString('vi-VN')}₫
             </span>
             <span className="text-xs text-slate-600 dark:text-slate-400 block mt-1">{t('forecastNextMonth')}</span>
@@ -461,51 +461,68 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </button>
         </div>
 
-        <div className="finance-list">
-          {recentTransactions.map(tx => {
-            const acc = accounts.find(a => a.id === tx.accountId);
-            const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
-            const cat = categories.find(c => c.id === tx.categoryId);
+        {recentTransactions.length === 0 ? (
+          <div className="glass-card rounded-3xl p-6 text-center space-y-3 border border-slate-200/80 dark:border-slate-800">
+            <div className="w-28 h-24 mx-auto flex items-center justify-center">
+              <img src="/illustrations/empty-transactions.svg" alt="Chưa có giao dịch" className="w-full h-full object-contain" />
+            </div>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('noTransactions')}</p>
+            <button
+              type="button"
+              onClick={onOpenAdd}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="whitespace-nowrap">{t('addTransaction')}</span>
+            </button>
+          </div>
+        ) : (
+          <div className="finance-list">
+            {recentTransactions.map(tx => {
+              const acc = accounts.find(a => a.id === tx.accountId);
+              const targetAcc = tx.targetAccountId ? accounts.find(a => a.id === tx.targetAccountId) : null;
+              const cat = categories.find(c => c.id === tx.categoryId);
 
-            return (
-              <button type="button"
-                key={tx.id}
-                onClick={() => onSelectTransaction(tx)}
-                className="transaction-row group w-full text-left flex items-center justify-between gap-2"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`p-2.5 rounded-xl shrink-0 ${
-                    tx.type === 'expense' ? 'bg-rose-500/15 text-rose-500 dark:text-rose-400' :
-                    tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
-                    tx.type === 'transfer' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' : 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
-                  }`}>
-                    <DynamicIcon name={cat?.iconName || 'CircleDollarSign'} className="w-4 h-4" />
+              return (
+                <button type="button"
+                  key={tx.id}
+                  onClick={() => onSelectTransaction(tx)}
+                  className="transaction-row group w-full text-left flex items-center justify-between gap-2"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`p-2.5 rounded-xl shrink-0 ${
+                      tx.type === 'expense' ? 'bg-rose-500/15 text-rose-500 dark:text-rose-400' :
+                      tx.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+                      tx.type === 'transfer' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' : 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
+                    }`}>
+                      <DynamicIcon name={cat?.iconName || 'CircleDollarSign'} className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white block truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                        {tx.description}
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
+                        {acc?.name} {targetAcc ? `→ ${targetAcc.name}` : ''} • {cat?.name} • {tx.date}
+                      </span>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white block truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
-                      {tx.description}
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
-                      {acc?.name} {targetAcc ? `→ ${targetAcc.name}` : ''} • {cat?.name} • {tx.date}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="text-right shrink-0 ml-2">
-                  <span className={`text-xs sm:text-sm font-bold block ${
-                    tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' :
-                    tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' :
-                    tx.type === 'transfer' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'
-                  }`}>
-                    {tx.type === 'expense' ? '-' : tx.type === 'income' ? '+' : ''}
-                    {tx.amount.toLocaleString('vi-VN')}₫
-                  </span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block">{t('tapToEdit')}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <div className="text-right shrink-0 ml-2 whitespace-nowrap">
+                    <span className={`text-xs sm:text-sm font-extrabold tabular-nums block ${
+                      tx.type === 'expense' ? 'text-rose-600 dark:text-rose-400' :
+                      tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' :
+                      tx.type === 'transfer' ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'
+                    }`}>
+                      {tx.type === 'expense' ? '-' : tx.type === 'income' ? '+' : ''}
+                      {tx.amount.toLocaleString('vi-VN')}₫
+                    </span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block whitespace-nowrap">{t('tapToEdit')}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       </>}

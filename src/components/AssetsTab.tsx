@@ -314,10 +314,10 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
     <div className="finance-screen silver-assets space-y-4 pb-6">
       
       {/* 3 Main Sub-tabs */}
-      <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-[10px] sm:text-xs font-semibold">
+      <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-[10px] sm:text-xs font-bold">
         <button
           onClick={() => setSubTab('accounts')}
-          className={`py-2 rounded-xl transition ${
+          className={`py-2 px-1 rounded-xl transition whitespace-nowrap truncate ${
             subTab === 'accounts' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
@@ -325,7 +325,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
         </button>
         <button
           onClick={() => setSubTab('loans')}
-          className={`py-2 rounded-xl transition ${
+          className={`py-2 px-1 rounded-xl transition whitespace-nowrap truncate ${
             subTab === 'loans' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
@@ -333,7 +333,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
         </button>
         <button
           onClick={() => setSubTab('debts')}
-          className={`py-2 rounded-xl transition ${
+          className={`py-2 px-1 rounded-xl transition whitespace-nowrap truncate ${
             subTab === 'debts' ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
           }`}
         >
@@ -405,7 +405,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                       )}
                     </span>
                   </span>
-                  <strong className="text-sm tabular-nums text-right break-all max-w-[150px] text-slate-900 dark:text-white font-extrabold">
+                  <strong className="text-sm tabular-nums text-right whitespace-nowrap shrink-0 ml-2 text-slate-900 dark:text-white font-extrabold">
                     {acc.balance.toLocaleString('vi-VN')} ₫
                   </strong>
                 </summary>
@@ -503,10 +503,28 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
           <div className="space-y-2.5">
             {debts.filter(d => d.type === 'loan').length === 0 ? (
-              <div className="glass-card p-6 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 space-y-1">
-                <User className="w-8 h-8 mx-auto text-emerald-500 opacity-60 mb-2" />
-                <p className="font-semibold text-slate-700 dark:text-slate-300">Chưa có khoản cho vay nào</p>
-                <p className="text-[11px]">Khi bạn cho bạn bè, người thân mượn tiền, hãy ghi chép ở đây để theo dõi và thu hồi đầy đủ.</p>
+              <div className="glass-card p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center space-y-3">
+                <div className="w-28 h-24 mx-auto flex items-center justify-center">
+                  <img src="/illustrations/empty-debts.svg" alt="Chưa có khoản cho vay" className="w-full h-full object-contain" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-sm text-slate-800 dark:text-slate-200">Chưa có khoản cho vay nào</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                    Khi bạn cho bạn bè, người thân mượn tiền, hãy ghi chép ở đây để theo dõi và thu hồi đầy đủ.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDebtModalType('loan');
+                    resetDebtForm();
+                    setIsDebtModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 active:scale-95 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="whitespace-nowrap">{t('addLoan')}</span>
+                </button>
               </div>
             ) : (
               debts.filter(d => d.type === 'loan').map(loan => (
@@ -618,10 +636,28 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
           <div className="space-y-3">
             {debts.filter(d => d.type === 'debt').length === 0 ? (
-              <div className="glass-card p-6 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 space-y-1">
-                <ShieldCheck className="w-8 h-8 mx-auto text-emerald-500 opacity-60 mb-2" />
-                <p className="font-semibold text-slate-700 dark:text-slate-300">Tuyệt vời! Bạn không có khoản nợ nào</p>
-                <p className="text-[11px]">Thêm thẻ tín dụng hoặc các khoản trả góp khi phát sinh để theo dõi hạn thanh toán và tránh phát sinh phí phạt.</p>
+              <div className="glass-card p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center space-y-3">
+                <div className="w-28 h-24 mx-auto flex items-center justify-center">
+                  <img src="/illustrations/empty-debts.svg" alt="Không có khoản nợ nào" className="w-full h-full object-contain" />
+                </div>
+                <div className="space-y-1">
+                  <p className="font-bold text-sm text-slate-800 dark:text-slate-200">Tuyệt vời! Bạn không có khoản nợ nào</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                    Thêm thẻ tín dụng hoặc các khoản trả góp khi phát sinh để theo dõi hạn thanh toán và tránh phát sinh phí phạt.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDebtModalType('debt');
+                    resetDebtForm();
+                    setIsDebtModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-500/20 active:scale-95 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="whitespace-nowrap">{t('addDebt')}</span>
+                </button>
               </div>
             ) : (
               debts.filter(d => d.type === 'debt').map(debt => {
