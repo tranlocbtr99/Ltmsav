@@ -12,7 +12,16 @@
           "package_name": "com.ltmsav.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "894474413931-fgjj73vtam8jre1h1s3a9pmfm2u7mi1n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ltmsav.app",
+            "certificate_hash": "b33484a6aff54b262d6f49fdea4c94e30d56a621"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCyMhqXbdwRzuIe1hDdlzoinxZ5Ysz60Io"

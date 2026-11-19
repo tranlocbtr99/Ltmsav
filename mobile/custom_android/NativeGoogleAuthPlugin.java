@@ -21,11 +21,21 @@ public class NativeGoogleAuthPlugin extends Plugin {
 
     private GoogleSignInClient getClient() {
         if (googleSignInClient == null) {
-            GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            GoogleSignInOptions.Builder builder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                     .requestEmail()
-                    .requestProfile()
-                    .build();
-            googleSignInClient = GoogleSignIn.getClient(getActivity(), gso);
+                    .requestProfile();
+
+            try {
+                int resId = getActivity().getResources().getIdentifier("default_web_client_id", "string", getActivity().getPackageName());
+                if (resId != 0) {
+                    String webClientId = getActivity().getString(resId);
+                    if (webClientId != null && !webClientId.trim().isEmpty()) {
+                        builder.requestIdToken(webClientId.trim());
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            googleSignInClient = GoogleSignIn.getClient(getActivity(), builder.build());
         }
         return googleSignInClient;
     }
