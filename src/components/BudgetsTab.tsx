@@ -76,7 +76,12 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
     <div className="finance-screen budget-screen space-y-4 pb-6">
       
       {/* Overview Banner */}
-      <div className="glass-card p-4 space-y-3">
+      <div className="glass-card p-5 space-y-3 relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-transparent to-blue-500/5 shadow-sm">
+        <div 
+          className="absolute right-0 top-0 bottom-0 w-1/2 bg-contain bg-right bg-no-repeat opacity-40 dark:opacity-25 pointer-events-none"
+          style={{ backgroundImage: `url('/illustrations/budget-banner-bg.svg')` }}
+        />
+        <div className="relative z-10 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
@@ -119,6 +124,7 @@ export const BudgetsTab: React.FC<BudgetsTabProps> = ({
             <span>{Math.round(overallPct)} {t('percentUsed')}</span>
             <span>{t('remainingLabel')}: {(totalBudgeted - totalSpentInBudgets).toLocaleString('vi-VN')}₫</span>
           </div>
+        </div>
         </div>
       </div>
 

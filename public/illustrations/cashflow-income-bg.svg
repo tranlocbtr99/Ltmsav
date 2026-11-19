@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="incWave" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="incArrow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="205" cy="55" r="45" fill="url(#incWave)"/>
+  <path d="M120 120 C160 80 190 95 240 70 L240 120 Z" fill="url(#incWave)"/>
+
+  <!-- Stylized Upward Trending 3D Arrow Graph -->
+  <g transform="translate(170, 25)">
+    <path d="M5 55 Q 25 45, 38 25 T 60 5" fill="none" stroke="url(#incArrow)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M48 5 L60 5 L60 17" fill="none" stroke="url(#incArrow)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="60" cy="5" r="3.5" fill="#34d399"/>
+  </g>
+</svg>

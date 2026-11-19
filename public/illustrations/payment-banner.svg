@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="payBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="coinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="320" height="100" rx="20" fill="url(#payBgGrad)"/>
+  <circle cx="280" cy="50" r="40" fill="#3b82f6" opacity="0.1"/>
+
+  <!-- Receipt & Checkmark 3D Graphic -->
+  <g transform="translate(240, 20)">
+    <rect x="10" y="8" width="34" height="46" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" opacity="0.9"/>
+    <!-- Receipt lines -->
+    <line x1="16" y1="18" x2="38" y2="18" stroke="#93c5fd" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16" y1="24" x2="32" y2="24" stroke="#bfdbfe" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16" y1="30" x2="36" y2="30" stroke="#bfdbfe" stroke-width="2" stroke-linecap="round"/>
+    <!-- Checkmark Badge -->
+    <circle cx="38" cy="44" r="14" fill="url(#coinGrad)"/>
+    <path d="M33 44 L37 48 L44 41" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- Sparkles -->
+  <path d="M220 30 L222 25 L224 30 L229 31.5 L224 33 L222 38 L220 33 L215 31.5 Z" fill="#60a5fa"/>
+</svg>

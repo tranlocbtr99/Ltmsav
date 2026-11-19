@@ -230,19 +230,25 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   return (
     <div className="space-y-5 pb-6 stagger">
       
-      <section className="balance-hero silver-balance">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium silver-muted">{t('availableBalance')}</span>
-          <button type="button" onClick={onToggleAssetsVisibility}
-            aria-label={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
-            aria-pressed={assetsHidden} className="hero-eye">
-            {assetsHidden ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
-          </button>
-        </div>
-        <div key={`${assetsHidden}-${availableBalance}`} className="balance-amount motion-value">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
-        <div className="silver-balance-secondary grid grid-cols-2 gap-3 mt-4 text-xs">
-          <div className="min-w-0"><span className="block silver-muted">{t('totalBalance')}</span><strong className="block mt-1 text-sm tabular-nums whitespace-nowrap truncate">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</strong></div>
-          <div className="min-w-0 silver-savings border-l pl-3"><span className="block silver-muted">{t('savingsBalance')}</span><strong className="block mt-1 text-sm tabular-nums whitespace-nowrap truncate">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</strong></div>
+      <section className="balance-hero silver-balance relative overflow-hidden rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm bg-gradient-to-br from-white/95 via-slate-50/80 to-blue-50/30 dark:from-slate-900/90 dark:via-slate-900/80 dark:to-blue-950/20 backdrop-blur-md">
+        <div 
+          className="absolute inset-0 bg-right bg-no-repeat bg-contain opacity-40 dark:opacity-25 pointer-events-none"
+          style={{ backgroundImage: `url('/illustrations/overview-balance-mesh.svg')` }}
+        />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">{t('availableBalance')}</span>
+            <button type="button" onClick={onToggleAssetsVisibility}
+              aria-label={t(assetsHidden ? 'showTotalAssets' : 'hideTotalAssets')}
+              aria-pressed={assetsHidden} className="hero-eye">
+              {assetsHidden ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+            </button>
+          </div>
+          <div key={`${assetsHidden}-${availableBalance}`} className="balance-amount motion-value">{assetsHidden ? '••••••' : availableBalance.toLocaleString('vi-VN')} <span className="text-xl">₫</span></div>
+          <div className="silver-balance-secondary grid grid-cols-2 gap-3 mt-4 text-xs backdrop-blur-sm bg-white/70 dark:bg-slate-950/70">
+            <div className="min-w-0"><span className="block silver-muted">{t('totalBalance')}</span><strong className="block mt-1 text-sm tabular-nums whitespace-nowrap truncate">{assetsHidden ? '••••••' : totalBalance.toLocaleString('vi-VN')} ₫</strong></div>
+            <div className="min-w-0 silver-savings border-l pl-3"><span className="block silver-muted">{t('savingsBalance')}</span><strong className="block mt-1 text-sm tabular-nums whitespace-nowrap truncate">{assetsHidden ? '••••••' : savingsBalance.toLocaleString('vi-VN')} ₫</strong></div>
+          </div>
         </div>
       </section>
       <div className="silver-home-actions">
@@ -253,12 +259,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       {assetsHidden ? <div className="glass-card p-5 text-center text-sm text-slate-600 dark:text-slate-300"><EyeOff className="mx-auto mb-2" aria-hidden="true"/>{t('hiddenHomeHint')}</div> : <>
       <div className="grid grid-cols-2 gap-3">
         {([
-          ['income', t('income'), monthIncome, TrendingUp],
-          ['expense', t('expense'), monthExpense, TrendingDown],
-        ] as const).map(([kind,label,value,Icon]) => <div key={kind} className={`metric-tile metric-${kind}`}>
-          <span className="flex items-center gap-1.5 text-xs"><Icon size={15}/>{label}</span>
-          <strong className="block text-lg tabular-nums whitespace-nowrap truncate mt-1">{kind === 'income' ? '+' : '−'}{value.toLocaleString('vi-VN')} ₫</strong>
-          <span className="block text-xs mt-1">{comparisonLabel(kind)}</span>
+          ['income', t('income'), monthIncome, TrendingUp, '/illustrations/cashflow-income-bg.svg'],
+          ['expense', t('expense'), monthExpense, TrendingDown, '/illustrations/cashflow-expense-bg.svg'],
+        ] as const).map(([kind,label,value,Icon,bgImg]) => <div key={kind} className={`metric-tile metric-${kind} relative overflow-hidden`}>
+          <div 
+            className="absolute right-0 bottom-0 top-0 w-2/3 bg-right bg-no-repeat bg-contain opacity-25 pointer-events-none"
+            style={{ backgroundImage: `url('${bgImg}')` }}
+          />
+          <div className="relative z-10">
+            <span className="flex items-center gap-1.5 text-xs"><Icon size={15}/>{label}</span>
+            <strong className="block text-lg tabular-nums whitespace-nowrap truncate mt-1">{kind === 'income' ? '+' : '−'}{value.toLocaleString('vi-VN')} ₫</strong>
+            <span className="block text-xs mt-1">{comparisonLabel(kind)}</span>
+          </div>
         </div>)}
       </div>
       <p className="text-xs text-slate-600 dark:text-slate-400">{t('monthComparisonHint')}</p>

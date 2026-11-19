@@ -36,9 +36,13 @@ export const AiAdvisoryWidget: React.FC<AiAdvisoryWidgetProps> = ({
         return (
           <div
             key={item.id}
-            className={`p-3 rounded-2xl border text-xs flex items-start justify-between gap-2.5 transition backdrop-blur-sm ${bgClass}`}
+            className={`p-3.5 rounded-2xl border text-xs flex items-start justify-between gap-2.5 transition backdrop-blur-md shadow-xs relative overflow-hidden ${bgClass}`}
           >
-            <div className="flex items-start gap-2 min-w-0 flex-1">
+            <div 
+              className="absolute right-1 top-0 bottom-0 w-24 bg-right bg-no-repeat bg-contain opacity-15 pointer-events-none"
+              style={{ backgroundImage: `url('/illustrations/ai-finance-mascot.svg')` }}
+            />
+            <div className="flex items-start gap-2.5 min-w-0 flex-1 relative z-10">
               <div className="mt-0.5 shrink-0">
                 {isAlert ? (
                   <AlertTriangle className={`w-4 h-4 ${iconColor}`} />

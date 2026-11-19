@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 130" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="budgetBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.16"/>
+      <stop offset="60%" stop-color="#3b82f6" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="targetRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Large decorative circles -->
+  <circle cx="340" cy="65" r="55" fill="#f59e0b" fill-opacity="0.07"/>
+  <circle cx="370" cy="110" r="30" fill="#3b82f6" fill-opacity="0.05"/>
+
+  <!-- 3D Target & Arrow -->
+  <g transform="translate(305, 25) scale(0.95)">
+    <!-- Outer ring -->
+    <circle cx="40" cy="40" r="36" stroke="url(#targetRing)" stroke-width="2.5" fill="none" opacity="0.6"/>
+    <!-- Middle ring -->
+    <circle cx="40" cy="40" r="25" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3 3" fill="none" opacity="0.7"/>
+    <!-- Bullseye -->
+    <circle cx="40" cy="40" r="14" fill="url(#targetRing)" opacity="0.85"/>
+    <circle cx="40" cy="40" r="6" fill="#ffffff"/>
+    <!-- Arrow -->
+    <path d="M12 68 L34 46" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M10 70 L14 62 L18 66 Z" fill="#ffffff"/>
+  </g>
+
+  <!-- Sparkles -->
+  <path d="M285 30 L287 24 L289 30 L295 32 L289 34 L287 40 L285 34 L279 32 Z" fill="#fbbf24" opacity="0.8"/>
+  <circle cx="270" cy="65" r="2.5" fill="#f59e0b" opacity="0.7"/>
+</svg>

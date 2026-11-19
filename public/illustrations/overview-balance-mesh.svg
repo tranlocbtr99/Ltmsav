@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 200" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="orbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.25"/>
+      <stop offset="50%" stop-color="#8b5cf6" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="wave1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.03"/>
+      <stop offset="50%" stop-color="#60a5fa" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="glowLine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Giant floating glass orb on the right -->
+  <circle cx="430" cy="50" r="110" fill="url(#orbGrad)"/>
+  <circle cx="430" cy="50" r="85" stroke="url(#glowLine)" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.6"/>
+  <circle cx="470" cy="130" r="60" fill="#6366f1" fill-opacity="0.08"/>
+
+  <!-- Liquid wave ribbons -->
+  <path d="M-20 120 C120 180 240 50 380 90 C450 110 490 80 520 100 L520 220 L-20 220 Z" fill="url(#wave1)"/>
+  <path d="M0 160 C150 110 280 190 420 140 C470 120 500 150 530 140" stroke="url(#glowLine)" stroke-width="2" opacity="0.4"/>
+
+  <!-- Subtle 3D Coin & Sparkles -->
+  <g transform="translate(390, 45) scale(0.9)">
+    <circle cx="30" cy="30" r="28" fill="#3b82f6" fill-opacity="0.2"/>
+    <circle cx="30" cy="30" r="20" stroke="#93c5fd" stroke-width="2" stroke-opacity="0.5"/>
+    <path d="M22 30 L28 36 L40 24" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+  </g>
+
+  <circle cx="320" cy="40" r="3" fill="#60a5fa" opacity="0.7"/>
+  <circle cx="350" cy="80" r="2" fill="#a855f7" opacity="0.6"/>
+  <path d="M460 25 L462 20 L464 25 L469 26.5 L464 28 L462 33 L460 28 L455 26.5 Z" fill="#93c5fd" opacity="0.75"/>
+</svg>

@@ -534,8 +534,13 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               debts.filter(d => d.type === 'loan').map(loan => (
                 <div
                   key={loan.id}
-                  className="glass-card card-interactive p-4 rounded-2xl border border-emerald-500/20 dark:border-emerald-500/10 space-y-3 bg-gradient-to-br from-emerald-500/5 to-transparent"
+                  className="glass-card card-interactive p-4 rounded-2xl border border-emerald-500/20 dark:border-emerald-500/10 space-y-3 bg-gradient-to-br from-emerald-500/5 to-transparent relative overflow-hidden"
                 >
+                  <div 
+                    className="absolute right-0 bottom-0 top-0 w-1/2 bg-right bg-no-repeat bg-contain opacity-20 pointer-events-none"
+                    style={{ backgroundImage: `url('/illustrations/loan-card-mesh.svg')` }}
+                  />
+                  <div className="relative z-10 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0">
@@ -610,6 +615,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                         </button>
                       )}
                     </div>
+                  </div>
                   </div>
                 </div>
               ))
@@ -784,8 +790,13 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   return (
                     <div
                       key={debt.id}
-                      className="glass-card card-interactive p-4 rounded-3xl border border-amber-500/20 dark:border-amber-500/10 space-y-3 bg-gradient-to-br from-amber-500/5 via-transparent to-purple-500/5"
+                      className="glass-card card-interactive p-4 rounded-3xl border border-amber-500/20 dark:border-amber-500/10 space-y-3 bg-gradient-to-br from-amber-500/5 via-transparent to-purple-500/5 relative overflow-hidden"
                     >
+                      <div 
+                        className="absolute right-0 bottom-0 top-0 w-1/2 bg-right bg-no-repeat bg-contain opacity-25 pointer-events-none"
+                        style={{ backgroundImage: `url('/illustrations/installment-pattern.svg')` }}
+                      />
+                      <div className="relative z-10 space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0 shadow-sm">
@@ -877,6 +888,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                             </button>
                           )}
                         </div>
+                      </div>
                       </div>
                     </div>
                   );
@@ -1757,13 +1769,33 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
           onClose={() => setIsPaymentModalOpen(false)}
         >
           <div className="silver-asset-panel">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                {selectedDebt.type === 'loan' ? 'Thu nợ từ' : 'Thanh toán cho'} {selectedDebt.person}
-              </h3>
-              <button aria-label={t('close')} onClick={() => setIsPaymentModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
+            {/* Liquid Glass Header Banner with SVG Illustration */}
+            <div className="relative overflow-hidden rounded-2xl mb-3 border border-blue-500/20 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-transparent p-4 shadow-sm">
+              <div 
+                className="absolute right-0 top-0 bottom-0 w-1/2 bg-contain bg-right bg-no-repeat opacity-40 pointer-events-none"
+                style={{ backgroundImage: `url('/illustrations/payment-banner.svg')` }}
+              />
+              <div className="relative z-10 flex items-start justify-between">
+                <div>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold mb-1 bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                    <Receipt className="w-3 h-3" /> {selectedDebt.type === 'loan' ? 'Ghi nhận Thu hồi' : 'Ghi nhận Thanh toán'}
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    {selectedDebt.type === 'loan' ? 'Thu nợ từ' : 'Thanh toán cho'} {selectedDebt.person}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Dư nợ còn: {selectedDebt.remainingAmount.toLocaleString('vi-VN')}₫
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={t('close')}
+                  onClick={() => setIsPaymentModalOpen(false)}
+                  className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handlePaymentSubmit} className="space-y-3.5 pt-1">
