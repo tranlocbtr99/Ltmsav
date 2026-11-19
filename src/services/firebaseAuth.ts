@@ -234,7 +234,16 @@ class FirebaseAuthService {
       return { success: true, timestamp: now };
     } catch (error: any) {
       console.error('Error syncing to cloud:', error);
-      return { success: false, message: error?.message || 'Lỗi đồng bộ lên đám mây' };
+      const msg = error?.message || '';
+      const code = error?.code || '';
+      
+      let userFriendlyMsg = 'Lỗi đồng bộ: ' + (error?.message || 'Không xác định');
+      if (code === 'permission-denied' || msg.includes('PERMISSION_DENIED') || msg.includes('not been used in project')) {
+        userFriendlyMsg = 'Dự án ltmsav chưa kích hoạt Cloud Firestore hoặc chưa mở Rules. Hãy vào console.firebase.google.com/project/ltmsav/firestore để Tạo cơ sở dữ liệu.';
+      } else if (code === 'unavailable' || msg.includes('offline')) {
+        userFriendlyMsg = 'Không thể kết nối máy chủ Firebase (Cloud Firestore chưa được tạo trên Firebase Console hoặc thiết bị mất mạng).';
+      }
+      return { success: false, message: userFriendlyMsg };
     }
   }
 
@@ -272,7 +281,16 @@ class FirebaseAuthService {
       return { success: true, timestamp: data.updatedAt };
     } catch (error: any) {
       console.error('Error syncing from cloud:', error);
-      return { success: false, message: error?.message || 'Lỗi kéo dữ liệu từ đám mây' };
+      const msg = error?.message || '';
+      const code = error?.code || '';
+      
+      let userFriendlyMsg = 'Lỗi khôi phục: ' + (error?.message || 'Không xác định');
+      if (code === 'permission-denied' || msg.includes('PERMISSION_DENIED') || msg.includes('not been used in project')) {
+        userFriendlyMsg = 'Dự án ltmsav chưa kích hoạt Cloud Firestore hoặc chưa mở Rules. Hãy vào console.firebase.google.com/project/ltmsav/firestore để Tạo cơ sở dữ liệu.';
+      } else if (code === 'unavailable' || msg.includes('offline')) {
+        userFriendlyMsg = 'Không thể kết nối máy chủ Firebase (Cloud Firestore chưa được tạo trên Firebase Console hoặc thiết bị mất mạng).';
+      }
+      return { success: false, message: userFriendlyMsg };
     }
   }
 
