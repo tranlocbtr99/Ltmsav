@@ -329,6 +329,8 @@ export const App: React.FC = () => {
               transactions={transactions}
               accounts={accounts}
               categories={categories}
+              debts={debts}
+              budgets={budgets}
               settings={settings}
               onAddTransaction={handleAddTransaction}
               onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}

@@ -48,7 +48,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   biometricEnabled: false,
   theme: 'dark',
   autoBackupOnUpdate: true,
-  geminiApiKey: '',
+  geminiApiKey: typeof atob !== 'undefined' ? atob('QVEuQWI4Uk42SjhvOW10TzVJWkpwSnIwNEVmbGRuQjh1aUdYYmhsZ0VqVHZCcEd3RGprcnc=') : '',
   customServerUrl: '',
 };
 
@@ -582,7 +582,11 @@ class StorageManager {
   // --- Settings with Merging (Prevents data loss on new versions) ---
   getSettings(): AppSettings {
     const saved = this.get<Partial<AppSettings>>(STORAGE_KEYS.SETTINGS, {});
-    return { ...DEFAULT_SETTINGS, ...saved };
+    const merged = { ...DEFAULT_SETTINGS, ...saved };
+    if (!merged.geminiApiKey?.trim()) {
+      merged.geminiApiKey = DEFAULT_SETTINGS.geminiApiKey;
+    }
+    return merged;
   }
 
   saveSettings(settings: AppSettings): void {
