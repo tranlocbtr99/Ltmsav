@@ -339,23 +339,14 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
             try {onDelete(transaction.id);onClose();}catch(error){setSubmitError(error instanceof Error ? error.message : String(error));}
           }}><Trash2 size={18}/>{t('delete')}</button>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={requestClose}
-              className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs sm:text-sm font-medium rounded-xl transition"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="submit"
-              form={formId}
-              className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-emerald-900/30 transition shrink-0"
-            >
-              <Check className="w-4 h-4" />
-              <span>{t('saveChanges')}</span>
-            </button>
-          </div>
+          <button
+            type="submit"
+            form={formId}
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-lg shadow-blue-500/20 transition"
+          >
+            <Check className="w-4 h-4" />
+            <span>{t('saveChanges')}</span>
+          </button>
         </div>
 
       </div>

@@ -174,8 +174,8 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Amount Input */}
-          <div>
+          {/* Amount Hero Card */}
+          <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-blue-500/5 via-slate-500/5 to-indigo-500/5 border border-slate-200/90 dark:border-slate-800/90 shadow-xs">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 block">
               {t('amountVnd')}
             </label>
@@ -185,22 +185,22 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 value={numAmount ? numAmount.toLocaleString('vi-VN') : ''}
                 onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="amount-input w-full pl-4 pr-12 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-xl font-bold text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="amount-input w-full pl-4 pr-12 py-3 bg-white/90 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-2xl text-2xl font-black text-slate-900 dark:text-white tabular-nums focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition shadow-inner"
                 required
                 inputMode="numeric"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 font-semibold">
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-bold text-lg">
                 ₫
               </span>
             </div>
             {/* Quick shortcuts */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
               {[50000, 100000, 200000, 500000, 1000000].map(val => (
                 <button
                   key={val}
                   type="button"
                   onClick={() => handleQuickAdd(val)}
-                  className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700/50 transition"
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/95 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200/80 dark:border-slate-700/60 shadow-xs transition active:scale-95"
                 >
                   +{val >= 1000000 ? `${val / 1000000}M` : `${val / 1000}k`}
                 </button>
@@ -218,9 +218,29 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder={t('transactionDescPlaceholder')}
-              className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500 transition"
+              className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 transition"
               required
             />
+            {/* Quick description chips */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {(type === 'expense' 
+                ? ['Cà phê ☕', 'Ăn trưa 🍜', 'Đi chợ 🛒', 'Đổ xăng ⛽', 'Mua sắm 🛍️', 'Tiền điện ⚡']
+                : type === 'income'
+                ? ['Lương 💵', 'Thưởng 🎁', 'Thu nợ 🔄', 'Bán hàng 📈']
+                : type === 'lend'
+                ? ['Cho bạn mượn 🤝', 'Đồng nghiệp tạm ứng 👥']
+                : ['Chuyển tiền tiết kiệm 🏦', 'Rút tiền mặt 🏧']
+              ).map(suggestion => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => setDescription(suggestion.replace(/ [^\s]+$/, ''))}
+                  className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/60 dark:border-slate-700/40 transition"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Account & Category */}
@@ -317,19 +337,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
         </form>
 
         {/* Footer Actions */}
-        <div className="dialog-footer px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={requestClose}
-            className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs sm:text-sm font-medium rounded-xl transition"
-          >
-            {t('cancel')}
-          </button>
+        <div className="dialog-footer px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/90 flex items-center justify-end">
           <button
             type="submit"
             form={formId}
             disabled={numAmount <= 0}
-            className="flex items-center justify-center gap-1.5 px-5 py-3 bg-blue-600 hover:bg-blue-700 hover:brightness-105 disabled:opacity-50 disabled:pointer-events-none text-white text-xs sm:text-sm font-semibold rounded-2xl shadow-lg shadow-blue-500/20 transition flex-1"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 hover:brightness-105 disabled:opacity-50 disabled:pointer-events-none text-white text-sm font-semibold rounded-2xl shadow-lg shadow-blue-500/20 transition"
           >
             <Plus className="w-4 h-4" />
             <span>{t('addTransactionBtn')}</span>

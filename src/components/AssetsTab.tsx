@@ -378,8 +378,12 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
           <div className="finance-list space-y-2.5">
             {accounts.map(acc => (
-              <details key={acc.id} className="account-details glass-card rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <summary className="asset-row cursor-pointer list-none p-3.5 flex items-center justify-between" aria-label={`${t('openAccountActions')}: ${acc.name}`}>
+              <details key={acc.id} className="account-details glass-card rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+                <div 
+                  className="absolute inset-0 bg-right-bottom bg-no-repeat bg-cover opacity-[0.05] dark:opacity-[0.08] pointer-events-none"
+                  style={{ backgroundImage: `url('/illustrations/card-mesh-pattern.svg')` }}
+                />
+                <summary className="asset-row cursor-pointer list-none p-3.5 flex items-center justify-between relative z-10" aria-label={`${t('openAccountActions')}: ${acc.name}`}>
                   <span className="flex items-center gap-3 min-w-0">
                     <span className="p-2.5 rounded-xl shrink-0" style={{backgroundColor:`${acc.color}20`,color:acc.color}}>
                       <DynamicIcon name={acc.iconName} className="w-5 h-5"/>
@@ -1347,13 +1351,40 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
           onClose={() => { setIsDebtModalOpen(false); resetDebtForm(); }}
         >
           <div className="silver-asset-panel max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                {debtModalType === 'loan' ? 'Ghi nhận Khoản Cho Vay (Tài sản phải thu)' : 'Ghi nhận Khoản Nợ / Nghĩa vụ trả'}
-              </h3>
-              <button aria-label={t('close')} onClick={() => { setIsDebtModalOpen(false); resetDebtForm(); }} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
+            {/* Liquid Glass Header Banner with SVG Illustration */}
+            <div className={`relative overflow-hidden rounded-2xl mb-3 border p-4 shadow-sm ${
+              debtModalType === 'loan' 
+                ? 'border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent' 
+                : 'border-rose-500/20 bg-gradient-to-r from-rose-500/10 via-purple-500/5 to-transparent'
+            }`}>
+              <div 
+                className="absolute right-0 top-0 bottom-0 w-1/2 bg-contain bg-right bg-no-repeat opacity-40 pointer-events-none"
+                style={{ backgroundImage: `url('/illustrations/${debtModalType === 'loan' ? 'loan-banner.svg' : 'debt-banner.svg'}')` }}
+              />
+              <div className="relative z-10 flex items-start justify-between">
+                <div>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold mb-1 ${
+                    debtModalType === 'loan' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                  }`}>
+                    {debtModalType === 'loan' ? <Sparkles className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                    {debtModalType === 'loan' ? 'Tài sản phải thu' : 'Nghĩa vụ trả nợ'}
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    {debtModalType === 'loan' ? 'Ghi nhận Khoản Cho Vay' : 'Ghi nhận Khoản Nợ / Trả Góp'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-[220px]">
+                    {debtModalType === 'loan' ? 'Theo dõi dòng tiền thu hồi và hạn trả' : 'Quản lý lịch trả nợ & hạn mức thẻ'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={t('close')}
+                  onClick={() => { setIsDebtModalOpen(false); resetDebtForm(); }}
+                  className="p-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleCreateDebt} className="space-y-3.5 pt-1">
@@ -1362,15 +1393,6 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 {/* Khi là Khoản Cho Vay (LOAN) */}
                 {debtModalType === 'loan' ? (
                   <>
-                    <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200 space-y-1">
-                      <div className="font-bold flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4 text-emerald-600" />
-                        <span>Sổ Cho Vay (Tài sản của bạn)</span>
-                      </div>
-                      <p className="text-[11px] opacity-90">
-                        Số tiền này là tài sản phải thu. Dòng tiền dự báo sẽ tính khoản thu này vào ngày đáo hạn.
-                      </p>
-                    </div>
 
                     <div>
                       <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Người mượn tiền *</label>
