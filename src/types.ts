@@ -81,6 +81,15 @@ export interface AppSettings {
   lastBackupDate?: string;
   customServerUrl?: string;
   geminiApiKey?: string;
+  userProfile?: {
+    displayName?: string;
+    universityOrJob?: string;
+    monthlyAllowance?: number;
+    incomeDayOfMonth?: number;
+    partTimeIncome?: number;
+    financialGoal?: string;
+    targetGoalAmount?: number;
+  };
 }
 
 export interface AiParsedCommand {

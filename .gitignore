@@ -6,6 +6,7 @@ dist
 .ssh_deploy_key.pub
 *.jks
 *.keystore
+keystore/
 *.apk
 *.aab
 LTMsav_Android_Source_Prepared.zip

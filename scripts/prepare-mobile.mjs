@@ -14,6 +14,7 @@ const app='mobile/android/app';
 let gradle=fs.readFileSync(`${app}/build.gradle`,'utf8');
 gradle=gradle.replace(/versionCode \d+/,`versionCode ${release.versionCode}`).replace(/versionName "[^"]+"/,`versionName "${release.versionName}"`);
 if(!gradle.includes('androidx.biometric:biometric')) gradle=gradle.replace('dependencies {','dependencies {\n    implementation "androidx.biometric:biometric:1.1.0"');
+if(!gradle.includes('play-services-auth')) gradle=gradle.replace('dependencies {','dependencies {\n    implementation "com.google.android.gms:play-services-auth:21.3.0"');
 fs.writeFileSync(`${app}/build.gradle`,gradle);
 const java=`${app}/src/main/java/com/ltmsav/app`;
 fs.mkdirSync(java,{recursive:true});
@@ -22,5 +23,8 @@ const manifest=`${app}/src/main/AndroidManifest.xml`;
 let xml=fs.readFileSync(manifest,'utf8');
 if(!xml.includes('android.permission.USE_BIOMETRIC')) xml=xml.replace('    <application','    <uses-permission android:name="android.permission.USE_BIOMETRIC" />\n    <application');
 fs.writeFileSync(manifest,xml);
+if(fs.existsSync('google-services.json')) {
+  fs.copyFileSync('google-services.json', `${app}/google-services.json`);
+}
 // Generate launcher icons from the one versioned source after platform creation.
 execFileSync('python3',['scripts/update_logo.py','assets/logo-source.png'],{stdio:'inherit'});

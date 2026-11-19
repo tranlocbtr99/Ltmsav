@@ -2,6 +2,13 @@
 set -euo pipefail
 node -e 'const r=JSON.parse(require("fs").readFileSync("release.json")); if((r.baselineVerified !== true && r.userApprovedRepackage !== true) || r.releaseStatus !== "ready") { console.error("Release blocked: verify the installed 1.9.2410 APK, its source, versionCode and signing certificate first."); process.exit(1); }'
 
+export KEYSTORE_PATH="${KEYSTORE_PATH:-keystore/LTMsav-release.jks}"
+if [ -f "keystore/keystore-password.txt" ] && [ -z "${KEYSTORE_PASSWORD:-}" ]; then
+  export KEYSTORE_PASSWORD="$(tr -d '\r\n' < keystore/keystore-password.txt)"
+fi
+export KEY_ALIAS="${KEY_ALIAS:-ltmsav}"
+export KEY_PASSWORD="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+
 : "${ANDROID_HOME:?}" "${KEYSTORE_PATH:?}" "${KEYSTORE_PASSWORD:?}" "${KEY_ALIAS:?}" "${KEY_PASSWORD:?}"
 BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
 OUT="build-output"

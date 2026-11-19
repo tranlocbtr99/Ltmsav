@@ -1,6 +1,6 @@
 import { CategoryManager } from './components/CategoryManager';
 import { ConfirmationHost } from './components/Confirmation';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { storage } from './services/storage';
 import { Account, Category, Transaction, Budget, DebtOrLoan, AuditLog, AppSettings, RecurringRule } from './types';
 import { TopHeader, BottomNavBar } from './components/Navigation';
@@ -12,6 +12,9 @@ import { BudgetsTab } from './components/BudgetsTab';
 import { AssetsTab } from './components/AssetsTab';
 import { ReportsTab } from './components/ReportsTab';
 import { RecurringTab } from './components/RecurringTab';
+import { ForecastSimulationTab } from './components/ForecastSimulationTab';
+import { AiAdvisoryWidget } from './components/AiAdvisoryWidget';
+import { AppUpdateBanner } from './components/AppUpdateBanner';
 import { SettingsTab } from './components/SettingsTab';
 import { EditTransactionModal } from './components/EditTransactionModal';
 import { AddTransactionModal } from './components/AddTransactionModal';
@@ -19,6 +22,9 @@ import { SecurityLockScreen } from './components/SecurityLockScreen';
 import { SplashScreen } from './components/SplashScreen';
 import { useOnlineStatus } from './hooks/usePWA';
 import { CheckCircle2 } from 'lucide-react';
+import { scanProactiveAdvisory } from './services/aiAdvisory';
+import { checkAppUpdate, AppUpdateInfo } from './services/updateManager';
+import release from '../release.json';
 
 export const App: React.FC = () => {
   const { t } = useLanguage();
@@ -56,6 +62,29 @@ export const App: React.FC = () => {
     const s = storage.getSettings();
     return !!s.securityEnabled;
   });
+
+  // In-app OTA Update state
+  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null);
+
+  useEffect(() => {
+    checkAppUpdate(release.versionName).then(info => {
+      if (info && info.isUpdateAvailable) {
+        setUpdateInfo(info);
+      }
+    });
+  }, []);
+
+  // Proactive AI Advisory Recommendations
+  const advisoryItems = useMemo(() => {
+    let total = 0;
+    let savings = 0;
+    accounts.forEach(acc => {
+      total += acc.balance;
+      if (acc.type === 'savings') savings += acc.balance;
+    });
+    const avail = total - savings;
+    return scanProactiveAdvisory(budgets, categories, debts, transactions, null, avail);
+  }, [budgets, categories, debts, transactions, accounts]);
 
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -248,14 +277,19 @@ export const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="finance-main flex-1 w-full max-w-3xl mx-auto px-4">
         
-        <div key={currentTab} className="silver-page-heading motion-heading"><h1>{t(currentTab === 'overview' ? 'overview' : currentTab === 'ai' ? 'assistantTitle' : currentTab === 'assets' ? 'assetsNav' : currentTab === 'budgets' || currentTab === 'recurring' ? 'planNav' : currentTab === 'settings' ? 'profileNav' : currentTab === 'reports' ? 'reports' : 'transactions')}</h1></div>
-        {(currentTab === 'budgets' || currentTab === 'recurring') && <div className="silver-segments silver-plan-tabs" role="group" aria-label={t('planNav')}>
+        <AppUpdateBanner updateInfo={updateInfo} />
+
+        <div key={currentTab} className="silver-page-heading motion-heading"><h1>{t(currentTab === 'overview' ? 'overview' : currentTab === 'ai' ? 'assistantTitle' : currentTab === 'assets' ? 'assetsNav' : currentTab === 'budgets' || currentTab === 'recurring' || currentTab === 'plans' ? 'planNav' : currentTab === 'settings' ? 'profileNav' : currentTab === 'reports' ? 'reports' : 'transactions')}</h1></div>
+        {(currentTab === 'budgets' || currentTab === 'recurring' || currentTab === 'plans') && <div className="silver-segments silver-plan-tabs" role="group" aria-label={t('planNav')}>
           <button type="button" aria-pressed={currentTab === 'budgets'} onClick={()=>setCurrentTab('budgets')}>{t('budget')}</button>
           <button type="button" aria-pressed={currentTab === 'recurring'} onClick={()=>setCurrentTab('recurring')}>{t('recurringTitle')}</button>
+          <button type="button" aria-pressed={currentTab === 'plans'} onClick={()=>setCurrentTab('plans')}>{t('forecastTitle')}</button>
         </div>}
         {/* Tab views */}
         <div className="animate-fade-in">
           <section className="motion-tab" hidden={currentTab !== 'overview'}>{(currentTab === 'overview' || visitedTabs.includes('overview')) && (
+            <>
+            <AiAdvisoryWidget items={advisoryItems} onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }} />
             <OverviewTab
               assetsHidden={assetsHidden}
               onToggleAssetsVisibility={toggleAssetsVisibility}
@@ -269,6 +303,7 @@ export const App: React.FC = () => {
               onSelectTransaction={(tx) => setSelectedTxForEdit(tx)}
               onNavigateTab={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
             />
+            </>
           )}</section>
 
           <section className="motion-tab" hidden={currentTab !== 'transactions'}>{(currentTab === 'transactions' || visitedTabs.includes('transactions')) && (
@@ -322,6 +357,15 @@ export const App: React.FC = () => {
             <RecurringTab accounts={accounts} categories={categories} transactions={transactions} rules={recurringRules} onSaveRules={handleSaveRecurring} onAdd={handleAddTransaction} {...categoryActions} />
           )}</section>
 
+          <section className="motion-tab" hidden={currentTab !== 'plans'}>{(currentTab === 'plans' || visitedTabs.includes('plans')) && (
+            <ForecastSimulationTab
+              accounts={accounts}
+              recurringRules={recurringRules}
+              debts={debts}
+              settings={settings}
+            />
+          )}</section>
+
           <section className="motion-tab" hidden={currentTab !== 'reports'}>{(currentTab === 'reports' || visitedTabs.includes('reports')) && (
             <ReportsTab
               transactions={transactions}
@@ -354,7 +398,7 @@ export const App: React.FC = () => {
 
       {/* Android Bottom Navigation */}
       <BottomNavBar
-        currentTab={currentTab === 'recurring' ? 'budgets' : currentTab === 'reports' ? 'overview' : currentTab}
+        currentTab={currentTab === 'recurring' || currentTab === 'plans' ? 'budgets' : currentTab === 'reports' ? 'overview' : currentTab}
         onTabChange={(tab) => { setHistoryAccountId(undefined); setCurrentTab(tab); }}
         onOpenAdd={() => setCurrentTab('ai')}
         isOnline={isOnline}

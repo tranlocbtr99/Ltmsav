@@ -7,10 +7,12 @@ import {
   Lock, Fingerprint, KeyRound, HardDrive, RotateCcw, Shield, Check, 
   AlertCircle, History, FileDown, FileUp, Mail, User, 
   Sun, Moon, Monitor, Database, ShieldCheck, RefreshCw, Sparkles, Globe,
-  Heart, Copy, X
+  Heart, Copy, X, Cloud, CloudUpload, CloudDownload, LogOut, ArrowDownToLine, Target
 } from 'lucide-react';
 import { storage } from '../services/storage';
 import { useLanguage } from '../contexts/LanguageContext';
+import { firebaseAuthService, GoogleUserInfo } from '../services/firebaseAuth';
+import { checkAppUpdate } from '../services/updateManager';
 
 import release from '../../release.json';
 const APP_VERSION = release.versionName;
@@ -52,6 +54,128 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [confirmPin, setConfirmPin] = useState('');
   const [pinError, setPinError] = useState('');
   const [pinSuccess, setPinSuccess] = useState('');
+
+  // Google Auth & Cloud Sync state
+  const [googleUser, setGoogleUser] = useState<GoogleUserInfo | null>(firebaseAuthService.getCurrentUser());
+  const [syncStatusMsg, setSyncStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(firebaseAuthService.getLastSyncTime());
+  const [quickEmailInput, setQuickEmailInput] = useState('');
+  const [showQuickEmail, setShowQuickEmail] = useState(false);
+
+  // Personal Financial Profile state
+  const [profileAllowance, setProfileAllowance] = useState(settings.userProfile?.monthlyAllowance?.toString() || '');
+  const [profileIncomeDay, setProfileIncomeDay] = useState(settings.userProfile?.incomeDayOfMonth?.toString() || '5');
+  const [profilePartTime, setProfilePartTime] = useState(settings.userProfile?.partTimeIncome?.toString() || '');
+  const [profileGoal, setProfileGoal] = useState(settings.userProfile?.financialGoal || '');
+  const [profileGoalAmount, setProfileGoalAmount] = useState(settings.userProfile?.targetGoalAmount?.toString() || '');
+  const [profileSavedMsg, setProfileSavedMsg] = useState(false);
+
+  // OTA update check state
+  const [otaStatus, setOtaStatus] = useState<string | null>(null);
+  const [isCheckingOta, setIsCheckingOta] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = firebaseAuthService.onUserChange((user) => {
+      setGoogleUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsSyncing(true);
+      setSyncStatusMsg(null);
+      await firebaseAuthService.signInWithGoogle();
+      setSyncStatusMsg({ text: t('googleLinked'), isError: false });
+    } catch (err: any) {
+      setSyncStatusMsg({ text: err.message || t('syncFailed'), isError: true });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleGoogleSignOut = async () => {
+    try {
+      await firebaseAuthService.signOut();
+      setSyncStatusMsg(null);
+    } catch (err: any) {
+      setSyncStatusMsg({ text: err.message || 'Lỗi đăng xuất', isError: true });
+    }
+  };
+
+  const handleCloudUpload = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await firebaseAuthService.syncToCloud();
+      if (res.success) {
+        setLastSyncTime(res.timestamp || new Date().toISOString());
+        setSyncStatusMsg({ text: t('syncSuccess'), isError: false });
+      } else {
+        setSyncStatusMsg({ text: res.message || t('syncFailed'), isError: true });
+      }
+    } catch (err: any) {
+      setSyncStatusMsg({ text: err.message || t('syncFailed'), isError: true });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCloudDownload = async () => {
+    const confirmed = await confirmAction(t('confirmRestoreCloud'), { destructive: false });
+    if (!confirmed) return;
+    try {
+      setIsSyncing(true);
+      const res = await firebaseAuthService.syncFromCloud();
+      if (res.success) {
+        setLastSyncTime(res.timestamp || new Date().toISOString());
+        setSyncStatusMsg({ text: t('syncSuccess'), isError: false });
+        window.location.reload();
+      } else {
+        setSyncStatusMsg({ text: res.message || t('syncFailed'), isError: true });
+      }
+    } catch (err: any) {
+      setSyncStatusMsg({ text: err.message || t('syncFailed'), isError: true });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSaveProfile = () => {
+    const updatedProfile = {
+      monthlyAllowance: parseFloat(profileAllowance.replace(/\D/g, '')) || 0,
+      incomeDayOfMonth: Math.min(31, Math.max(1, parseInt(profileIncomeDay, 10) || 5)),
+      partTimeIncome: parseFloat(profilePartTime.replace(/\D/g, '')) || 0,
+      financialGoal: profileGoal.trim(),
+      targetGoalAmount: parseFloat(profileGoalAmount.replace(/\D/g, '')) || 0,
+    };
+    onUpdateSettings({
+      ...settings,
+      userProfile: updatedProfile
+    });
+    setProfileSavedMsg(true);
+    setTimeout(() => setProfileSavedMsg(false), 3000);
+  };
+
+  const handleCheckOta = async () => {
+    try {
+      setIsCheckingOta(true);
+      setOtaStatus(t('otaChecking'));
+      const info = await checkAppUpdate(APP_VERSION);
+      if (info.isUpdateAvailable) {
+        setOtaStatus(`Đã có bản mới v${info.latestVersion}! Đang mở trang tải...`);
+        if (info.downloadUrl) {
+          window.open(info.downloadUrl, '_blank');
+        }
+      } else {
+        setOtaStatus(t('otaLatestVersion'));
+      }
+    } catch {
+      setOtaStatus('Không thể kết nối máy chủ cập nhật.');
+    } finally {
+      setIsCheckingOta(false);
+    }
+  };
 
   useEffect(() => {
     // Check persistence status
@@ -403,6 +527,257 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </div></details>
 
+      {/* Google Account & Cloud Backup */}
+      <details className="silver-settings-section" open={!!googleUser}>
+        <summary>
+          <span className="silver-settings-icon">
+            <Cloud className="w-5 h-5 text-blue-500" />
+          </span>
+          <span className="silver-settings-name">{t('googleAccountTitle')}</span>
+          <small>{googleUser ? (googleUser.email || t('googleLinked')) : t('notLinked')}</small>
+          <span aria-hidden="true">›</span>
+        </summary>
+        <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="flex items-center gap-3">
+            {googleUser?.photoURL ? (
+              <img src={googleUser.photoURL} alt="Avatar" className="w-11 h-11 rounded-full border border-slate-200 dark:border-slate-700 object-cover shadow-sm" />
+            ) : (
+              <div className="w-11 h-11 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-lg border border-blue-500/20">
+                {googleUser?.displayName ? googleUser.displayName.charAt(0).toUpperCase() : <User className="w-6 h-6" />}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                {googleUser ? (googleUser.displayName || 'Tài khoản Google') : t('googleAccountTitle')}
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                {googleUser ? (googleUser.email || '') : t('googleAccountDesc')}
+              </p>
+            </div>
+            {googleUser && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <Check className="w-3 h-3" /> {t('googleLinked')}
+              </span>
+            )}
+          </div>
+
+          {syncStatusMsg && (
+            <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+              syncStatusMsg.isError
+                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+            }`}>
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{syncStatusMsg.text}</span>
+            </div>
+          )}
+
+          {!googleUser ? (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isSyncing}
+                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-white font-semibold rounded-2xl border border-slate-300 dark:border-slate-700 text-xs shadow-sm transition active:scale-98 disabled:opacity-50"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                </svg>
+                <span>{isSyncing ? t('syncing') : t('signInWithGoogle')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowQuickEmail(!showQuickEmail)}
+                className="w-full text-center text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-medium py-1"
+              >
+                {showQuickEmail ? 'Ẩn liên kết nhanh' : 'Hoặc liên kết nhanh qua Email'}
+              </button>
+
+              {showQuickEmail && (
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                  <input
+                    type="email"
+                    value={quickEmailInput}
+                    onChange={(e) => setQuickEmailInput(e.target.value)}
+                    placeholder="Nhập email Google (vd: user@gmail.com)"
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!quickEmailInput.includes('@')) {
+                        setSyncStatusMsg({ text: 'Vui lòng nhập email hợp lệ', isError: true });
+                        return;
+                      }
+                      firebaseAuthService.linkDirectAccount(quickEmailInput);
+                      setSyncStatusMsg({ text: 'Đã liên kết tài khoản: ' + quickEmailInput, isError: false });
+                    }}
+                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition active:scale-95 shadow-sm"
+                  >
+                    Xác nhận liên kết ngay
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800/60">
+                <span>{t('lastCloudSync')}</span>
+                <span className="font-medium text-slate-700 dark:text-slate-300">
+                  {lastSyncTime ? new Date(lastSyncTime).toLocaleString() : t('neverSynced')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleCloudUpload}
+                  disabled={isSyncing}
+                  className="flex items-center justify-center gap-1.5 p-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium rounded-xl border border-blue-200 dark:border-blue-800 text-xs transition active:scale-95 disabled:opacity-50"
+                >
+                  <CloudUpload className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span>{t('syncToCloud')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCloudDownload}
+                  disabled={isSyncing}
+                  className="flex items-center justify-center gap-1.5 p-3 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-medium rounded-xl border border-purple-200 dark:border-purple-800 text-xs transition active:scale-95 disabled:opacity-50"
+                >
+                  <CloudDownload className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span>{t('syncFromCloud')}</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignOut}
+                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold rounded-xl transition"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{t('signOutGoogle')}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </details>
+
+      {/* Personal Financial Profile */}
+      <details className="silver-settings-section">
+        <summary>
+          <span className="silver-settings-icon">
+            <Target className="w-5 h-5 text-indigo-500" />
+          </span>
+          <span className="silver-settings-name">{t('userProfileTitle')}</span>
+          <small>{settings.userProfile?.financialGoal || 'Mục tiêu tài chính'}</small>
+          <span aria-hidden="true">›</span>
+        </summary>
+        <div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400">
+              <Target className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('userProfileTitle')}</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('userProfileDesc')}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t('monthlyAllowanceLabel')}
+                </label>
+                <input
+                  type="number"
+                  value={profileAllowance}
+                  onChange={(e) => setProfileAllowance(e.target.value)}
+                  placeholder="Vd: 5000000"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t('incomeDayLabel')}
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={profileIncomeDay}
+                  onChange={(e) => setProfileIncomeDay(e.target.value)}
+                  placeholder="Vd: 5"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                {t('partTimeIncomeLabel')}
+              </label>
+              <input
+                type="number"
+                value={profilePartTime}
+                onChange={(e) => setProfilePartTime(e.target.value)}
+                placeholder="Vd: 2000000"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t('financialGoalLabel')}
+                </label>
+                <input
+                  type="text"
+                  value={profileGoal}
+                  onChange={(e) => setProfileGoal(e.target.value)}
+                  placeholder="Vd: Quỹ khẩn cấp 3 tháng, Mua laptop..."
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                  {t('targetGoalAmountLabel')}
+                </label>
+                <input
+                  type="number"
+                  value={profileGoalAmount}
+                  onChange={(e) => setProfileGoalAmount(e.target.value)}
+                  placeholder="Vd: 15000000"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            {profileSavedMsg && (
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-1.5">
+                <Check className="w-4 h-4" />
+                <span>{t('profileSaved')}</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleSaveProfile}
+              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition active:scale-95 shadow-sm"
+            >
+              {t('saveProfile')}
+            </button>
+          </div>
+        </div>
+      </details>
+
       {/* 5. Backup and Restore */}
       <details className="silver-settings-section"><summary><span className="silver-settings-icon"><DynamicIcon name="ArchiveRestore" className="w-5 h-5"/></span><span className="silver-settings-name">{t('dataBackupTitle')}</span><span aria-hidden="true">›</span></summary><div className="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3.5">
         <div className="flex items-center gap-2.5">
@@ -610,8 +985,24 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-slate-400">{t('versionLabel')}</span>
-            <span className="font-semibold text-slate-900 dark:text-white">{APP_VERSION}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-900 dark:text-white">{APP_VERSION}</span>
+              <button
+                type="button"
+                onClick={handleCheckOta}
+                disabled={isCheckingOta}
+                className="text-[10px] px-2 py-0.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold transition flex items-center gap-1 disabled:opacity-50"
+              >
+                <ArrowDownToLine className="w-3 h-3" />
+                <span>{isCheckingOta ? 'Đang kiểm tra...' : 'OTA Check'}</span>
+              </button>
+            </div>
           </div>
+          {otaStatus && (
+            <div className="text-[10px] p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium">
+              {otaStatus}
+            </div>
+          )}
           <div className="flex items-center justify-between pt-1">
             <span className="text-slate-400">{t('contactAuthorLabel')}</span>
             <a

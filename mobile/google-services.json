@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "894474413931",
+    "project_id": "ltmsav",
+    "storage_bucket": "ltmsav.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:894474413931:android:5061d1c2063f4e83750e2e",
+        "android_client_info": {
+          "package_name": "com.ltmsav.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyMhqXbdwRzuIe1hDdlzoinxZ5Ysz60Io"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

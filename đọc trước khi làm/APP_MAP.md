@@ -35,11 +35,19 @@ src/contexts/LanguageContext.tsx (845)  bản dịch vi/en, object PHẲNG ~360 
 src/services/storage.ts (613)    CRUD + migration + backup/snapshot/audit
 src/services/aiParser.ts (307)   pipeline AI (xem mục 5)
 src/services/biometric.ts (107)  Capacitor NativeBiometric → fallback WebAuthn
+src/services/firebaseAuth.ts     Google OAuth + Firebase Cloud Sync (Firestore)
+src/services/simulationEngine.ts Bộ máy mô phỏng mua sắm 4 kịch bản (Không mua, Mua ngay, Trả góp, Tích lũy)
+src/services/forecastEngine.ts   Dự báo dòng tiền 30 ngày & cảnh báo thiếu hụt (Shortage Alerts)
+src/services/aiAdvisory.ts       Trợ lý AI quét và khuyến nghị tài chính chủ động
+src/services/updateManager.ts    Kiểm tra và thông báo bản cập nhật OTA từ GitHub Releases
 src/hooks/usePWA.ts   (83)       usePWAInstall(), useOnlineStatus()
 src/components/Navigation.tsx (177) TopHeader + BottomNavBar (5 tab + nút AI giữa)
 src/components/OverviewTab.tsx (594)      ★ tab 'overview'
 src/components/TransactionsTab.tsx (322)  ★ tab 'transactions'
 src/components/BudgetsTab.tsx (274)       ★ tab 'budgets'
+src/components/ForecastSimulationTab.tsx  ★ tab 'plans' (Dự báo 30 ngày & Mô phỏng mua sắm)
+src/components/AiAdvisoryWidget.tsx       Thẻ gợi ý lời khuyên thông minh trên Overview
+src/components/AppUpdateBanner.tsx        Banner thông báo cập nhật phiên bản mới OTA
 src/components/AssetsTab.tsx (719)        ★ tab 'assets' (3 sub-tab)
 src/components/ReportsTab.tsx (231)       ★ tab 'reports' (chỉ vào được qua header/overview)
 src/components/AiChatTab.tsx (342)        ★ tab 'ai'
@@ -188,3 +196,13 @@ Kết quả `AiChatResponse`: `{ intent, needs_confirmation, clarification_quest
 - AiChatTab disables incomplete drafts, supports borrower/debt-repayment editing, prevents duplicate synchronous submission and confirms similar cashflow entries already saved in the ledger (including earlier sessions). Every draft still requires an explicit user confirmation, regardless of provider flags. Enter/composition and in-flight input preservation remain guarded.
 - Tests: ai-financial-safety.test.ts and ai-provider-boundary.test.ts plus scripts/verify-ai-safety-ui.mjs and verify-ai-backend.mjs. Includes malformed/fabricated provider output, fallback, local dates, shorthand, ambiguous sources, double-click and duplicate cancellation/confirmation.
 - Release 3.2.0 / 30200, previous 30100; financial storage/schema 7, existing records, app ID and signing certificate unchanged.
+
+## Google Authentication, Smart Planning & In-App OTA Update (3.3.0)
+- src/services/firebaseAuth.ts: Firebase Auth + Firestore integration using google-services.json for com.ltmsav.app.
+- Offline-first preserved: localStorage remains the single source of truth; no schema breaking change.
+- src/services/simulationEngine.ts: Bộ máy mô phỏng mua sắm 4 kịch bản (Không mua, Mua ngay, Trả góp, Tích lũy).
+- src/services/forecastEngine.ts: Dự báo dòng tiền 30 ngày & cảnh báo thiếu hụt tiền (Shortage Alerts).
+- src/services/aiAdvisory.ts: Quét ngân sách & công nợ tạo khuyến nghị tài chính chủ động trên Overview.
+- src/services/updateManager.ts: Kiểm tra cập nhật trực tiếp từ GitHub Releases (In-App OTA Auto-updater).
+- SettingsTab & App.tsx: Tối ưu UI gọn gàng, hiển thị hồ sơ tài chính cá nhân, tài khoản Google & banner OTA.
+- Release 3.3.0 / 30300, previous 30200; ký bằng khóa cố định LTMsav-release.jks để cài đè trực tiếp lên app cũ.
