@@ -8,6 +8,23 @@ export interface Account {
   currency: string;
   iconName: string;
   color: string;
+
+  // Chi tiết tài sản ngân hàng / ví / tiết kiệm / thẻ tín dụng
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
+  branch?: string;
+
+  // Sổ tiết kiệm
+  interestRate?: number;
+  termMonths?: number;
+  depositDate?: string;
+  maturityDate?: string;
+
+  // Thẻ tín dụng
+  creditLimit?: number;
+  statementDay?: number;
+  paymentDueDay?: number;
 }
 
 export type CategoryType = 'expense' | 'income' | 'lend';
@@ -45,6 +62,8 @@ export interface Budget {
   monthlyLimit: number;
 }
 
+export type DebtCategory = 'bank_loan' | 'credit_card' | 'installment' | 'personal_debt' | 'other';
+
 export interface DebtOrLoan {
   id: string;
   type: 'loan' | 'debt';
@@ -56,6 +75,15 @@ export interface DebtOrLoan {
   note?: string;
   status: 'active' | 'settled';
   createdAt: string;
+
+  // Chi tiết đặc tính khoản nợ / cho vay
+  debtCategory?: DebtCategory;
+  lenderName?: string;
+  interestRate?: number; // % / năm
+  termMonths?: number; // Kỳ hạn (tháng)
+  isInstallment?: boolean; // Trả góp định kỳ
+  monthlyInstallmentAmount?: number; // Tiền trả định kỳ hàng tháng
+  monthlyPaymentDay?: number; // Ngày trả cố định trong tháng (1 - 31)
 }
 
 export interface AuditLog {

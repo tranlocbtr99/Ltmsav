@@ -83,7 +83,7 @@ export const App: React.FC = () => {
       if (acc.type === 'savings') savings += acc.balance;
     });
     const avail = total - savings;
-    return scanProactiveAdvisory(budgets, categories, debts, transactions, null, avail);
+    return scanProactiveAdvisory(budgets, categories, debts, transactions, null, avail, accounts);
   }, [budgets, categories, debts, transactions, accounts]);
 
   // Modals
@@ -182,7 +182,7 @@ export const App: React.FC = () => {
     showToast(`${t('toastAccountAdded')}: ${acc.name}`);
   };
 
-  const handleEditAccount = (id: string, updates: Pick<Account, 'name' | 'type' | 'iconName' | 'color'>) => {
+  const handleEditAccount = (id: string, updates: Partial<Account>) => {
     const account = storage.updateAccount(id, updates);
     if (!account) return;
     reloadData();
@@ -213,6 +213,12 @@ export const App: React.FC = () => {
     storage.recordDebtPayment(id, amount);
     reloadData();
     showToast(t('toastPaymentSuccess'));
+  };
+
+  const handleDeleteDebtOrLoan = (id: string) => {
+    storage.deleteDebtOrLoan(id);
+    reloadData();
+    showToast(t('toastDeleted'));
   };
 
   const handleExportBackup = () => {
@@ -350,6 +356,7 @@ export const App: React.FC = () => {
               onAddDebtOrLoan={handleAddDebtOrLoan}
               onRecordPayment={handleRecordPayment}
               onDeleteAccount={handleDeleteAccountSource}
+              onDeleteDebtOrLoan={handleDeleteDebtOrLoan}
             />
           )}</section>
 

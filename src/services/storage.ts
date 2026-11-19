@@ -545,6 +545,12 @@ class StorageManager {
     return true;
   }
 
+  deleteDebtOrLoan(id: string): void {
+    const items = this.getDebtsAndLoans().filter(i => i.id !== id);
+    this.saveDebtsAndLoans(items);
+    this.addAuditLog('DELETE', 'ACCOUNT', id, `Xóa bản ghi nợ/cho vay ID ${id}`);
+  }
+
   // --- Audit Logs ---
   getAuditLogs(): AuditLog[] {
     return this.get<AuditLog[]>(STORAGE_KEYS.AUDIT_LOGS, []);

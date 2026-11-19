@@ -4,10 +4,11 @@ import { DateField } from './DateField';
 import { IOSSelect } from './IOSSelect';
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Account, DebtOrLoan } from '../types';
+import { Account, DebtOrLoan, DebtCategory } from '../types';
 import { 
   Wallet, Plus, Edit2, ArrowDownLeft, ArrowUpRight, CheckCircle2, 
-  Clock, User, Landmark, SlidersHorizontal, ShieldCheck, X, Check, Trash2
+  Clock, User, Landmark, SlidersHorizontal, ShieldCheck, X, Check, Trash2,
+  Building2, CreditCard, PiggyBank, Calendar, Percent
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 
@@ -23,17 +24,25 @@ const ACCOUNT_COLORS = [
   '#F59E0B', '#EAB308', '#14B8A6', '#3B82F6', '#A855F7', '#64748B',
 ];
 
+const COMMON_BANKS = [
+  'Vietcombank', 'MB Bank', 'Techcombank', 'VPBank', 'ACB', 'BIDV', 'VietinBank', 'TPBank', 'VIB', 'Sacombank', 'HDBank', 'OCB'
+];
+
+const COMMON_WALLETS = [
+  'Momo', 'ZaloPay', 'Viettel Money', 'VNPay', 'ShopeePay'
+];
 
 interface AssetsTabProps {
   onViewAccount?: (id: string) => void;
   accounts: Account[];
   debts: DebtOrLoan[];
-  onEditAccount: (id: string, updates: Pick<Account, 'name' | 'type' | 'iconName' | 'color'>) => void;
+  onEditAccount: (id: string, updates: Partial<Account>) => void;
   onAddAccount: (acc: Omit<Account, 'id'>) => void;
   onAdjustBalance: (id: string, newBalance: number, reason: string) => void;
   onAddDebtOrLoan: (item: Omit<DebtOrLoan, 'id' | 'createdAt' | 'status' | 'remainingAmount'>) => void;
   onRecordPayment: (id: string, amount: number) => void;
   onDeleteAccount: (id: string) => void;
+  onDeleteDebtOrLoan?: (id: string) => void;
 }
 
 export const AssetsTab: React.FC<AssetsTabProps> = ({
@@ -46,6 +55,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
   onAddDebtOrLoan,
   onRecordPayment,
   onDeleteAccount,
+  onDeleteDebtOrLoan,
 }) => {
   const { t } = useLanguage();
   const [subTab, setSubTab] = useState<'accounts' | 'debts' | 'loans'>('accounts');
@@ -70,13 +80,69 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
   const [accColor, setAccColor] = useState('#10B981');
   const [accIcon, setAccIcon] = useState('Landmark');
 
+  // Detailed Account fields
+  const [accBankName, setAccBankName] = useState('');
+  const [accNumber, setAccNumber] = useState('');
+  const [accHolder, setAccHolder] = useState('');
+  const [accBranch, setAccBranch] = useState('');
+  const [accInterestRateStr, setAccInterestRateStr] = useState('');
+  const [accTermMonthsStr, setAccTermMonthsStr] = useState('');
+  const [accDepositDate, setAccDepositDate] = useState('');
+  const [accMaturityDate, setAccMaturityDate] = useState('');
+  const [accCreditLimitStr, setAccCreditLimitStr] = useState('');
+  const [accStatementDayStr, setAccStatementDayStr] = useState('');
+  const [accDueDayStr, setAccDueDayStr] = useState('');
+
   // Add Debt/Loan state
-  const [debtType, setDebtType] = useState<'debt' | 'loan'>('loan');
+  const [debtType, setDebtType] = useState<'debt' | 'loan'>('debt');
   const [debtPerson, setDebtPerson] = useState('');
   const [debtAmountStr, setDebtAmountStr] = useState('');
   const [debtDueDate, setDebtDueDate] = useState('');
   const [debtNote, setDebtNote] = useState('');
   const [debtAccountId, setDebtAccountId] = useState(accounts[0]?.id || '');
+
+  // Detailed Debt fields
+  const [debtCategory, setDebtCategory] = useState<DebtCategory>('personal_debt');
+  const [debtLenderName, setDebtLenderName] = useState('');
+  const [debtInterestRateStr, setDebtInterestRateStr] = useState('');
+  const [debtTermMonthsStr, setDebtTermMonthsStr] = useState('');
+  const [debtIsInstallment, setDebtIsInstallment] = useState(false);
+  const [debtMonthlyInstallmentStr, setDebtMonthlyInstallmentStr] = useState('');
+  const [debtMonthlyPaymentDayStr, setDebtMonthlyPaymentDayStr] = useState('15');
+
+  const resetAccountForm = () => {
+    setEditingAccountId(null);
+    setAccName('');
+    setAccType('bank');
+    setAccBalanceStr('');
+    setAccColor('#10B981');
+    setAccIcon('Landmark');
+    setAccBankName('');
+    setAccNumber('');
+    setAccHolder('');
+    setAccBranch('');
+    setAccInterestRateStr('');
+    setAccTermMonthsStr('');
+    setAccDepositDate('');
+    setAccMaturityDate('');
+    setAccCreditLimitStr('');
+    setAccStatementDayStr('');
+    setAccDueDayStr('');
+  };
+
+  const resetDebtForm = () => {
+    setDebtPerson('');
+    setDebtAmountStr('');
+    setDebtDueDate('');
+    setDebtNote('');
+    setDebtCategory('personal_debt');
+    setDebtLenderName('');
+    setDebtInterestRateStr('');
+    setDebtTermMonthsStr('');
+    setDebtIsInstallment(false);
+    setDebtMonthlyInstallmentStr('');
+    setDebtMonthlyPaymentDayStr('15');
+  };
 
   // Payment state
   const [selectedDebt, setSelectedDebt] = useState<DebtOrLoan | null>(null);
@@ -99,26 +165,51 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
     const balance = parseInt(accBalanceStr.replace(/\D/g, ''), 10) || 0;
     if (!accName.trim()) return;
 
-    if (editingAccountId) {
-      onEditAccount(editingAccountId, { name: accName.trim(), type: accType, iconName: accIcon, color: accColor });
-    } else onAddAccount({
+    const interestRate = parseFloat(accInterestRateStr) || undefined;
+    const termMonths = parseInt(accTermMonthsStr, 10) || undefined;
+    const creditLimit = parseInt(accCreditLimitStr.replace(/\D/g, ''), 10) || undefined;
+    const statementDay = parseInt(accStatementDayStr, 10) || undefined;
+    const paymentDueDay = parseInt(accDueDayStr, 10) || undefined;
+
+    const accountData: Omit<Account, 'id'> = {
       name: accName.trim(),
       type: accType,
       balance,
       currency: 'VND',
       iconName: accIcon,
       color: accColor,
-    });
+      bankName: accBankName.trim() || undefined,
+      accountNumber: accNumber.trim() || undefined,
+      accountHolder: accHolder.trim() || undefined,
+      branch: accBranch.trim() || undefined,
+      interestRate,
+      termMonths,
+      depositDate: accDepositDate || undefined,
+      maturityDate: accMaturityDate || undefined,
+      creditLimit,
+      statementDay,
+      paymentDueDay,
+    };
+
+    if (editingAccountId) {
+      onEditAccount(editingAccountId, accountData);
+    } else {
+      onAddAccount(accountData);
+    }
 
     setIsAccountModalOpen(false);
-    setAccName('');
-    setAccBalanceStr('');
+    resetAccountForm();
   };
 
   const handleCreateDebt = (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseInt(debtAmountStr.replace(/\D/g, ''), 10) || 0;
     if (!debtPerson.trim() || amount <= 0) return;
+
+    const interestRate = parseFloat(debtInterestRateStr) || undefined;
+    const termMonths = parseInt(debtTermMonthsStr, 10) || undefined;
+    const monthlyInstallmentAmount = parseInt(debtMonthlyInstallmentStr.replace(/\D/g, ''), 10) || undefined;
+    const monthlyPaymentDay = parseInt(debtMonthlyPaymentDayStr, 10) || undefined;
 
     onAddDebtOrLoan({
       type: debtType,
@@ -127,12 +218,17 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
       accountId: debtAccountId,
       dueDate: debtDueDate || undefined,
       note: debtNote.trim() || undefined,
+      debtCategory,
+      lenderName: debtLenderName.trim() || undefined,
+      interestRate,
+      termMonths,
+      isInstallment: debtIsInstallment,
+      monthlyInstallmentAmount,
+      monthlyPaymentDay,
     });
 
     setIsDebtModalOpen(false);
-    setDebtPerson('');
-    setDebtAmountStr('');
-    setDebtNote('');
+    resetDebtForm();
   };
 
   const handlePaymentSubmit = (e: React.FormEvent) => {
@@ -203,7 +299,24 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
               <summary className="asset-row cursor-pointer list-none" aria-label={`${t('openAccountActions')}: ${acc.name}`}>
                 <span className="flex items-center gap-3 min-w-0">
                   <span className="p-2.5 rounded-xl shrink-0" style={{backgroundColor:`${acc.color}20`,color:acc.color}}><DynamicIcon name={acc.iconName} className="w-5 h-5"/></span>
-                  <span className="min-w-0"><strong className="block text-sm break-words">{acc.name}</strong><span className="text-xs text-slate-500 dark:text-slate-400">{t(acc.type === 'wallet' ? 'eWallet' : acc.type)}</span></span>
+                  <span className="min-w-0">
+                    <strong className="block text-sm break-words">{acc.name}</strong>
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <span>{t(acc.type === 'wallet' ? 'eWallet' : acc.type)}</span>
+                      {acc.bankName && <span className="font-medium text-slate-700 dark:text-slate-300">• {acc.bankName}</span>}
+                      {acc.accountNumber && <span className="font-mono text-[11px] text-slate-600 dark:text-slate-400">({acc.accountNumber})</span>}
+                    </div>
+                    {acc.type === 'savings' && (acc.interestRate || acc.maturityDate) && (
+                      <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        {acc.interestRate ? `${acc.interestRate}%/năm` : ''} {acc.maturityDate ? `• Đáo hạn: ${acc.maturityDate}` : ''}
+                      </div>
+                    )}
+                    {acc.type === 'credit' && acc.creditLimit && (
+                      <div className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                        Hạn mức: {acc.creditLimit.toLocaleString('vi-VN')}₫
+                      </div>
+                    )}
+                  </span>
                 </span>
                 <strong className="text-sm tabular-nums text-right break-all max-w-[150px]">{acc.balance.toLocaleString('vi-VN')} ₫</strong>
               </summary>
@@ -214,8 +327,24 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                     title={t('editAccount')}
                     className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 px-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-blue-700/20"
                     onClick={() => {
-                      setEditingAccountId(acc.id); setAccName(acc.name); setAccType(acc.type);
-                      setAccIcon(acc.iconName); setAccColor(acc.color); setIsAccountModalOpen(true);
+                      setEditingAccountId(acc.id);
+                      setAccName(acc.name);
+                      setAccType(acc.type);
+                      setAccIcon(acc.iconName);
+                      setAccColor(acc.color);
+                      setAccBalanceStr(acc.balance.toString());
+                      setAccBankName(acc.bankName || '');
+                      setAccNumber(acc.accountNumber || '');
+                      setAccHolder(acc.accountHolder || '');
+                      setAccBranch(acc.branch || '');
+                      setAccInterestRateStr(acc.interestRate ? acc.interestRate.toString() : '');
+                      setAccTermMonthsStr(acc.termMonths ? acc.termMonths.toString() : '');
+                      setAccDepositDate(acc.depositDate || '');
+                      setAccMaturityDate(acc.maturityDate || '');
+                      setAccCreditLimitStr(acc.creditLimit ? acc.creditLimit.toString() : '');
+                      setAccStatementDayStr(acc.statementDay ? acc.statementDay.toString() : '');
+                      setAccDueDayStr(acc.paymentDueDay ? acc.paymentDueDay.toString() : '');
+                      setIsAccountModalOpen(true);
                     }}
                   >
                     <Edit2 className="w-4 h-4 shrink-0" /><span>{t('editDetails')}</span>
@@ -251,6 +380,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
             </span>
             <button
               onClick={() => {
+                resetDebtForm();
                 setDebtType('loan');
                 setIsDebtModalOpen(true);
               }}
@@ -273,10 +403,30 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                       <User className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{loan.person}</h4>
-                      <span className="text-[11px] text-slate-600 dark:text-slate-400">
-                        {t('dueDate')}: {loan.dueDate || t('noDueDate')} {loan.note ? `• ${loan.note}` : ''}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{loan.person}</h4>
+                        {loan.debtCategory && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            {t(loan.debtCategory === 'bank_loan' ? 'bankLoan' : loan.debtCategory === 'credit_card' ? 'creditCardDebt' : loan.debtCategory === 'installment' ? 'installmentDebt' : loan.debtCategory === 'personal_debt' ? 'personalDebt' : 'otherDebt')}
+                          </span>
+                        )}
+                        {loan.isInstallment && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            {t('installmentBadge')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 flex flex-wrap gap-x-2">
+                        {loan.lenderName && <span>{loan.lenderName}</span>}
+                        {loan.interestRate ? <span className="text-blue-600 dark:text-blue-400 font-medium">{t('interestRateBadge')}: {loan.interestRate}%/năm</span> : null}
+                        {loan.isInstallment && loan.monthlyInstallmentAmount ? (
+                          <span className="text-amber-600 dark:text-amber-400 font-medium">
+                            {t('installmentBadge')}: {loan.monthlyInstallmentAmount.toLocaleString('vi-VN')}₫ (ngày {loan.monthlyPaymentDay || 15})
+                          </span>
+                        ) : null}
+                        <span>{t('dueDate')}: {loan.dueDate || t('noDueDate')}</span>
+                        {loan.note ? <span>• {loan.note}</span> : null}
+                      </div>
                     </div>
                   </div>
 
@@ -297,18 +447,34 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                     </span>
                   </div>
 
-                  {loan.status === 'active' && (
-                    <button
-                      onClick={() => {
-                        setSelectedDebt(loan);
-                        setPayAmountStr(loan.remainingAmount.toString());
-                        setIsPaymentModalOpen(true);
-                      }}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs transition"
-                    >
-                      {t('collectDebt')}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {loan.status === 'active' && (
+                      <button
+                        onClick={() => {
+                          setSelectedDebt(loan);
+                          setPayAmountStr(loan.remainingAmount.toString());
+                          setIsPaymentModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl text-xs transition"
+                      >
+                        {t('collectDebt')}
+                      </button>
+                    )}
+                    {onDeleteDebtOrLoan && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (await confirmAction(t('deleteDebtConfirm'), { destructive: true })) {
+                            onDeleteDebtOrLoan(loan.id);
+                          }
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition"
+                        title={t('delete')}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -325,6 +491,7 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
             </span>
             <button
               onClick={() => {
+                resetDebtForm();
                 setDebtType('debt');
                 setIsDebtModalOpen(true);
               }}
@@ -347,10 +514,30 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                       <Landmark className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{debt.person}</h4>
-                      <span className="text-[11px] text-slate-600 dark:text-slate-400">
-                        {t('term')}: {debt.dueDate || t('noDueDate')} {debt.note ? `• ${debt.note}` : ''}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{debt.person}</h4>
+                        {debt.debtCategory && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            {t(debt.debtCategory === 'bank_loan' ? 'bankLoan' : debt.debtCategory === 'credit_card' ? 'creditCardDebt' : debt.debtCategory === 'installment' ? 'installmentDebt' : debt.debtCategory === 'personal_debt' ? 'personalDebt' : 'otherDebt')}
+                          </span>
+                        )}
+                        {debt.isInstallment && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            {t('installmentBadge')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 flex flex-wrap gap-x-2">
+                        {debt.lenderName && <span>{debt.lenderName}</span>}
+                        {debt.interestRate ? <span className="text-rose-600 dark:text-rose-400 font-medium">{t('interestRateBadge')}: {debt.interestRate}%/năm</span> : null}
+                        {debt.isInstallment && debt.monthlyInstallmentAmount ? (
+                          <span className="text-amber-600 dark:text-amber-400 font-medium">
+                            {t('installmentBadge')}: {debt.monthlyInstallmentAmount.toLocaleString('vi-VN')}₫ (ngày {debt.monthlyPaymentDay || 15})
+                          </span>
+                        ) : null}
+                        <span>{t('term')}: {debt.dueDate || t('noDueDate')}</span>
+                        {debt.note ? <span>• {debt.note}</span> : null}
+                      </div>
                     </div>
                   </div>
 
@@ -371,18 +558,34 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                     </span>
                   </div>
 
-                  {debt.status === 'active' && (
-                    <button
-                      onClick={() => {
-                        setSelectedDebt(debt);
-                        setPayAmountStr(debt.remainingAmount.toString());
-                        setIsPaymentModalOpen(true);
-                      }}
-                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs transition"
-                    >
-                      {t('payDebt')}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {debt.status === 'active' && (
+                      <button
+                        onClick={() => {
+                          setSelectedDebt(debt);
+                          setPayAmountStr(debt.remainingAmount.toString());
+                          setIsPaymentModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-xl text-xs transition"
+                      >
+                        {t('payDebt')}
+                      </button>
+                    )}
+                    {onDeleteDebtOrLoan && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (await confirmAction(t('deleteDebtConfirm'), { destructive: true })) {
+                            onDeleteDebtOrLoan(debt.id);
+                          }
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition"
+                        title={t('delete')}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -451,16 +654,16 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
       {/* Modal: Add Account */}
       {isAccountModalOpen && (
-        <AssetSheet title={t(editingAccountId ? 'editAccount' : 'addMoneySource')} onClose={() => setIsAccountModalOpen(false)}>
-          <div className="silver-asset-panel">
+        <AssetSheet title={t(editingAccountId ? 'editAccount' : 'addMoneySource')} onClose={() => { setIsAccountModalOpen(false); resetAccountForm(); }}>
+          <div className="silver-asset-panel max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t(editingAccountId ? 'editAccount' : 'addMoneySource')}</h3>
-              <button aria-label={t('close')} onClick={() => setIsAccountModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <button aria-label={t('close')} onClick={() => { setIsAccountModalOpen(false); resetAccountForm(); }} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateAccount} className="space-y-3.5"><div className="silver-asset-fields">
+            <form onSubmit={handleCreateAccount} className="space-y-3.5"><div className="silver-asset-fields space-y-3">
               <div>
                 <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('accountName')}</label>
                 <input
@@ -495,6 +698,201 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                   <option value="credit" data-icon="CreditCard">{t('creditCard')}</option>
                 </IOSSelect>
               </div>
+
+              {/* Chi tiết cho Tài khoản Ngân hàng */}
+              {accType === 'bank' && (
+                <div className="p-3 rounded-xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <Building2 className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Thông tin Ngân hàng</span>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('bankNameLabel')}</label>
+                    <input
+                      type="text"
+                      value={accBankName}
+                      onChange={e => setAccBankName(e.target.value)}
+                      placeholder={t('bankNamePlaceholder')}
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs"
+                    />
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {COMMON_BANKS.slice(0, 6).map(b => (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => { setAccBankName(b); if (!accName) setAccName(b); }}
+                          className="px-2 py-0.5 text-[10px] rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-500 hover:text-white transition"
+                        >
+                          {b}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('accountNumberLabel')}</label>
+                      <input
+                        type="text"
+                        value={accNumber}
+                        onChange={e => setAccNumber(e.target.value)}
+                        placeholder="VD: 1029384756"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('accountHolderLabel')}</label>
+                      <input
+                        type="text"
+                        value={accHolder}
+                        onChange={e => setAccHolder(e.target.value)}
+                        placeholder="NGUYEN VAN A"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs uppercase"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Chi tiết cho Ví điện tử */}
+              {accType === 'wallet' && (
+                <div className="p-3 rounded-xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <Wallet className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Thông tin Ví điện tử</span>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('bankNameLabel')}</label>
+                    <input
+                      type="text"
+                      value={accBankName}
+                      onChange={e => setAccBankName(e.target.value)}
+                      placeholder="VD: Momo, ZaloPay..."
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs"
+                    />
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {COMMON_WALLETS.map(w => (
+                        <button
+                          key={w}
+                          type="button"
+                          onClick={() => { setAccBankName(w); if (!accName) setAccName(w); }}
+                          className="px-2 py-0.5 text-[10px] rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-pink-500 hover:text-white transition"
+                        >
+                          {w}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">Số điện thoại ví</label>
+                    <input
+                      type="text"
+                      value={accNumber}
+                      onChange={e => setAccNumber(e.target.value)}
+                      placeholder="VD: 0912345678"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Chi tiết cho Sổ tiết kiệm */}
+              {accType === 'savings' && (
+                <div className="p-3 rounded-xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    <PiggyBank className="w-3.5 h-3.5" />
+                    <span>Đặc tính Sổ tiết kiệm</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('bankNameLabel')}</label>
+                      <input
+                        type="text"
+                        value={accBankName}
+                        onChange={e => setAccBankName(e.target.value)}
+                        placeholder="VD: Vietcombank"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('interestRatePercent')}</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={accInterestRateStr}
+                        onChange={e => setAccInterestRateStr(e.target.value)}
+                        placeholder="5.5"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('depositDateLabel')}</label>
+                      <DateField
+                        type="date"
+                        value={accDepositDate}
+                        onChange={e => setAccDepositDate(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('maturityDateLabel')}</label>
+                      <DateField
+                        type="date"
+                        value={accMaturityDate}
+                        onChange={e => setAccMaturityDate(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Chi tiết cho Thẻ tín dụng */}
+              {accType === 'credit' && (
+                <div className="p-3 rounded-xl bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Đặc tính Thẻ tín dụng</span>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('creditLimitLabel')}</label>
+                    <input
+                      type="text"
+                      value={accCreditLimitStr ? parseInt(accCreditLimitStr.replace(/\D/g, ''), 10).toLocaleString('vi-VN') : ''}
+                      onChange={e => setAccCreditLimitStr(e.target.value.replace(/\D/g, ''))}
+                      placeholder="20.000.000"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs font-bold"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('statementDayLabel')}</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={accStatementDayStr}
+                        onChange={e => setAccStatementDayStr(e.target.value)}
+                        placeholder="20"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('paymentDueDayLabel')}</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={accDueDayStr}
+                        onChange={e => setAccDueDayStr(e.target.value)}
+                        placeholder="5"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Icon picker */}
               <div>
@@ -562,10 +960,10 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 />
               </div>}
 
-              </div><div className="flex items-center justify-end gap-2 pt-2">
+              </div><div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsAccountModalOpen(false)}
+                  onClick={() => { setIsAccountModalOpen(false); resetAccountForm(); }}
                   className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-lg transition"
                 >
                   {t('cancel')}
@@ -584,50 +982,145 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
 
       {/* Modal: Add Debt/Loan */}
       {isDebtModalOpen && (
-        <AssetSheet title={(debtType === 'loan' ? t('addLoanTitle') : t('addDebtTitle'))} onClose={() => setIsDebtModalOpen(false)}>
-          <div className="silver-asset-panel">
+        <AssetSheet title={(debtType === 'loan' ? t('addLoanTitle') : t('addDebtTitle'))} onClose={() => { setIsDebtModalOpen(false); resetDebtForm(); }}>
+          <div className="silver-asset-panel max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 {debtType === 'loan' ? t('addLoanTitle') : t('addDebtTitle')}
               </h3>
-              <button aria-label={t('close')} onClick={() => setIsDebtModalOpen(false)} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
+              <button aria-label={t('close')} onClick={() => { setIsDebtModalOpen(false); resetDebtForm(); }} className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateDebt} className="space-y-3"><div className="silver-asset-fields">
+            <form onSubmit={handleCreateDebt} className="space-y-3"><div className="silver-asset-fields space-y-3">
+              {/* Phân loại khoản nợ */}
               <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('relatedPerson')}</label>
-                <input
-                  type="text"
-                  value={debtPerson}
-                  onChange={e => setDebtPerson(e.target.value)}
-                  placeholder={t('relatedPersonPlaceholder')}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
-                  required
-                />
+                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('debtCategoryLabel')}</label>
+                <IOSSelect
+                  label={t('debtCategoryLabel')}
+                  value={debtCategory}
+                  onChange={e => setDebtCategory(e.target.value as DebtCategory)}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs font-semibold"
+                >
+                  <option value="personal_debt">{t('personalDebt')}</option>
+                  <option value="bank_loan">{t('bankLoan')}</option>
+                  <option value="credit_card">{t('creditCardDebt')}</option>
+                  <option value="installment">{t('installmentDebt')}</option>
+                  <option value="other">{t('otherDebt')}</option>
+                </IOSSelect>
               </div>
 
-              <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('amountVnd')}</label>
-                <input
-                  type="text"
-                  value={debtAmountStr ? parseInt(debtAmountStr.replace(/\D/g, ''), 10).toLocaleString('vi-VN') : ''}
-                  onChange={e => setDebtAmountStr(e.target.value.replace(/\D/g, ''))}
-                  placeholder="1.000.000"
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs font-bold tabular-nums"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('relatedPerson')}</label>
+                  <input
+                    type="text"
+                    value={debtPerson}
+                    onChange={e => setDebtPerson(e.target.value)}
+                    placeholder="VD: Tuấn, Ngân hàng..."
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('lenderNameLabel')}</label>
+                  <input
+                    type="text"
+                    value={debtLenderName}
+                    onChange={e => setDebtLenderName(e.target.value)}
+                    placeholder={t('lenderNamePlaceholder')}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('paymentDue')}</label>
-                <DateField
-                  type="date"
-                  value={debtDueDate}
-                  onChange={e => setDebtDueDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('amountVnd')}</label>
+                  <input
+                    type="text"
+                    value={debtAmountStr ? parseInt(debtAmountStr.replace(/\D/g, ''), 10).toLocaleString('vi-VN') : ''}
+                    onChange={e => setDebtAmountStr(e.target.value.replace(/\D/g, ''))}
+                    placeholder="10.000.000"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs font-bold tabular-nums"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('interestRateDebtLabel')}</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={debtInterestRateStr}
+                    onChange={e => setDebtInterestRateStr(e.target.value)}
+                    placeholder="12.5"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Tùy chọn trả góp định kỳ hàng tháng */}
+              <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={debtIsInstallment}
+                    onChange={e => setDebtIsInstallment(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-700 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-900 dark:text-white">{t('isInstallmentLabel')}</span>
+                </label>
+
+                {debtIsInstallment && (
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('monthlyInstallmentAmountLabel')}</label>
+                      <input
+                        type="text"
+                        value={debtMonthlyInstallmentStr ? parseInt(debtMonthlyInstallmentStr.replace(/\D/g, ''), 10).toLocaleString('vi-VN') : ''}
+                        onChange={e => setDebtMonthlyInstallmentStr(e.target.value.replace(/\D/g, ''))}
+                        placeholder="2.000.000"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">{t('monthlyPaymentDayLabel')}</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={debtMonthlyPaymentDayStr}
+                        onChange={e => setDebtMonthlyPaymentDayStr(e.target.value)}
+                        placeholder="15"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('paymentDue')}</label>
+                  <DateField
+                    type="date"
+                    value={debtDueDate}
+                    onChange={e => setDebtDueDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{t('termMonthsDebtLabel')}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={debtTermMonthsStr}
+                    onChange={e => setDebtTermMonthsStr(e.target.value)}
+                    placeholder="12"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs"
+                  />
+                </div>
               </div>
 
               <div>
@@ -641,10 +1134,10 @@ export const AssetsTab: React.FC<AssetsTabProps> = ({
                 />
               </div>
 
-              </div><div className="flex items-center justify-end gap-2 pt-2">
+              </div><div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsDebtModalOpen(false)}
+                  onClick={() => { setIsDebtModalOpen(false); resetDebtForm(); }}
                   className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-lg transition"
                 >
                   {t('cancel')}
