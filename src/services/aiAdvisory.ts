@@ -58,34 +58,70 @@ export function scanProactiveAdvisory(
     }
   }
 
-  // 2. Cảnh báo công nợ sắp đến hạn & trả góp định kỳ
+  // 2. Cảnh báo công nợ sắp đến hạn, trả góp & thẻ tín dụng
   const next7Days = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7);
   for (const d of debts) {
     if (d.status === 'active' && d.remainingAmount > 0) {
       // 2a. Trả góp định kỳ hàng tháng sắp đến hạn trong 3 ngày tới
-      if (d.isInstallment && d.monthlyInstallmentAmount && d.monthlyPaymentDay) {
+      if (d.debtCategory === 'installment' && d.monthlyInstallmentAmount && d.monthlyPaymentDay) {
         let daysUntil = d.monthlyPaymentDay - currentDayOfMonth;
         if (daysUntil < 0) {
-          // Tháng sau hoặc đã qua trong tháng này
           const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
           daysUntil += daysInMonth;
         }
 
         if (daysUntil >= 0 && daysUntil <= 3) {
-          const lender = d.lenderName || d.person;
+          const titleName = d.itemName || d.person;
+          const currentKỳ = (d.paidInstallments || 0) + 1;
+          const totalKỳ = d.totalInstallments || 12;
           items.push({
             id: `installment-due-${d.id}`,
             type: 'warning',
             title: `Kỳ trả góp sắp đến hạn`,
-            message: `Khoản trả góp cho ${lender} (${new Intl.NumberFormat('vi-VN').format(d.monthlyInstallmentAmount)}đ) đến ngày thanh toán ${d.monthlyPaymentDay} (${daysUntil === 0 ? 'Hôm nay' : `còn ${daysUntil} ngày`}).`,
-            actionLabel: 'Xem khoản nợ',
+            message: `Kỳ ${currentKỳ}/${totalKỳ} của [${titleName}] (${new Intl.NumberFormat('vi-VN').format(d.monthlyInstallmentAmount)}đ) đến ngày thanh toán ${d.monthlyPaymentDay} (${daysUntil === 0 ? 'Hôm nay' : `còn ${daysUntil} ngày`}).`,
+            actionLabel: 'Xem khoản trả góp',
             actionTab: 'assets'
           });
         }
       }
 
-      // 2b. Lãi suất cao cần ưu tiên trả
-      if (d.type === 'debt' && d.interestRate && d.interestRate >= 18) {
+      // 2b. Thẻ tín dụng đến hạn thanh toán sao kê hoặc vượt 80% hạn mức
+      if (d.debtCategory === 'credit_card') {
+        if (d.creditLimit && d.creditLimit > 0) {
+          const utilRate = Math.round((d.remainingAmount / d.creditLimit) * 100);
+          if (utilRate >= 80) {
+            items.push({
+              id: `cc-limit-alert-${d.id}`,
+              type: 'alert',
+              title: `Thẻ tín dụng dùng quá ${utilRate}% hạn mức`,
+              message: `Thẻ [${d.lenderName || d.person}] đã dùng ${new Intl.NumberFormat('vi-VN').format(d.remainingAmount)}đ / ${new Intl.NumberFormat('vi-VN').format(d.creditLimit)}đ. Cần kiểm soát chi tiêu để tránh phí phạt vượt hạn mức.`,
+              actionLabel: 'Xem thẻ',
+              actionTab: 'assets'
+            });
+          }
+        }
+
+        if (d.paymentDueDay) {
+          let daysUntilDue = d.paymentDueDay - currentDayOfMonth;
+          if (daysUntilDue < 0) {
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            daysUntilDue += daysInMonth;
+          }
+          if (daysUntilDue >= 0 && daysUntilDue <= 3) {
+            items.push({
+              id: `cc-due-date-${d.id}`,
+              type: 'warning',
+              title: `Hạn thanh toán sao kê thẻ tín dụng`,
+              message: `Hạn chót thanh toán thẻ [${d.lenderName || d.person}] (${new Intl.NumberFormat('vi-VN').format(d.remainingAmount)}đ) vào ngày ${d.paymentDueDay} (${daysUntilDue === 0 ? 'Hôm nay' : `còn ${daysUntilDue} ngày`}). Thanh toán đúng hạn để tránh lãi suất cao.`,
+              actionLabel: 'Thanh toán thẻ',
+              actionTab: 'assets'
+            });
+          }
+        }
+      }
+
+      // 2c. Lãi suất cao cần ưu tiên trả
+      if (d.type === 'debt' && d.interestRate && d.interestRate >= 18 && d.debtCategory !== 'credit_card') {
         items.push({
           id: `debt-high-interest-${d.id}`,
           type: 'alert',
@@ -96,8 +132,8 @@ export function scanProactiveAdvisory(
         });
       }
 
-      // 2c. Khoản nợ đáo hạn trong 7 ngày tới
-      if (d.dueDate) {
+      // 2d. Khoản nợ đáo hạn trong 7 ngày tới (không phải trả góp / thẻ tín dụng)
+      if (d.dueDate && d.debtCategory !== 'installment' && d.debtCategory !== 'credit_card') {
         const dueDate = new Date(d.dueDate);
         if (dueDate >= now && dueDate <= next7Days) {
           if (d.type === 'debt') {
@@ -106,16 +142,16 @@ export function scanProactiveAdvisory(
               type: 'warning',
               title: `Khoản nợ sắp đến hạn`,
               message: `Cần chuẩn bị ${new Intl.NumberFormat('vi-VN').format(d.remainingAmount)}đ trả cho ${d.lenderName || d.person} vào ngày ${d.dueDate}.`,
-              actionLabel: 'Quản lý tài sản & nợ',
+              actionLabel: 'Quản lý nợ',
               actionTab: 'assets'
             });
           } else {
             items.push({
               id: `loan-due-${d.id}`,
               type: 'tip',
-              title: `Nhắc thu hồi khoản vay`,
-              message: `Khoản cho ${d.person} vay (${new Intl.NumberFormat('vi-VN').format(d.remainingAmount)}đ) đến hạn thu vào ngày ${d.dueDate}.`,
-              actionLabel: 'Xem khoản vay',
+              title: `Nhắc thu hồi khoản cho vay`,
+              message: `Khoản cho ${d.person} mượn (${new Intl.NumberFormat('vi-VN').format(d.remainingAmount)}đ) đến hạn hẹn thu vào ngày ${d.dueDate}.`,
+              actionLabel: 'Xem khoản cho vay',
               actionTab: 'assets'
             });
           }

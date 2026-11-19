@@ -101,32 +101,36 @@ export function generateCashflowForecast(
       }
     }
 
-    // 3. Công nợ / Khoản vay đến hạn trả trong ngày & trả góp định kỳ
+    // 3. Công nợ / Khoản vay đến hạn trả trong ngày, thẻ tín dụng & trả góp định kỳ
     for (const debt of debts) {
       if (debt.status === 'active' && debt.remainingAmount > 0) {
-        // Trường hợp 1: Trả góp định kỳ hàng tháng
-        if (debt.isInstallment && debt.monthlyInstallmentAmount && debt.monthlyInstallmentAmount > 0) {
-          const paymentDay = debt.monthlyPaymentDay || (debt.dueDate ? parseInt(debt.dueDate.slice(8, 10), 10) : 15);
+        // 3a. Trường hợp Mua trả góp hàng tháng
+        if (debt.debtCategory === 'installment' && debt.monthlyInstallmentAmount && debt.monthlyInstallmentAmount > 0) {
+          const paymentDay = debt.monthlyPaymentDay || 15;
           if (dayOfMonth === paymentDay) {
             const payAmount = Math.min(debt.monthlyInstallmentAmount, debt.remainingAmount);
-            if (debt.type === 'debt') {
-              dayOutflow += payAmount;
-              const catName = debt.debtCategory === 'credit_card' ? 'Thẻ tín dụng' : debt.debtCategory === 'bank_loan' ? 'Vay ngân hàng' : 'Trả góp';
-              notes.push(`Trả góp định kỳ [${catName} - ${debt.lenderName || debt.person}]: -${new Intl.NumberFormat('vi-VN').format(payAmount)}đ`);
-            } else if (debt.type === 'loan') {
-              dayInflow += payAmount;
-              notes.push(`Thu nợ trả góp từ ${debt.person}: +${new Intl.NumberFormat('vi-VN').format(payAmount)}đ`);
-            }
+            dayOutflow += payAmount;
+            const currentKỳ = (debt.paidInstallments || 0) + 1;
+            const totalKỳ = debt.totalInstallments || 12;
+            notes.push(`Đóng trả góp [${debt.itemName || debt.person}] kỳ ${currentKỳ}/${totalKỳ}: -${new Intl.NumberFormat('vi-VN').format(payAmount)}đ`);
           }
-        } else if (debt.dueDate === dateStr) {
-          // Trường hợp 2: Khoản nợ đáo hạn trả một lần vào ngày chỉ định
-          if (debt.type === 'debt') {
+        }
+        // 3b. Trường hợp Thẻ tín dụng đến hạn thanh toán sao kê
+        else if (debt.debtCategory === 'credit_card' && debt.paymentDueDay) {
+          if (dayOfMonth === debt.paymentDueDay) {
             dayOutflow += debt.remainingAmount;
-            notes.push(`Đến hạn tất toán nợ cho ${debt.lenderName || debt.person}: -${new Intl.NumberFormat('vi-VN').format(debt.remainingAmount)}đ`);
-          } else if (debt.type === 'loan') {
-            dayInflow += debt.remainingAmount;
-            notes.push(`Dự kiến thu hồi nợ từ ${debt.person}: +${new Intl.NumberFormat('vi-VN').format(debt.remainingAmount)}đ`);
+            notes.push(`Hạn thanh toán thẻ tín dụng [${debt.lenderName || debt.person}]: -${new Intl.NumberFormat('vi-VN').format(debt.remainingAmount)}đ`);
           }
+        }
+        // 3c. Trường hợp Khoản nợ thông thường đáo hạn thanh toán
+        else if (debt.type === 'debt' && debt.dueDate === dateStr) {
+          dayOutflow += debt.remainingAmount;
+          notes.push(`Đến hạn tất toán nợ cho ${debt.lenderName || debt.person}: -${new Intl.NumberFormat('vi-VN').format(debt.remainingAmount)}đ`);
+        }
+        // 3d. Trường hợp Khoản cho vay đến ngày thu hồi (Tài sản)
+        else if (debt.type === 'loan' && debt.dueDate === dateStr) {
+          dayInflow += debt.remainingAmount;
+          notes.push(`Dự kiến thu nợ từ ${debt.person}: +${new Intl.NumberFormat('vi-VN').format(debt.remainingAmount)}đ`);
         }
       }
     }

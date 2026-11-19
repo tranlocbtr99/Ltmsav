@@ -62,28 +62,45 @@ export interface Budget {
   monthlyLimit: number;
 }
 
-export type DebtCategory = 'bank_loan' | 'credit_card' | 'installment' | 'personal_debt' | 'other';
+export type DebtCategory = 
+  | 'credit_card'       // Thẻ tín dụng
+  | 'installment'       // Trả góp mua hàng / tiêu dùng
+  | 'bank_loan'         // Vay ngân hàng
+  | 'personal_debt'     // Vay mượn cá nhân / người thân
+  | 'other';
 
 export interface DebtOrLoan {
   id: string;
-  type: 'loan' | 'debt';
-  person: string;
-  amount: number;
-  remainingAmount: number;
+  type: 'loan' | 'debt'; // 'loan' = Cho người khác vay (Tài sản); 'debt' = Khoản nợ phải trả (Nghĩa vụ nợ)
+  person: string; // Tên người mượn (khi loan) hoặc Bên cho vay / Người liên quan (khi debt)
+  amount: number; // Tổng số tiền vay ban đầu hoặc Giá trị món hàng
+  remainingAmount: number; // Dư nợ còn lại cần trả hoặc Số tiền chưa thu hồi được
   accountId: string;
-  dueDate?: string;
+  dueDate?: string; // Ngày hẹn trả / Ngày đáo hạn
   note?: string;
   status: 'active' | 'settled';
   createdAt: string;
 
-  // Chi tiết đặc tính khoản nợ / cho vay
+  // Chi tiết đặc tính khoản nợ (cho type === 'debt')
   debtCategory?: DebtCategory;
-  lenderName?: string;
-  interestRate?: number; // % / năm
-  termMonths?: number; // Kỳ hạn (tháng)
-  isInstallment?: boolean; // Trả góp định kỳ
-  monthlyInstallmentAmount?: number; // Tiền trả định kỳ hàng tháng
-  monthlyPaymentDay?: number; // Ngày trả cố định trong tháng (1 - 31)
+  lenderName?: string; // Tên ngân hàng / Tổ chức cho vay / Công ty tài chính
+  interestRate?: number; // Lãi suất %/năm
+  termMonths?: number; // Thời hạn vay (tháng)
+  isInstallment?: boolean; // Có hình thức trả góp định kỳ không
+
+  // Chi tiết Thẻ tín dụng
+  creditLimit?: number; // Hạn mức thẻ tín dụng
+  cardNumberLast4?: string; // 4 số cuối thẻ
+  statementDay?: number; // Ngày chốt sao kê hàng tháng (1 - 31)
+  paymentDueDay?: number; // Ngày đến hạn thanh toán sao kê (1 - 31)
+
+  // Chi tiết Mua trả góp
+  itemName?: string; // Tên sản phẩm trả góp (VD: iPhone, Xe máy...)
+  downPayment?: number; // Tiền trả trước
+  totalInstallments?: number; // Tổng số kỳ trả góp (tháng)
+  paidInstallments?: number; // Số kỳ đã thanh toán
+  monthlyInstallmentAmount?: number; // Tiền đóng định kỳ hàng tháng
+  monthlyPaymentDay?: number; // Ngày đóng tiền cố định hàng tháng (1 - 31)
 }
 
 export interface AuditLog {

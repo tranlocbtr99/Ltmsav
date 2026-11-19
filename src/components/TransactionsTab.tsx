@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Transaction, Account, Category, TransactionType } from '../types';
 import { 
   Search, Filter, Plus, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, 
-  Calendar, Edit3, Trash2, SlidersHorizontal, X 
+  Calendar, Edit3, Trash2, SlidersHorizontal, X, Clock 
 } from 'lucide-react';
 import { DynamicIcon } from './DynamicIcon';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -93,6 +93,20 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
 
     const [year, month, day] = dateStr.split('-');
     return `${day}/${month}/${year}`;
+  };
+
+  const formatTransactionTime = (createdAt?: string) => {
+    if (!createdAt) return '';
+    try {
+      const d = new Date(createdAt);
+      if (isNaN(d.getTime())) return '';
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      const s = String(d.getSeconds()).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    } catch {
+      return '';
+    }
   };
 
   const hasActiveFilters = selectedType !== 'all' || selectedAccount !== 'all' || selectedCategory !== 'all' || searchTerm !== '' || !!fromDate || !!toDate;
@@ -300,10 +314,18 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                               </span>
                             )}
                           </div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
-                            {acc?.name} {targetAcc ? `→ ${targetAcc.name}` : ''} • {cat?.name}
-                            {tx.person ? ` • ${tx.person}` : ''}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {formatTransactionTime(tx.createdAt) && (
+                              <span className="inline-flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold shrink-0">
+                                <Clock className="w-2.5 h-2.5 text-blue-500 inline" />
+                                {formatTransactionTime(tx.createdAt)}
+                              </span>
+                            )}
+                            <span className="truncate">
+                              {acc?.name} {targetAcc ? `→ ${targetAcc.name}` : ''} • {cat?.name}
+                              {tx.person ? ` • ${tx.person}` : ''}
+                            </span>
+                          </div>
                         </div>
                       </div>
 

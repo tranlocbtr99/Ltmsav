@@ -537,7 +537,14 @@ class StorageManager {
       throw new Error('Số tiền thanh toán không hợp lệ hoặc vượt quá dư nợ.');
     }
     item.remainingAmount -= paymentAmount;
-    if (item.remainingAmount === 0) {
+    if (item.debtCategory === 'installment') {
+      item.paidInstallments = (item.paidInstallments || 0) + 1;
+      if (item.totalInstallments && item.paidInstallments >= item.totalInstallments) {
+        item.remainingAmount = 0;
+      }
+    }
+    if (item.remainingAmount <= 0) {
+      item.remainingAmount = 0;
       item.status = 'settled';
     }
     this.saveDebtsAndLoans(items);
