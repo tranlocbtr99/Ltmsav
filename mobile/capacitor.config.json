@@ -1,7 +1,7 @@
 {
   "appId": "com.ltmsav.app",
   "appName": "LTMsav",
-  "webDir": "dist",
+  "webDir": "../dist",
   "android": {
     "allowMixedContent": false
   }
